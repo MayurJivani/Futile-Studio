@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futile Studio — Mayur</title>
+  <meta name="description" content="Everything is futile at scale. We do it anyway, because there's beauty in it." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0c0b09;
+      --surface:   #141210;
+      --border:    #2a2620;
+      --cream:     #e6ddd0;
+      --muted:     #7a7062;
+      --faint:     #2e2a24;
+      --rust:      #c4622d;
+      --rust-lt:   #d4874a;
+      --serif:     'Playfair Display', Georgia, serif;
+      --mono:      'Space Mono', 'Courier New', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* nav */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 48px;
+      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+    }
+
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      color: var(--cream);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--rust); }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 32px;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--cream); }
+
+    /* hero */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 120px 48px 80px;
+      position: relative;
+    }
+
+    .hero-inner { max-width: 720px; }
+
+    .label {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+      margin-bottom: 32px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--rust-lt);
+    }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 480px;
+      margin: 0 auto 48px;
+      line-height: 1.9;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border);
+      color: var(--cream);
+      text-decoration: none;
+      padding: 12px 24px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .hero-cta:hover { border-color: var(--rust); color: var(--rust-lt); }
+    .hero-cta svg { width: 14px; height: 14px; }
+
+    /* vinyl decorative */
+    .vinyl-deco {
+      position: absolute;
+      right: -80px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 340px;
+      height: 340px;
+      opacity: 0.08;
+      animation: spin 40s linear infinite;
+    }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* sections */
+    section { padding: 100px 48px; max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 40px;
+      color: var(--cream);
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 0 48px;
+      max-width: calc(1100px - 96px);
+    }
+
+    /* about */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .about-text p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.9;
+      margin-bottom: 20px;
+    }
+
+    .about-text p strong { color: var(--cream); font-weight: 400; }
+
+    .philosophy-quote {
+      border-left: 2px solid var(--rust);
+      padding-left: 28px;
+      margin-top: 40px;
+    }
+
+    .philosophy-quote blockquote {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 22px;
+      line-height: 1.5;
+      color: var(--cream);
+      opacity: 0.85;
+    }
+
+    .philosophy-quote cite {
+      display: block;
+      margin-top: 12px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    /* stack cards */
+    .stack-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stack-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .stack-item span:first-child { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .stack-item span:last-child  { color: var(--cream); }
+
+    /* projects */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .project-card {
+      border: 1px solid var(--border);
+      padding: 28px;
+      background: var(--surface);
+      transition: border-color 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      color: inherit;
+    }
+
+    .project-card:hover { border-color: var(--rust); }
+
+    .project-tag {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-bottom: 12px;
+    }
+
+    .project-name {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 10px;
+    }
+
+    .project-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .project-arrow {
+      margin-top: 20px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--rust);
+      text-transform: uppercase;
+    }
+
+    /* recording */
+    .recording-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .recording-header p {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 360px;
+      line-height: 1.8;
+    }
+
+    .vinyl-shelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+
+    .vinyl-item {
+      aspect-ratio: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .vinyl-item:hover { border-color: var(--rust); }
+
+    .vinyl-item .vinyl-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.12;
+    }
+
+    .vinyl-item .vinyl-bg svg { width: 80%; height: 80%; }
+
+    .vinyl-title {
+      font-family: var(--serif);
+      font-size: 14px;
+      color: var(--cream);
+      position: relative;
+      z-index: 1;
+    }
+
+    .vinyl-artist {
+      font-size: 11px;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+    }
+
+    .vinyl-format {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rust);
+      position: relative;
+      z-index: 1;
+      margin-top: 6px;
+    }
+
+    .add-tile {
+      aspect-ratio: 1;
+      border: 1px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+
+    /* thoughts */
+    .thoughts-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .thought-item {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 32px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+      text-decoration: none;
+      color: inherit;
+      transition: opacity 0.2s;
+    }
+
+    .thought-item:hover { opacity: 0.7; }
+
+    .thought-date {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding-top: 4px;
+    }
+
+    .thought-title {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 8px;
+    }
+
+    .thought-preview {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    /* footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--rust); }
+
+    .footer-copy {
+      font-size: 11px;
+      color: var(--faint);
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      nav ul { gap: 20px; }
+      section { padding: 72px 24px; }
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+      .recording-header { flex-direction: column; }
+      .thought-item { grid-template-columns: 1fr; gap: 8px; }
+      footer { padding: 40px 24px; flex-direction: column; align-items: flex-start; }
+      .vinyl-deco { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Futile<span>.</span>Studio</a>
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#recording">Recording Co</a></li>
+      <li><a href="#thoughts">Thoughts</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <!-- Vinyl decoration -->
+    <svg class="vinyl-deco" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="99" stroke="white" stroke-width="1"/>
+      <circle cx="100" cy="100" r="88" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="76" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="64" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="52" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="40" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="28" stroke="white" stroke-width="0.5"/>
+      <circle cx="100" cy="100" r="16" stroke="white" stroke-width="1"/>
+      <circle cx="100" cy="100" r="6"  fill="white" opacity="0.6"/>
+    </svg>
+
+    <div class="hero-inner">
+      <span class="label">futile.studio / est. 2025</span>
+      <h1>Everything is<br><em>futile.</em><br>Do it anyway.</h1>
+      <p class="hero-sub">
+        We are here briefly. At scale, nothing persists. Yet there is something worth doing
+        in the making — of music, of software, of objects that outlast you.
+      </p>
+      <a href="#about" class="hero-cta">
+        Explore the studio
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 8h10M9 4l4 4-4 4"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-grid">
+      <div class="about-text">
+        <div class="section-label">/ About</div>
+        <h2>The person<br>behind the work</h2>
+        <p>
+          I'm Mayur. I build things — software, recordings, collections — with the full awareness
+          that <strong>none of it matters at a cosmic scale.</strong> That's the point.
+        </p>
+        <p>
+          Futile Studio is my personal corner of the internet. It's where my projects live,
+          where my thoughts collect dust until they're worth reading, and where Futile Recording Co
+          keeps a log of every piece of music that moved me enough to own it physically.
+        </p>
+        <p>
+          I collect vinyls and cassettes. Physical media. Things that represent a moment,
+          an emotion, a sound that mattered. They'll outlast me. So will the code, if it's good enough.
+        </p>
+
+        <div class="philosophy-quote">
+          <blockquote>
+            "We are on this planet for a brief time. The scale makes everything futile.
+            The beauty is in doing it anyway."
+          </blockquote>
+          <cite>— Mayur, futile.studio</cite>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">/ The stack</div>
+        <div class="stack-list">
+          <div class="stack-item"><span>Building</span><span>Software projects</span></div>
+          <div class="stack-item"><span>Collecting</span><span>Vinyl &amp; cassettes</span></div>
+          <div class="stack-item"><span>Making</span><span>Music / Futile Rec. Co</span></div>
+          <div class="stack-item"><span>Writing</span><span>Thoughts &amp; ideas</span></div>
+          <div class="stack-item"><span>Domain</span><span>futile.studio</span></div>
+          <div class="stack-item"><span>Based in</span><span>Planet Earth, briefly</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="section-label">/ Projects</div>
+    <h2>Things I've built<br>& shipped</h2>
+
+    <div class="projects-grid">
+
+      <!-- Live project cards — replace with real ones -->
+      <a href="#" class="project-card">
+        <div class="project-tag">Web / Tool</div>
+        <div class="project-name">Project One</div>
+        <div class="project-desc">A short description of what this does and why it exists. Keep it one or two sentences.</div>
+        <div class="project-arrow">View project →</div>
+      </a>
+
+      <a href="#" class="project-card">
+        <div class="project-tag">Experiment</div>
+        <div class="project-name">Project Two</div>
+        <div class="project-desc">Another thing built for the joy of building. Maybe it's useful. Maybe it's just beautiful.</div>
+        <div class="project-arrow">View project →</div>
+      </a>
+
+      <a href="#" class="project-card">
+        <div class="project-tag">Open Source</div>
+        <div class="project-name">Project Three</div>
+        <div class="project-desc">Something released into the wild. Free, like it should be.</div>
+        <div class="project-arrow">View project →</div>
+      </a>
+
+      <!-- Placeholder for future -->
+      <div class="project-card" style="border-style: dashed; opacity: 0.4; cursor: default;">
+        <div class="project-tag">Coming soon</div>
+        <div class="project-name">Next thing</div>
+        <div class="project-desc">Something in progress. Watch this space.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FUTILE RECORDING CO -->
+  <section id="recording">
+    <div class="recording-header">
+      <div>
+        <div class="section-label">/ Futile Recording Co</div>
+        <h2>The library.<br>Physical media.</h2>
+      </div>
+      <p>
+        Every vinyl, cassette, and tape in the collection. Music that moved me enough
+        to own in a form that requires effort. Things that'll stay when I'm long gone.
+      </p>
+    </div>
+
+    <div class="vinyl-shelf">
+
+      <!-- Vinyl records — fill in with your actual collection -->
+      <div class="vinyl-item">
+        <div class="vinyl-bg">
+          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
+        </div>
+        <div class="vinyl-title">Album One</div>
+        <div class="vinyl-artist">Artist Name</div>
+        <div class="vinyl-format">Vinyl · 1983</div>
+      </div>
+
+      <div class="vinyl-item">
+        <div class="vinyl-bg">
+          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
+        </div>
+        <div class="vinyl-title">Album Two</div>
+        <div class="vinyl-artist">Artist Name</div>
+        <div class="vinyl-format">Cassette · 1991</div>
+      </div>
+
+      <div class="vinyl-item">
+        <div class="vinyl-bg">
+          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
+        </div>
+        <div class="vinyl-title">Album Three</div>
+        <div class="vinyl-artist">Artist Name</div>
+        <div class="vinyl-format">Vinyl · 2001</div>
+      </div>
+
+      <div class="vinyl-item">
+        <div class="vinyl-bg">
+          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
+        </div>
+        <div class="vinyl-title">My Recording</div>
+        <div class="vinyl-artist">Futile Recording Co</div>
+        <div class="vinyl-format">Original · 2025</div>
+      </div>
+
+      <div class="add-tile">+ Add to shelf</div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- THOUGHTS -->
+  <section id="thoughts">
+    <div class="section-label">/ Thoughts</div>
+    <h2>Writing.<br>Occasionally.</h2>
+
+    <div class="thoughts-list">
+
+      <!-- Thought entries — replace with real posts -->
+      <a href="#" class="thought-item">
+        <div class="thought-date">Mar 2025</div>
+        <div>
+          <div class="thought-title">On the permanence of impermanence</div>
+          <div class="thought-preview">Why physical media matters in a world of infinite streaming. A record doesn't disappear when a service shuts down.</div>
+        </div>
+      </a>
+
+      <a href="#" class="thought-item">
+        <div class="thought-date">Feb 2025</div>
+        <div>
+          <div class="thought-title">Why I build things no one will use</div>
+          <div class="thought-preview">On the act of making for its own sake. The output is irrelevant. The practice is the point.</div>
+        </div>
+      </a>
+
+      <a href="#" class="thought-item">
+        <div class="thought-date">Jan 2025</div>
+        <div>
+          <div class="thought-title">Futile, and that's okay</div>
+          <div class="thought-preview">The manifesto. Why this studio exists and what I'm trying to say by naming it after nothing mattering.</div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Futile.Studio</div>
+    <ul class="footer-links">
+      <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="mailto:hello@futile.studio">Email</a></li>
+      <!-- Stripe-ready: add a /support or /tip link here when ready -->
+    </ul>
+    <div class="footer-copy">© 2025 Mayur · Everything is futile · Do it anyway</div>
+  </footer>
+
+</body>
+</html>
