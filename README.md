@@ -1,46 +1,51 @@
-# Astro Starter Kit: Basics
+# Futile Studio
 
-```sh
-npm create astro@latest -- --template basics
+Monorepo for futile.studio portfolio and projects.futile.studio hosted apps.
+
+## Structure
+
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
+Futile-Studio/
+├── src/                 # Portfolio site (futile.studio)
+├── mosaic/
+│   ├── frontend/        # Mosaic Astro app → /mosaic
+│   └── server/          # Mosaic upload + WebSocket API
+├── server/              # Unified Express host for projects
 ├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+│   ├── qno/             # Built Qno frontend (assembled)
+│   └── mosaic/          # Built Mosaic frontend (assembled)
+└── scripts/assemble.js  # Copies build outputs into public/
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+Qno frontend and backend live in `../Qno-web/` and are built into this host at `/qno`.
 
-## 🧞 Commands
+## Projects host
 
-All commands are run from the root of the project, from a terminal:
+`projects.futile.studio` serves:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+| Path | App |
+|------|-----|
+| `/qno` | Qno card game (static + `/qno/ws`) |
+| `/mosaic` | Mosaic video canvas (static + `/mosaic/ws`, `/mosaic/upload`, `/mosaic/files`) |
 
-## 👀 Want to learn more?
+## Commands
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```bash
+# Install all workspace deps
+npm install
+
+# Build portfolio + both projects + assemble into public/
+npm run build
+
+# Run projects host (port 3000)
+npm start
+
+# Portfolio dev only
+npm run dev:portfolio
+```
+
+## Deploy
+
+Point `projects.futile.studio` at the Express process (`npm start`). Build with `npm run build` first so `public/qno` and `public/mosaic` exist.
+
+For `futile.studio`, deploy the portfolio `dist/` separately or serve from the same host root.
