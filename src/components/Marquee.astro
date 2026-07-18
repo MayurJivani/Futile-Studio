@@ -1,0 +1,80 @@
+---
+interface Props {
+	items: string[];
+	speed?: number; // seconds per loop
+}
+const { items, speed = 26 } = Astro.props;
+const doubled = [...items, ...items];
+---
+
+<div class="marquee" style={`--speed:${speed}s`}>
+	<div class="marquee-track">
+		{doubled.map((item, i) => <span class={i % 2 === 0 ? 'is-fill' : 'is-outline'}>{item}</span>)}
+	</div>
+</div>
+
+<style>
+	.marquee {
+		width: 100%;
+		overflow: hidden;
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		padding: 18px 0;
+		background: var(--bg-2);
+	}
+
+	.marquee-track {
+		display: flex;
+		width: max-content;
+		animation: marquee var(--speed) linear infinite;
+	}
+
+	.marquee-track span {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		padding: 0 22px;
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: clamp(20px, 3vw, 34px);
+		letter-spacing: 0.01em;
+		white-space: nowrap;
+	}
+
+	.marquee-track span.is-outline {
+		color: transparent;
+		-webkit-text-stroke: 1px var(--line-strong);
+	}
+
+	.marquee-track span.is-fill {
+		color: var(--cyan);
+	}
+
+	.marquee-track span::before {
+		content: '◆';
+		margin-right: 22px;
+		font-size: 10px;
+		color: var(--cyan);
+		-webkit-text-stroke: 0;
+	}
+
+	.marquee:hover .marquee-track {
+		animation-play-state: paused;
+	}
+
+	@keyframes marquee {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.marquee-track {
+			animation: none;
+		}
+	}
+</style>

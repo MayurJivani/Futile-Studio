@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
+import Marquee from '../components/Marquee.astro';
 ---
 
 <Layout>
@@ -8,24 +9,45 @@ import Nav from '../components/Nav.astro';
 
 	<!-- HERO -->
 	<div class="hero">
-		<svg class="hero-diagram" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-			<circle cx="200" cy="200" r="190" stroke="currentColor" stroke-width="1"/>
-			<circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.5"/>
-			<circle cx="200" cy="200" r="90" stroke="currentColor" stroke-width="0.5"/>
-			<circle cx="200" cy="200" r="40" stroke="currentColor" stroke-width="0.5"/>
-			<circle cx="200" cy="200" r="4" fill="currentColor"/>
-			<line x1="200" y1="10" x2="200" y2="390" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"/>
-			<line x1="10" y1="200" x2="390" y2="200" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"/>
+		<svg
+			class="hero-diagram"
+			id="hero-diagram"
+			viewBox="0 0 400 400"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			aria-hidden="true"
+		>
+			<circle cx="200" cy="200" r="190" stroke="currentColor" stroke-width="1"></circle>
+			<circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.5"></circle>
+			<circle cx="200" cy="200" r="90" stroke="currentColor" stroke-width="0.5"></circle>
+			<circle cx="200" cy="200" r="40" stroke="currentColor" stroke-width="0.5"></circle>
+			<circle cx="200" cy="200" r="4" fill="currentColor"></circle>
+			<line x1="200" y1="10" x2="200" y2="390" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"
+			></line>
+			<line x1="10" y1="200" x2="390" y2="200" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"
+			></line>
 		</svg>
+
+		<div class="hero-hud" aria-hidden="true">
+			<span>FIG. 01 — SELF PORTRAIT</span>
+			<span>SCALE 1:1</span>
+		</div>
 
 		<div class="hero-inner">
 			<span class="label" data-reveal>FUTILE.STUDIO — DWG NO. 001 — EST. 2025</span>
-			<h1 data-reveal style="--d:80ms">Everything<br />is <em>futile.</em><br />Do it anyway.</h1>
+			<h1 data-split-group>
+				<span class="split-mask"><span class="split-word">Everything</span></span><br />
+				<span class="split-mask"><span class="split-word">is</span></span>
+				<span class="split-mask"><span class="split-word hl">futile.</span></span><br />
+				<span class="split-mask"><span class="split-word">Do</span></span>
+				<span class="split-mask"><span class="split-word">it</span></span>
+				<span class="split-mask"><span class="split-word">anyway.</span></span>
+			</h1>
 			<p class="hero-sub" data-reveal style="--d:160ms">
-				We are here briefly. At scale, nothing persists. Yet there is something worth doing
-				in the making — of software, of recordings, of objects that outlast you.
+				We are here briefly. At scale, nothing persists. Yet there is something worth doing in the making — of
+				software, of recordings, of objects that outlast you.
 			</p>
-			<a href="#about" class="hero-cta" data-reveal style="--d:240ms">
+			<a href="#about" class="hero-cta" data-reveal data-magnetic style="--d:240ms">
 				Explore the studio
 				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
 					<path d="M3 8h10M9 4l4 4-4 4"></path>
@@ -39,38 +61,51 @@ import Nav from '../components/Nav.astro';
 		</div>
 	</div>
 
+	<Marquee items={['Building', 'Collecting', 'Making', 'Homelabbing', 'Writing']} speed={26} />
+
 	<!-- ABOUT -->
 	<section id="about">
 		<div class="sheet-label" data-reveal>SHEET 01 / 05 — ABOUT</div>
 		<div class="about-grid">
 			<div class="about-text">
 				<div class="section-label" data-reveal>/ About</div>
-				<h2 data-reveal style="--d:40ms">The person<br />behind the work</h2>
+				<h2 data-split data-split-group>The person behind the work</h2>
 				<p data-reveal style="--d:80ms">
-					I'm Mayur. I build things — software, recordings, collections — with the full awareness
-					that <strong>none of it matters at a cosmic scale.</strong> That's the point.
+					I'm Mayur. I build things — software, recordings, collections — with the full awareness that <strong
+						>none of it matters at a cosmic scale.</strong
+					> That's the point.
 				</p>
 				<p data-reveal style="--d:120ms">
-					Futile Studio is my personal corner of the internet. It's where my projects live,
-					where my thoughts collect dust until they're worth reading, and where Futile Recording Co
-					keeps a log of every piece of music that moved me enough to own it physically.
+					Futile Studio is my personal corner of the internet. It's where my projects live, where my thoughts
+					collect dust until they're worth reading, and where Futile Recording Co keeps a log of every piece
+					of music that moved me enough to own it physically.
 				</p>
 				<p data-reveal style="--d:160ms">
-					I collect vinyls and cassettes. Physical media. Things that represent a moment,
-					an emotion, a sound that mattered. They'll outlast me. So will the code, if it's good enough.
+					I collect vinyls and cassettes. Physical media. Things that represent a moment, an emotion, a sound
+					that mattered. They'll outlast me. So will the code, if it's good enough.
 				</p>
 			</div>
 
 			<div data-reveal style="--d:120ms">
 				<div class="section-label">/ Spec</div>
 				<div class="stack-list">
-					<div class="stack-item"><span>01</span><span>Building</span><span>Software &amp; infrastructure</span></div>
-					<div class="stack-item"><span>02</span><span>Collecting</span><span>Vinyl &amp; cassettes</span></div>
+					<div class="stack-item">
+						<span>01</span><span>Building</span><span>Software &amp; infrastructure</span>
+					</div>
+					<div class="stack-item">
+						<span>02</span><span>Collecting</span><span>Vinyl &amp; cassettes</span>
+					</div>
 					<div class="stack-item"><span>03</span><span>Making</span><span>Music / Futile Rec. Co</span></div>
 					<div class="stack-item"><span>04</span><span>Homelabbing</span><span>Jinx everything</span></div>
 					<div class="stack-item"><span>05</span><span>Based in</span><span>Paderborn, Germany</span></div>
 				</div>
-				<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="hero-cta" style="margin-top:32px;display:inline-flex">
+				<a
+					href="/cv.pdf"
+					download="Mayur_Jivani_CV.pdf"
+					class="hero-cta"
+					data-magnetic
+					style="margin-top:32px;display:inline-flex"
+				>
 					Download CV
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
 						<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
@@ -81,41 +116,144 @@ import Nav from '../components/Nav.astro';
 	</section>
 
 	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+		<svg width="100%" height="2" preserveAspectRatio="none"
+			><line
+				class="draw-path"
+				x1="0"
+				y1="1"
+				x2="100%"
+				y2="1"
+				stroke="var(--line-strong)"
+				stroke-width="1"
+				pathLength="1"></line></svg
+		>
 	</div>
 
-	<!-- PROJECTS -->
-	<section id="projects">
-		<div class="sheet-label" data-reveal>SHEET 02 / 05 — PROJECTS</div>
-		<div class="section-label" data-reveal>/ Projects</div>
-		<h2 data-reveal style="--d:40ms">Things I've built<br />&amp; shipped</h2>
+	<!-- PROJECTS (horizontal pinned scroll on desktop) -->
+	<section id="projects" class="projects-section">
+		<div class="projects-head">
+			<div class="sheet-label" data-reveal>SHEET 02 / 05 — PROJECTS</div>
+			<div class="section-label" data-reveal>/ Projects</div>
+			<h2 data-split data-split-group>Things I've built &amp; shipped</h2>
+			<div class="projects-hint" data-reveal style="--d:80ms">Scroll →</div>
+		</div>
 
-		<div class="projects-grid">
-			<a href="https://qno.futile.studio/" target="_blank" rel="noopener" class="project-card" data-reveal style="--d:80ms">
-				<div class="project-tag">Game · Dec 2025</div>
-				<div class="project-name">Qno</div>
-				<div class="project-desc">A quantum-themed Uno card game built to teach quantum computing — superposition, entanglement, quantum gates — through multiplayer gameplay. React.js, Node.js, WebSockets.</div>
-				<div class="project-arrow">Play →</div>
-			</a>
+		<div class="projects-pin" id="projects-pin">
+			<div class="projects-track" id="projects-track">
+				<a
+					href="https://qno.futile.studio/"
+					target="_blank"
+					rel="noopener"
+					class="project-card"
+					data-magnetic="0.15"
+					data-glimpse
+				>
+					<div class="project-tag">Game · Dec 2025</div>
+					<div class="project-name">Qno</div>
+					<div class="project-desc">
+						A quantum-themed Uno card game built to teach quantum computing — superposition, entanglement,
+						quantum gates — through multiplayer gameplay. React.js, Node.js, WebSockets.
+					</div>
+					<div class="project-arrow">Play →</div>
+					<template>
+						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
+							<circle cx="120" cy="52" r="30" stroke-dasharray="3 4"></circle>
+							<circle cx="120" cy="52" r="18"></circle>
+							<circle cx="120" cy="52" r="3" fill="currentColor" stroke="none"></circle>
+							<rect x="70" y="98" width="34" height="46" rx="4" transform="rotate(-8 87 121)"></rect>
+							<rect x="103" y="100" width="34" height="46" rx="4"></rect>
+							<rect x="136" y="98" width="34" height="46" rx="4" transform="rotate(8 153 121)"></rect>
+						</svg>
+						<div class="glimpse-tag">Multiplayer · quantum mechanics as gameplay</div>
+					</template>
+				</a>
 
-			<div class="project-card" aria-disabled="true" data-reveal style="--d:140ms">
-				<div class="project-tag">Video · 2025</div>
-				<div class="project-name">Mosaic</div>
-				<div class="project-desc">Multi-screen video mosaic canvas — sync playback across devices, clip routing to individual viewers, and LAN-friendly uploads. Astro, React, WebSockets.</div>
-				<div class="project-arrow">In development</div>
+				<div class="project-card" aria-disabled="true" data-magnetic="0.15" data-glimpse>
+					<div class="project-tag">Video · 2025</div>
+					<div class="project-name">Mosaic</div>
+					<div class="project-desc">
+						Multi-screen video mosaic canvas — sync playback across devices, clip routing to individual
+						viewers, and LAN-friendly uploads. Astro, React, WebSockets.
+					</div>
+					<div class="project-arrow">In development</div>
+					<template>
+						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
+							<rect x="8" y="8" width="72" height="60"></rect>
+							<rect x="88" y="8" width="72" height="60" fill="currentColor" fill-opacity="0.12"></rect>
+							<path d="M115 28l16 10-16 10z" fill="currentColor" stroke="none"></path>
+							<rect x="168" y="8" width="64" height="60"></rect>
+							<rect x="8" y="76" width="110" height="66"></rect>
+							<rect x="126" y="76" width="106" height="66"></rect>
+						</svg>
+						<div class="glimpse-tag">Synced playback across every screen in the room</div>
+					</template>
+				</div>
+
+				<a
+					href="https://github.com/mayurjivani"
+					target="_blank"
+					rel="noopener"
+					class="project-card"
+					data-magnetic="0.15"
+					data-glimpse
+				>
+					<div class="project-tag">Music · Jan 2024</div>
+					<div class="project-name">Chorus</div>
+					<div class="project-desc">
+						A Wordle-inspired music guessing game with Spotify integration. Pulls your listening history,
+						streams audio in-browser via Spotify Playback SDK. React.js.
+					</div>
+					<div class="project-arrow">View project →</div>
+					<template>
+						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
+							<path
+								d="M10 90V60M28 90V40M46 90V70M64 90V25M82 90V55M100 90V15M118 90V65M136 90V35M154 90V75M172 90V50M190 90V20M208 90V60M226 90V45"
+								stroke-linecap="round"></path>
+							<rect x="8" y="112" width="224" height="26" rx="13"></rect>
+							<circle cx="30" cy="125" r="3" fill="currentColor" stroke="none"></circle>
+						</svg>
+						<div class="glimpse-tag">Guess the track from your own listening history</div>
+					</template>
+				</a>
+
+				<a href="/collection" class="project-card project-card-end" data-magnetic="0.15" data-glimpse>
+					<div class="project-tag">Futile Recording Co</div>
+					<div class="project-name">The Collection</div>
+					<div class="project-desc">
+						Vinyl and cassette, digitized. A turntable and tape deck you can actually play.
+					</div>
+					<div class="project-arrow">Enter →</div>
+					<template>
+						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
+							<circle cx="62" cy="75" r="52"></circle>
+							<circle cx="62" cy="75" r="36"></circle>
+							<circle cx="62" cy="75" r="20"></circle>
+							<circle cx="62" cy="75" r="4" fill="currentColor" stroke="none"></circle>
+							<rect x="140" y="45" width="92" height="60"></rect>
+							<circle cx="166" cy="75" r="14"></circle>
+							<circle cx="206" cy="75" r="14"></circle>
+							<circle cx="166" cy="75" r="3" fill="currentColor" stroke="none"></circle>
+							<circle cx="206" cy="75" r="3" fill="currentColor" stroke="none"></circle>
+						</svg>
+						<div class="glimpse-tag">Press play on a real turntable &amp; tape deck</div>
+					</template>
+				</a>
 			</div>
-
-			<a href="https://github.com/mayurjivani" target="_blank" rel="noopener" class="project-card" data-reveal style="--d:200ms">
-				<div class="project-tag">Music · Jan 2024</div>
-				<div class="project-name">Chorus</div>
-				<div class="project-desc">A Wordle-inspired music guessing game with Spotify integration. Pulls your listening history, streams audio in-browser via Spotify Playback SDK. React.js.</div>
-				<div class="project-arrow">View project →</div>
-			</a>
 		</div>
 	</section>
 
 	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+		<svg width="100%" height="2" preserveAspectRatio="none"
+			><line
+				class="draw-path"
+				x1="0"
+				y1="1"
+				x2="100%"
+				y2="1"
+				stroke="var(--line-strong)"
+				stroke-width="1"
+				pathLength="1"></line></svg
+		>
 	</div>
 
 	<!-- HOMELAB -->
@@ -123,12 +261,14 @@ import Nav from '../components/Nav.astro';
 		<div class="sheet-label" data-reveal>SHEET 03 / 05 — INFRASTRUCTURE</div>
 		<div class="homelab-grid">
 			<div>
-				<div class="section-label" data-reveal>/ Homelab</div>
+				<div class="section-label" data-reveal>
+					<span class="status-dot"></span> / Homelab — system online
+				</div>
 				<h2 data-reveal style="--d:40ms">The server<br />is called <em>jinx.</em></h2>
 				<p data-reveal style="--d:80ms">
-					A self-hosted stack running bare metal at home. I got into it because I wanted
-					to understand infrastructure at the lowest level I could reach — total control.
-					Everything under <strong>*.futile.studio</strong> runs off it.
+					A self-hosted stack running bare metal at home. I got into it because I wanted to understand
+					infrastructure at the lowest level I could reach — total control. Every project, every recording,
+					every word I've written runs off it.
 				</p>
 			</div>
 			<div class="rack" data-reveal style="--d:120ms">
@@ -139,38 +279,49 @@ import Nav from '../components/Nav.astro';
 					<div class="rack-item"><span>Vaultwarden</span><span>Secrets / passwords</span></div>
 					<div class="rack-item"><span>Coolify</span><span>Deploys &amp; app hosting</span></div>
 				</div>
-				<div class="section-label" style="margin-top:28px">/ Subdomains</div>
+				<div class="section-label" style="margin-top:28px">/ Also on the rack</div>
 				<div class="rack-list">
-					<div class="rack-item"><span>projects.futile.studio</span><span>Hosted apps — Qno, Mosaic</span></div>
-					<div class="rack-item"><span>media.futile.studio</span><span>FLAC library</span></div>
-					<div class="rack-item"><span>radio.futile.studio</span><span class="pending">Coming soon</span></div>
+					<div class="rack-item"><span>Reverse proxy</span><span>Routes every project by name</span></div>
+					<div class="rack-item"><span>Object storage</span><span>Recordings &amp; written media</span></div>
+					<div class="rack-item"><span>Backups</span><span>Nightly, offsite</span></div>
 				</div>
 			</div>
 		</div>
 	</section>
 
-	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
-	</div>
+	<Marquee items={['Physical media', 'Vinyl', 'Cassette', 'FLAC']} speed={30} />
 
 	<!-- FUTILE RECORDING CO / COLLECTION TEASER -->
 	<section id="recording">
 		<div class="sheet-label" data-reveal>SHEET 04 / 05 — FUTILE RECORDING CO</div>
 		<div class="recording-header">
 			<div>
-				<div class="section-label" data-reveal>/ The library</div>
-				<h2 data-reveal style="--d:40ms">Physical media,<br />played back digitally.</h2>
+				<div class="section-label" data-reveal>
+					<span class="status-dot status-dot-red"></span> / The library
+				</div>
+				<h2 data-split data-split-group>Physical media, played back digitally.</h2>
 			</div>
 			<p data-reveal style="--d:80ms">
-				Every vinyl and cassette in the collection, shelved and playable — turntable
-				crackle, tape hiss, and all. Music that moved me enough to own in a form that
-				requires effort.
+				Every vinyl and cassette in the collection, shelved and playable — turntable crackle, tape hiss, and
+				all. Music that moved me enough to own in a form that requires effort.
 			</p>
 		</div>
 
-		<a href="/collection" class="collection-cta" data-reveal style="--d:120ms">
+		<a href="/collection" class="collection-cta" data-reveal data-magnetic="0.12" style="--d:120ms">
 			<div class="collection-cta-icon">
-				<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="1"/><circle cx="50" cy="50" r="34" stroke="currentColor" stroke-width="0.5"/><circle cx="50" cy="50" r="20" stroke="currentColor" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>
+				<svg viewBox="0 0 100 100" fill="none"
+					><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="1"></circle><circle
+						cx="50"
+						cy="50"
+						r="34"
+						stroke="currentColor"
+						stroke-width="0.5"></circle><circle
+						cx="50"
+						cy="50"
+						r="20"
+						stroke="currentColor"
+						stroke-width="0.5"></circle><circle cx="50" cy="50" r="4" fill="currentColor"></circle></svg
+				>
 			</div>
 			<div>
 				<div class="project-name">Enter the collection</div>
@@ -180,41 +331,40 @@ import Nav from '../components/Nav.astro';
 	</section>
 
 	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+		<svg width="100%" height="2" preserveAspectRatio="none"
+			><line
+				class="draw-path"
+				x1="0"
+				y1="1"
+				x2="100%"
+				y2="1"
+				stroke="var(--line-strong)"
+				stroke-width="1"
+				pathLength="1"></line></svg
+		>
 	</div>
 
 	<!-- THOUGHTS -->
 	<section id="thoughts">
 		<div class="sheet-label" data-reveal>SHEET 05 / 05 — THOUGHTS</div>
-		<div class="section-label" data-reveal>/ Thoughts</div>
-		<h2 data-reveal style="--d:40ms">Writing.<br />Occasionally.</h2>
-
-		<div class="thoughts-list">
-			<a href="#" class="thought-item" data-reveal style="--d:80ms">
-				<div class="thought-date">Mar 2025</div>
-				<div>
-					<div class="thought-title">On the permanence of impermanence</div>
-					<div class="thought-preview">Why physical media matters in a world of infinite streaming. A record doesn't disappear when a service shuts down.</div>
-				</div>
-			</a>
-
-			<a href="#" class="thought-item" data-reveal style="--d:140ms">
-				<div class="thought-date">Feb 2025</div>
-				<div>
-					<div class="thought-title">Why I build things no one will use</div>
-					<div class="thought-preview">On the act of making for its own sake. The output is irrelevant. The practice is the point.</div>
-				</div>
-			</a>
-
-			<a href="#" class="thought-item" data-reveal style="--d:200ms">
-				<div class="thought-date">Jan 2025</div>
-				<div>
-					<div class="thought-title">Futile, and that's okay</div>
-					<div class="thought-preview">The manifesto. Why this studio exists and what I'm trying to say by naming it after nothing mattering.</div>
-				</div>
+		<div class="thoughts-top">
+			<div>
+				<div class="section-label" data-reveal>/ Thoughts</div>
+				<h2 data-split data-split-group>Writing. Occasionally.</h2>
+			</div>
+			<a href="/thoughts" class="hero-cta" data-reveal data-magnetic style="--d:80ms">
+				All writing
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+					<path d="M3 8h10M9 4l4 4-4 4"></path>
+				</svg>
 			</a>
 		</div>
+
+		<div id="thoughts-status" class="list-status" data-reveal>Loading…</div>
+		<div class="thoughts-list" id="thoughts-list"></div>
 	</section>
+
+	<Marquee items={['Everything is futile', 'Do it anyway']} speed={24} />
 
 	<!-- FOOTER -->
 	<footer>
@@ -223,14 +373,101 @@ import Nav from '../components/Nav.astro';
 			<div class="footer-scale">SCALE 1:1 · REV 2026</div>
 		</div>
 		<ul class="footer-links">
-			<li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
-			<li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a></li>
-			<li><a href="mailto:mayur@futile.studio">Email</a></li>
-			<li><a href="/cv.pdf" download="Mayur_Jivani_CV.pdf">CV</a></li>
+			<li>
+				<a href="https://github.com/mayurjivani" target="_blank" rel="noopener" data-magnetic="0.4">GitHub</a>
+			</li>
+			<li>
+				<a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener" data-magnetic="0.4"
+					>LinkedIn</a>
+			</li>
+			<li><a href="mailto:mayur@futile.studio" data-magnetic="0.4">Email</a></li>
+			<li><a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" data-magnetic="0.4">CV</a></li>
 		</ul>
 		<div class="footer-copy">© 2026 Mayur · Everything is futile · Do it anyway</div>
 	</footer>
 </Layout>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	gsap.registerPlugin(ScrollTrigger);
+
+	/* hero diagram parallax */
+	const diagram = document.getElementById('hero-diagram');
+	if (diagram && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		gsap.to(diagram, {
+			rotate: 25,
+			scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 0.6 },
+		});
+	}
+
+	/* horizontal pinned project rail (desktop only) */
+	function setupProjectsRail() {
+		const track = document.getElementById('projects-track') as HTMLElement | null;
+		const pin = document.getElementById('projects-pin');
+		if (!track || !pin) return;
+
+		const mm = gsap.matchMedia();
+		mm.add('(min-width: 900px)', () => {
+			const amount = () => track.scrollWidth - pin.clientWidth;
+			const tween = gsap.to(track, {
+				x: () => -amount(),
+				ease: 'none',
+				scrollTrigger: {
+					trigger: pin,
+					start: 'top top+=70',
+					end: () => '+=' + amount(),
+					pin: true,
+					scrub: 0.7,
+					invalidateOnRefresh: true,
+				},
+			});
+			return () => tween.scrollTrigger?.kill();
+		});
+	}
+	setupProjectsRail();
+
+	/* latest thoughts, pulled from the backend */
+	import { apiFetch, esc } from '../lib/api.js';
+
+	function fmtDate(iso: string) {
+		const d = new Date(iso.replace(' ', 'T') + 'Z');
+		return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+	}
+
+	const thoughtsStatus = document.getElementById('thoughts-status');
+	const thoughtsList = document.getElementById('thoughts-list');
+
+	apiFetch('/api/posts')
+		.then((res) => (res.ok ? res.json() : []))
+		.then((posts) => {
+			if (!thoughtsStatus || !thoughtsList) return;
+			if (!posts.length) {
+				thoughtsStatus.textContent = 'Nothing published yet — the first entry is coming.';
+				return;
+			}
+			thoughtsStatus.style.display = 'none';
+			for (const post of posts.slice(0, 3)) {
+				const a = document.createElement('a');
+				a.href = `/thoughts/post?slug=${encodeURIComponent(post.slug)}`;
+				a.className = 'thought-item';
+				a.innerHTML = `
+					<div class="thought-date">${fmtDate(post.created_at)}</div>
+					<div>
+						<div class="thought-title">${esc(post.title)}</div>
+						<div class="thought-preview">${esc(post.excerpt || '')}</div>
+					</div>
+					<div class="thought-stamp" aria-hidden="true">READ</div>
+				`;
+				thoughtsList.appendChild(a);
+			}
+		})
+		.catch(() => {
+			if (thoughtsStatus) thoughtsStatus.textContent = 'Could not reach the backend.';
+		});
+
+	window.addEventListener('load', () => ScrollTrigger.refresh());
+</script>
 
 <style>
 	section {
@@ -259,11 +496,37 @@ import Nav from '../components/Nav.astro';
 	}
 
 	.section-label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		font-size: 11px;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--cyan);
 		margin-bottom: 16px;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--cyan);
+		box-shadow: 0 0 6px var(--cyan);
+		animation: pulse 1.8s ease-in-out infinite;
+		flex-shrink: 0;
+	}
+	.status-dot-red {
+		background: var(--red);
+		box-shadow: 0 0 6px var(--red);
+	}
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.25;
+		}
 	}
 
 	h1 {
@@ -273,16 +536,16 @@ import Nav from '../components/Nav.astro';
 		margin-bottom: 32px;
 	}
 
-	h1 em {
-		font-style: normal;
+	.split-word.hl {
 		color: var(--cyan);
 	}
 
 	h2 {
 		font-size: clamp(30px, 4.4vw, 54px);
-		line-height: 1.02;
+		line-height: 1.06;
 		margin-bottom: 40px;
 		color: var(--white);
+		max-width: 14ch;
 	}
 
 	h2 em {
@@ -305,40 +568,25 @@ import Nav from '../components/Nav.astro';
 		max-width: 760px;
 	}
 
+	.hero-hud {
+		position: absolute;
+		bottom: 100px;
+		left: 40px;
+		right: 40px;
+		display: flex;
+		justify-content: space-between;
+		font-size: 9px;
+		letter-spacing: 0.14em;
+		color: var(--faint);
+		pointer-events: none;
+	}
+
 	.hero-sub {
 		font-size: 15px;
 		color: var(--muted);
 		max-width: 480px;
 		margin: 0 auto 48px;
 		line-height: 1.9;
-	}
-
-	.hero-cta {
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		border: 1px solid var(--line-strong);
-		color: var(--white);
-		text-decoration: none;
-		padding: 13px 26px;
-		font-size: 12px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		transition:
-			border-color 0.2s,
-			color 0.2s,
-			background 0.2s;
-	}
-
-	.hero-cta:hover {
-		border-color: var(--cyan);
-		color: var(--cyan);
-		background: rgba(94, 184, 255, 0.06);
-	}
-
-	.hero-cta svg {
-		width: 14px;
-		height: 14px;
 	}
 
 	.hero-diagram {
@@ -350,13 +598,6 @@ import Nav from '../components/Nav.astro';
 		height: 460px;
 		color: var(--cyan);
 		opacity: 0.1;
-		animation: spin 50s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: translateY(-50%) rotate(360deg);
-		}
 	}
 
 	.scroll-cue {
@@ -381,9 +622,21 @@ import Nav from '../components/Nav.astro';
 		animation: scrollcue 1.8s ease-in-out infinite;
 	}
 	@keyframes scrollcue {
-		0% { transform: scaleY(0.2); transform-origin: top; opacity: 0.4; }
-		50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
-		100% { transform: scaleY(0.2); transform-origin: bottom; opacity: 0.4; }
+		0% {
+			transform: scaleY(0.2);
+			transform-origin: top;
+			opacity: 0.4;
+		}
+		50% {
+			transform: scaleY(1);
+			transform-origin: top;
+			opacity: 1;
+		}
+		100% {
+			transform: scaleY(0.2);
+			transform-origin: bottom;
+			opacity: 0.4;
+		}
 	}
 
 	.divider {
@@ -442,20 +695,42 @@ import Nav from '../components/Nav.astro';
 		color: var(--white);
 	}
 
-	/* projects */
-	.projects-grid {
+	/* projects — horizontal rail */
+	.projects-section {
+		max-width: none;
+		padding-left: 0;
+		padding-right: 0;
+	}
+	.projects-head {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 0 40px;
+		position: relative;
+	}
+	.projects-hint {
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	.projects-pin {
+		margin-top: 56px;
+		overflow: hidden;
+	}
+
+	.projects-track {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-		gap: 24px;
+		grid-template-columns: 1fr;
+		gap: 20px;
+		padding: 4px 24px 20px;
 	}
 
 	.project-card {
 		border: 1px solid var(--line);
-		padding: 28px;
+		padding: 32px;
 		background: var(--surface);
-		transition:
-			border-color 0.25s,
-			transform 0.25s;
+		transition: border-color 0.25s;
 		cursor: pointer;
 		text-decoration: none;
 		display: block;
@@ -487,12 +762,16 @@ import Nav from '../components/Nav.astro';
 	}
 
 	.project-card:hover {
-		border-color: var(--line-strong);
-		transform: translateY(-3px);
+		border-color: var(--cyan);
 	}
 	.project-card:hover::before,
 	.project-card:hover::after {
 		border-color: var(--cyan);
+	}
+
+	.project-card-end {
+		background: var(--surface-lt);
+		border-color: var(--line-strong);
 	}
 
 	.project-tag {
@@ -526,6 +805,19 @@ import Nav from '../components/Nav.astro';
 		text-transform: uppercase;
 	}
 
+	@media (min-width: 900px) {
+		.projects-track {
+			display: flex;
+			width: max-content;
+			gap: 24px;
+			padding: 4px 40px 40px;
+		}
+		.project-card {
+			width: min(38vw, 440px);
+			flex-shrink: 0;
+		}
+	}
+
 	/* homelab */
 	.homelab-grid {
 		display: grid;
@@ -541,10 +833,6 @@ import Nav from '../components/Nav.astro';
 	.homelab-grid p strong {
 		color: var(--white);
 		font-weight: 500;
-	}
-	h2 em {
-		font-style: normal;
-		color: var(--cyan);
 	}
 	.rack {
 		border: 1px solid var(--line);
@@ -569,9 +857,6 @@ import Nav from '../components/Nav.astro';
 	.rack-item span:last-child {
 		color: var(--muted);
 		text-align: right;
-	}
-	.rack-item span.pending {
-		color: var(--red);
 	}
 
 	/* recording teaser */
@@ -614,27 +899,50 @@ import Nav from '../components/Nav.astro';
 		flex-shrink: 0;
 		animation: spin 12s linear infinite;
 	}
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 
 	/* thoughts */
+	.thoughts-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+	.thoughts-top h2 {
+		margin-bottom: 0;
+	}
+	.list-status {
+		font-size: 13px;
+		color: var(--muted);
+		padding: 24px 0;
+	}
 	.thoughts-list {
 		display: flex;
 		flex-direction: column;
+		margin-top: 40px;
 	}
 
 	.thought-item {
 		display: grid;
-		grid-template-columns: 100px 1fr;
+		grid-template-columns: 100px 1fr auto;
 		gap: 32px;
 		padding: 28px 0;
 		border-bottom: 1px solid var(--line);
-		align-items: start;
+		align-items: center;
 		text-decoration: none;
 		color: inherit;
 		transition: opacity 0.2s;
+		position: relative;
+		overflow: hidden;
 	}
 
 	.thought-item:hover {
-		opacity: 0.7;
+		opacity: 0.85;
 	}
 
 	.thought-date {
@@ -657,6 +965,26 @@ import Nav from '../components/Nav.astro';
 		font-size: 13px;
 		color: var(--muted);
 		line-height: 1.8;
+	}
+
+	.thought-stamp {
+		font-family: var(--display);
+		font-weight: 800;
+		font-size: 12px;
+		letter-spacing: 0.1em;
+		color: var(--red);
+		border: 1.5px solid var(--red);
+		padding: 4px 10px;
+		transform: rotate(-8deg) scale(0.8);
+		opacity: 0;
+		transition:
+			opacity 0.25s,
+			transform 0.25s;
+		white-space: nowrap;
+	}
+	.thought-item:hover .thought-stamp {
+		opacity: 0.85;
+		transform: rotate(-8deg) scale(1);
 	}
 
 	/* footer */
@@ -698,6 +1026,7 @@ import Nav from '../components/Nav.astro';
 	}
 
 	.footer-links a {
+		display: inline-block;
 		font-size: 11px;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -740,6 +1069,9 @@ import Nav from '../components/Nav.astro';
 			grid-template-columns: 1fr;
 			gap: 8px;
 		}
+		.thought-stamp {
+			display: none;
+		}
 		footer {
 			padding: 40px 24px;
 			flex-direction: column;
@@ -748,7 +1080,13 @@ import Nav from '../components/Nav.astro';
 		.hero-diagram {
 			display: none;
 		}
+		.hero-hud {
+			display: none;
+		}
 		.divider {
+			padding: 0 24px;
+		}
+		.projects-head {
 			padding: 0 24px;
 		}
 	}

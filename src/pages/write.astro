@@ -1,0 +1,476 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+---
+
+<Layout title="Write — Futile Studio" description="Studio editor.">
+	<Nav active="home" />
+
+	<div class="write-wrap" id="write-wrap" style="display:none">
+		<div class="write-head">
+			<div>
+				<div class="sheet-label">/ WRITE — DWG 04</div>
+				<h1>The desk.</h1>
+			</div>
+			<div class="write-who">
+				Signed in as <strong id="who">—</strong>
+				<button id="logout" class="ghost-btn" data-magnetic="0.4">Sign out</button>
+			</div>
+		</div>
+
+		<div class="write-grid">
+			<aside class="post-list" id="post-list">
+				<div class="post-list-head">
+					<span>Posts</span>
+					<button id="new-post" class="ghost-btn" data-magnetic="0.4">+ New</button>
+				</div>
+				<div id="post-items"></div>
+			</aside>
+
+			<form class="editor" id="editor-form">
+				<input type="hidden" id="post-id" />
+				<label>
+					<span>Title</span>
+					<input type="text" id="f-title" required />
+				</label>
+				<label>
+					<span>Slug</span>
+					<input type="text" id="f-slug" placeholder="auto-generated from title" />
+				</label>
+				<label>
+					<span>Excerpt</span>
+					<input type="text" id="f-excerpt" placeholder="One line, shown on the listing" />
+				</label>
+
+				<div class="body-toolbar">
+					<span>Body — Markdown</span>
+					<label class="upload-btn" data-magnetic="0.3">
+						Insert image
+						<input type="file" id="f-image" accept="image/*" hidden />
+					</label>
+				</div>
+				<textarea
+					id="f-body"
+					rows="16"
+					placeholder="Write here. Drag an image in, or use Insert image."
+					required></textarea>
+
+				<label class="checkbox-row">
+					<input type="checkbox" id="f-published" />
+					<span>Published</span>
+				</label>
+
+				<div class="editor-actions">
+					<button type="submit" class="hero-cta" data-magnetic>Save</button>
+					<button
+						type="button"
+						id="delete-post"
+						class="ghost-btn danger"
+						data-magnetic="0.4"
+						style="display:none">Delete</button
+					>
+					<span class="save-status" id="save-status"></span>
+				</div>
+			</form>
+		</div>
+	</div>
+</Layout>
+
+<script>
+	import { apiFetch, API_BASE, setCsrfToken, esc } from '../lib/api.js';
+
+	const wrap = document.getElementById('write-wrap') as HTMLElement;
+	const whoEl = document.getElementById('who') as HTMLElement;
+	const postItems = document.getElementById('post-items') as HTMLElement;
+	const form = document.getElementById('editor-form') as HTMLFormElement;
+	const idField = document.getElementById('post-id') as HTMLInputElement;
+	const titleField = document.getElementById('f-title') as HTMLInputElement;
+	const slugField = document.getElementById('f-slug') as HTMLInputElement;
+	const excerptField = document.getElementById('f-excerpt') as HTMLInputElement;
+	const bodyField = document.getElementById('f-body') as HTMLTextAreaElement;
+	const publishedField = document.getElementById('f-published') as HTMLInputElement;
+	const imageInput = document.getElementById('f-image') as HTMLInputElement;
+	const deleteBtn = document.getElementById('delete-post') as HTMLButtonElement;
+	const saveStatus = document.getElementById('save-status') as HTMLElement;
+
+	let posts: any[] = [];
+
+	async function checkAuth() {
+		const res = await apiFetch('/api/auth/me');
+		if (!res.ok) {
+			window.location.href = '/login';
+			return false;
+		}
+		const data = await res.json();
+		setCsrfToken(data.csrfToken);
+		whoEl.textContent = data.username;
+		wrap.style.display = '';
+		return true;
+	}
+
+	async function loadPosts() {
+		const res = await apiFetch('/api/posts?all=1');
+		posts = res.ok ? await res.json() : [];
+		renderPostList();
+	}
+
+	function renderPostList() {
+		postItems.innerHTML = '';
+		if (!posts.length) {
+			postItems.innerHTML = '<div class="post-empty">No posts yet.</div>';
+			return;
+		}
+		for (const post of posts) {
+			const item = document.createElement('button');
+			item.type = 'button';
+			item.className = 'post-item' + (String(post.id) === idField.value ? ' is-active' : '');
+			item.innerHTML = `
+				<span class="post-item-title">${esc(post.title)}</span>
+				<span class="post-item-status ${post.published ? 'is-live' : ''}">${post.published ? 'Live' : 'Draft'}</span>
+			`;
+			item.addEventListener('click', () => selectPost(post));
+			postItems.appendChild(item);
+		}
+	}
+
+	async function selectPost(post: any) {
+		// The listing omits `body` to keep payloads small — fetch the full record.
+		const res = await apiFetch(`/api/posts/${encodeURIComponent(post.slug)}`);
+		if (!res.ok) {
+			saveStatus.textContent = 'Could not load that post.';
+			return;
+		}
+		const full = await res.json();
+		idField.value = String(full.id);
+		titleField.value = full.title;
+		slugField.value = full.slug;
+		excerptField.value = full.excerpt || '';
+		bodyField.value = full.body;
+		publishedField.checked = !!full.published;
+		deleteBtn.style.display = '';
+		saveStatus.textContent = '';
+		renderPostList();
+	}
+
+	function clearForm() {
+		idField.value = '';
+		titleField.value = '';
+		slugField.value = '';
+		excerptField.value = '';
+		bodyField.value = '';
+		publishedField.checked = false;
+		deleteBtn.style.display = 'none';
+		saveStatus.textContent = '';
+		renderPostList();
+	}
+
+	function insertAtCursor(textarea: HTMLTextAreaElement, text: string) {
+		const start = textarea.selectionStart ?? textarea.value.length;
+		const end = textarea.selectionEnd ?? textarea.value.length;
+		textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+		const pos = start + text.length;
+		textarea.setSelectionRange(pos, pos);
+		textarea.focus();
+	}
+
+	async function uploadImage(file: File) {
+		const fd = new FormData();
+		fd.append('file', file);
+		saveStatus.textContent = 'Uploading…';
+		const res = await apiFetch('/api/media', { method: 'POST', body: fd });
+		if (!res.ok) {
+			saveStatus.textContent = 'Image upload failed.';
+			return;
+		}
+		const data = await res.json();
+		insertAtCursor(bodyField, `\n![](${API_BASE}${data.url})\n`);
+		saveStatus.textContent = '';
+	}
+
+	imageInput.addEventListener('change', () => {
+		if (imageInput.files?.[0]) uploadImage(imageInput.files[0]);
+		imageInput.value = '';
+	});
+
+	bodyField.addEventListener('dragover', (e) => e.preventDefault());
+	bodyField.addEventListener('drop', (e) => {
+		e.preventDefault();
+		const file = e.dataTransfer?.files?.[0];
+		if (file && file.type.startsWith('image/')) uploadImage(file);
+	});
+
+	titleField.addEventListener('input', () => {
+		if (!idField.value && !slugField.dataset.touched) {
+			slugField.value = titleField.value
+				.toLowerCase()
+				.trim()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/(^-|-$)/g, '');
+		}
+	});
+	slugField.addEventListener('input', () => {
+		slugField.dataset.touched = '1';
+	});
+
+	form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		saveStatus.textContent = 'Saving…';
+		const payload = {
+			title: titleField.value,
+			slug: slugField.value,
+			excerpt: excerptField.value,
+			body: bodyField.value,
+			published: publishedField.checked,
+		};
+		const isEdit = !!idField.value;
+		const res = await apiFetch(isEdit ? `/api/posts/${idField.value}` : '/api/posts', {
+			method: isEdit ? 'PUT' : 'POST',
+			body: JSON.stringify(payload),
+		});
+		if (res.ok) {
+			const post = await res.json();
+			idField.value = String(post.id);
+			slugField.value = post.slug;
+			deleteBtn.style.display = '';
+			saveStatus.textContent = 'Saved.';
+			await loadPosts();
+		} else {
+			const body = await res.json().catch(() => ({}));
+			saveStatus.textContent = body.error || 'Save failed.';
+		}
+	});
+
+	deleteBtn.addEventListener('click', async () => {
+		if (!idField.value) return;
+		if (!confirm('Delete this post? This cannot be undone.')) return;
+		await apiFetch(`/api/posts/${idField.value}`, { method: 'DELETE' });
+		clearForm();
+		await loadPosts();
+	});
+
+	document.getElementById('new-post')?.addEventListener('click', clearForm);
+	document.getElementById('logout')?.addEventListener('click', async () => {
+		await apiFetch('/api/auth/logout', { method: 'POST' });
+		window.location.href = '/login';
+	});
+
+	checkAuth().then((ok) => {
+		if (ok) loadPosts();
+	});
+</script>
+
+<style>
+	.write-wrap {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 150px 40px 100px;
+	}
+
+	.write-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 20px;
+		flex-wrap: wrap;
+		margin-bottom: 40px;
+	}
+
+	.sheet-label {
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--cyan);
+		margin-bottom: 12px;
+	}
+
+	.write-head h1 {
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: clamp(32px, 5vw, 48px);
+		color: var(--white);
+	}
+
+	.write-who {
+		font-size: 12px;
+		color: var(--muted);
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+	.write-who strong {
+		color: var(--white);
+	}
+
+	.ghost-btn {
+		background: none;
+		border: 1px solid var(--line-strong);
+		color: var(--muted);
+		font-family: var(--mono);
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		padding: 8px 14px;
+		cursor: pointer;
+		transition:
+			border-color 0.2s,
+			color 0.2s;
+	}
+	.ghost-btn:hover {
+		border-color: var(--cyan);
+		color: var(--cyan);
+	}
+	.ghost-btn.danger:hover {
+		border-color: var(--red);
+		color: var(--red);
+	}
+
+	.write-grid {
+		display: grid;
+		grid-template-columns: 260px 1fr;
+		gap: 32px;
+		align-items: start;
+	}
+
+	.post-list {
+		border: 1px solid var(--line);
+		background: var(--surface);
+	}
+	.post-list-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 16px;
+		border-bottom: 1px solid var(--line);
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.post-empty {
+		padding: 20px 16px;
+		font-size: 12px;
+		color: var(--faint);
+	}
+	.post-item {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		border-bottom: 1px solid var(--line);
+		padding: 14px 16px;
+		cursor: pointer;
+		color: inherit;
+		font-family: var(--mono);
+	}
+	.post-item:hover,
+	.post-item.is-active {
+		background: var(--surface-lt);
+	}
+	.post-item-title {
+		font-size: 13px;
+		color: var(--white);
+	}
+	.post-item-status {
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+	.post-item-status.is-live {
+		color: var(--cyan);
+	}
+
+	.editor {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		border: 1px solid var(--line);
+		background: var(--surface);
+		padding: 28px;
+	}
+
+	.editor label {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.editor label span {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.editor input[type='text'],
+	.editor textarea {
+		background: var(--bg-2);
+		border: 1px solid var(--line);
+		color: var(--white);
+		font-family: var(--mono);
+		font-size: 13px;
+		padding: 12px 14px;
+		outline: none;
+		resize: vertical;
+		transition: border-color 0.2s;
+	}
+	.editor input[type='text']:focus,
+	.editor textarea:focus {
+		border-color: var(--cyan);
+	}
+
+	.body-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.body-toolbar span {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+	.upload-btn {
+		border: 1px solid var(--line-strong);
+		color: var(--cyan);
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		padding: 6px 12px;
+		cursor: pointer;
+		transition: border-color 0.2s;
+	}
+	.upload-btn:hover {
+		border-color: var(--cyan);
+	}
+
+	.checkbox-row {
+		flex-direction: row !important;
+		align-items: center;
+		gap: 10px !important;
+	}
+	.checkbox-row input {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--cyan);
+	}
+
+	.editor-actions {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+	.save-status {
+		font-size: 11px;
+		color: var(--muted);
+	}
+
+	@media (max-width: 860px) {
+		.write-grid {
+			grid-template-columns: 1fr;
+		}
+		.write-wrap {
+			padding: 120px 24px 60px;
+		}
+	}
+</style>

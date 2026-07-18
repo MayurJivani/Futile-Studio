@@ -16,7 +16,6 @@ const { active = 'home' } = Astro.props;
 		<li><a href="/#homelab">Homelab</a></li>
 		<li><a href="/collection" class={active === 'collection' ? 'is-active' : ''}>Collection</a></li>
 		<li><a href="/#thoughts">Thoughts</a></li>
-		<li><a href="https://radio.futile.studio" class="nav-radio">Radio <em>soon</em></a></li>
 	</ul>
 </nav>
 
@@ -31,7 +30,7 @@ const { active = 'home' } = Astro.props;
 		a.addEventListener('click', () => {
 			list.classList.remove('is-open');
 			toggle?.setAttribute('aria-expanded', 'false');
-		})
+		}),
 	);
 </script>
 
@@ -82,19 +81,6 @@ const { active = 'home' } = Astro.props;
 	nav a:hover,
 	nav a.is-active {
 		color: var(--cyan);
-	}
-
-	.nav-radio {
-		border: 1px solid var(--line-strong);
-		padding: 6px 10px;
-		display: inline-flex;
-		gap: 6px;
-		align-items: baseline;
-	}
-	.nav-radio em {
-		font-style: normal;
-		color: var(--red);
-		font-size: 9px;
 	}
 
 	.nav-toggle {

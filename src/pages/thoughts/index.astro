@@ -1,0 +1,193 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Marquee from '../../components/Marquee.astro';
+---
+
+<Layout title="Thoughts — Futile Studio" description="Writing, occasionally. From Futile Studio.">
+	<Nav active="home" />
+
+	<div class="intro">
+		<div class="sheet-label" data-reveal>SHEET 00 / 01 — THOUGHTS</div>
+		<span class="label" data-reveal>/ Writing</span>
+		<h1 data-split-group>
+			<span class="split-mask"><span class="split-word">Writing.</span></span><br />
+			<span class="split-mask"><span class="split-word hl">Occasionally.</span></span>
+		</h1>
+	</div>
+
+	<Marquee items={['Notes', 'Drafts', 'Manifestos', 'Read anyway']} speed={32} />
+
+	<section id="thoughts-list">
+		<div id="list-loading" class="list-status">Loading…</div>
+		<div id="list-empty" class="list-status" style="display:none">
+			Nothing published yet — check back soon.
+		</div>
+		<div class="thoughts-list" id="thoughts-list-items"></div>
+	</section>
+</Layout>
+
+<script>
+	import { apiFetch, esc } from '../../lib/api.js';
+
+	const loading = document.getElementById('list-loading') as HTMLElement;
+	const empty = document.getElementById('list-empty') as HTMLElement;
+	const list = document.getElementById('thoughts-list-items') as HTMLElement;
+
+	function fmtDate(iso: string) {
+		const d = new Date(iso.replace(' ', 'T') + 'Z');
+		return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+	}
+
+	apiFetch('/api/posts')
+		.then((res) => (res.ok ? res.json() : []))
+		.then((posts) => {
+			loading.style.display = 'none';
+			if (!posts.length) {
+				empty.style.display = '';
+				return;
+			}
+			for (const post of posts) {
+				const a = document.createElement('a');
+				a.href = `/thoughts/post?slug=${encodeURIComponent(post.slug)}`;
+				a.className = 'thought-item';
+				a.setAttribute('data-reveal', '');
+				a.innerHTML = `
+					<div class="thought-date">${fmtDate(post.created_at)}</div>
+					<div>
+						<div class="thought-title">${esc(post.title)}</div>
+						<div class="thought-preview">${esc(post.excerpt || '')}</div>
+					</div>
+					<div class="thought-stamp" aria-hidden="true">READ</div>
+				`;
+				list.appendChild(a);
+			}
+		})
+		.catch(() => {
+			loading.textContent = 'Could not reach the backend.';
+		});
+</script>
+
+<style>
+	.intro {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 150px 40px 60px;
+		position: relative;
+	}
+	.sheet-label {
+		position: absolute;
+		top: 60px;
+		right: 40px;
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--faint);
+	}
+	.label {
+		display: inline-block;
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 20px;
+	}
+	.intro h1 {
+		font-size: clamp(38px, 6vw, 72px);
+		line-height: 1;
+		color: var(--white);
+	}
+	.split-word.hl {
+		color: var(--cyan);
+	}
+
+	section {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 60px 40px 120px;
+	}
+
+	.list-status {
+		font-size: 13px;
+		color: var(--muted);
+		padding: 20px 0;
+	}
+
+	.thoughts-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.thought-item {
+		display: grid;
+		grid-template-columns: 100px 1fr auto;
+		gap: 32px;
+		padding: 28px 0;
+		border-bottom: 1px solid var(--line);
+		align-items: center;
+		text-decoration: none;
+		color: inherit;
+		transition: opacity 0.2s;
+		position: relative;
+		overflow: hidden;
+	}
+	.thought-item:hover {
+		opacity: 0.85;
+	}
+	.thought-date {
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		color: var(--muted);
+	}
+	.thought-title {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 19px;
+		color: var(--white);
+		margin-bottom: 8px;
+	}
+	.thought-preview {
+		font-size: 13px;
+		color: var(--muted);
+		line-height: 1.8;
+	}
+	.thought-stamp {
+		font-family: var(--display);
+		font-weight: 800;
+		font-size: 12px;
+		letter-spacing: 0.1em;
+		color: var(--red);
+		border: 1.5px solid var(--red);
+		padding: 4px 10px;
+		transform: rotate(-8deg) scale(0.8);
+		opacity: 0;
+		transition:
+			opacity 0.25s,
+			transform 0.25s;
+		white-space: nowrap;
+	}
+	.thought-item:hover .thought-stamp {
+		opacity: 0.85;
+		transform: rotate(-8deg) scale(1);
+	}
+
+	@media (max-width: 768px) {
+		.intro {
+			padding: 120px 24px 40px;
+		}
+		.sheet-label {
+			top: 32px;
+			right: 24px;
+		}
+		section {
+			padding: 40px 24px 80px;
+		}
+		.thought-item {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+		.thought-stamp {
+			display: none;
+		}
+	}
+</style>

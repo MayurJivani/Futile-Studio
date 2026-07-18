@@ -1,0 +1,155 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+---
+
+<Layout title="Thoughts — Futile Studio" description="Writing, occasionally.">
+	<Nav active="home" />
+
+	<article class="post-wrap">
+		<a href="/thoughts" class="back-link" data-magnetic="0.2">← All writing</a>
+		<div id="post-loading" class="list-status">Loading…</div>
+		<div id="post-missing" class="list-status" style="display:none">
+			That post doesn't exist, or hasn't been published yet.
+		</div>
+		<div id="post-content" style="display:none">
+			<div class="post-date" id="post-date"></div>
+			<h1 id="post-title"></h1>
+			<div class="post-body" id="post-body"></div>
+		</div>
+	</article>
+</Layout>
+
+<script>
+	import { apiFetch } from '../../lib/api.js';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
+
+	const loading = document.getElementById('post-loading') as HTMLElement;
+	const missing = document.getElementById('post-missing') as HTMLElement;
+	const content = document.getElementById('post-content') as HTMLElement;
+
+	function fmtDate(iso: string) {
+		const d = new Date(iso.replace(' ', 'T') + 'Z');
+		return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+	}
+
+	const slug = new URLSearchParams(location.search).get('slug');
+
+	if (!slug) {
+		loading.style.display = 'none';
+		missing.style.display = '';
+	} else {
+		apiFetch(`/api/posts/${encodeURIComponent(slug)}`)
+			.then((res) => (res.ok ? res.json() : null))
+			.then((post) => {
+				loading.style.display = 'none';
+				if (!post) {
+					missing.style.display = '';
+					return;
+				}
+				document.title = `${post.title} — Futile Studio`;
+				(document.getElementById('post-date') as HTMLElement).textContent = fmtDate(post.created_at);
+				(document.getElementById('post-title') as HTMLElement).textContent = post.title;
+				// Server strips raw HTML at write time, but the markdown still becomes
+				// HTML here — sanitize the rendered output before it touches the DOM.
+				(document.getElementById('post-body') as HTMLElement).innerHTML = DOMPurify.sanitize(
+					marked.parse(post.body) as string,
+				);
+				content.style.display = '';
+			})
+			.catch(() => {
+				loading.textContent = 'Could not reach the backend.';
+			});
+	}
+</script>
+
+<style>
+	.post-wrap {
+		max-width: 760px;
+		margin: 0 auto;
+		padding: 150px 40px 140px;
+	}
+	.back-link {
+		display: inline-block;
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		text-decoration: none;
+		margin-bottom: 48px;
+	}
+	.list-status {
+		font-size: 13px;
+		color: var(--muted);
+	}
+	.post-date {
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 16px;
+	}
+	#post-title {
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: clamp(30px, 5vw, 48px);
+		line-height: 1.05;
+		color: var(--white);
+		margin-bottom: 40px;
+	}
+	.post-body {
+		font-size: 15px;
+		line-height: 1.9;
+		color: var(--muted);
+	}
+	.post-body :global(h2),
+	.post-body :global(h3) {
+		color: var(--white);
+		margin: 40px 0 16px;
+	}
+	.post-body :global(p) {
+		margin-bottom: 20px;
+	}
+	.post-body :global(strong) {
+		color: var(--white);
+		font-weight: 500;
+	}
+	.post-body :global(a) {
+		color: var(--cyan);
+	}
+	.post-body :global(img) {
+		max-width: 100%;
+		border: 1px solid var(--line);
+		margin: 24px 0;
+	}
+	.post-body :global(blockquote) {
+		border-left: 2px solid var(--cyan);
+		padding-left: 20px;
+		color: var(--cyan-soft);
+		margin: 24px 0;
+	}
+	.post-body :global(code) {
+		background: var(--surface-lt);
+		padding: 2px 6px;
+		font-size: 0.9em;
+	}
+	.post-body :global(pre) {
+		background: var(--surface-lt);
+		border: 1px solid var(--line);
+		padding: 16px;
+		overflow-x: auto;
+		margin: 24px 0;
+	}
+	.post-body :global(ul),
+	.post-body :global(ol) {
+		margin: 0 0 20px 20px;
+	}
+
+	@media (max-width: 768px) {
+		.post-wrap {
+			padding: 120px 24px 80px;
+		}
+	}
+</style>

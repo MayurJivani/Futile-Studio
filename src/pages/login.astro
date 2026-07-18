@@ -1,0 +1,154 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+---
+
+<Layout title="Sign in — Futile Studio" description="Studio access.">
+	<Nav active="home" />
+
+	<div class="auth-wrap">
+		<div class="auth-card" data-reveal>
+			<div class="auth-label">/ ACCESS — DWG 03</div>
+			<h1>Sign in</h1>
+			<p class="auth-sub">Studio access for writing &amp; publishing.</p>
+
+			<form id="login-form">
+				<label>
+					<span>Username</span>
+					<input type="text" name="username" autocomplete="username" required />
+				</label>
+				<label>
+					<span>Password</span>
+					<input type="password" name="password" autocomplete="current-password" required />
+				</label>
+				<button type="submit" class="hero-cta" data-magnetic>
+					Enter
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M3 8h10M9 4l4 4-4 4"></path>
+					</svg>
+				</button>
+				<p class="auth-error" id="auth-error" role="alert"></p>
+			</form>
+		</div>
+	</div>
+</Layout>
+
+<script>
+	import { apiFetch } from '../lib/api.js';
+
+	const form = document.getElementById('login-form') as HTMLFormElement;
+	const errorEl = document.getElementById('auth-error') as HTMLElement;
+	const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+	// already signed in? skip straight to the editor
+	apiFetch('/api/auth/me').then((res) => {
+		if (res.ok) window.location.href = '/write';
+	});
+
+	form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		errorEl.textContent = '';
+		submitBtn.disabled = true;
+		try {
+			const data = new FormData(form);
+			const res = await apiFetch('/api/auth/login', {
+				method: 'POST',
+				body: JSON.stringify({
+					username: data.get('username'),
+					password: data.get('password'),
+				}),
+			});
+			if (res.ok) {
+				// CSRF token comes back here, but /write re-fetches it from
+				// /api/auth/me on load, so nothing to persist client-side.
+				window.location.href = '/write';
+			} else {
+				const body = await res.json().catch(() => ({}));
+				errorEl.textContent = body.error || 'Could not sign in — is the backend running?';
+			}
+		} finally {
+			submitBtn.disabled = false;
+		}
+	});
+</script>
+
+<style>
+	.auth-wrap {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		padding: 140px 24px 80px;
+	}
+
+	.auth-card {
+		width: min(400px, 100%);
+		border: 1px solid var(--line-strong);
+		background: var(--surface);
+		padding: 40px;
+		position: relative;
+	}
+
+	.auth-label {
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--cyan);
+		margin-bottom: 20px;
+	}
+
+	.auth-card h1 {
+		font-size: clamp(28px, 5vw, 36px);
+		color: var(--white);
+		margin-bottom: 10px;
+	}
+
+	.auth-sub {
+		font-size: 13px;
+		color: var(--muted);
+		margin-bottom: 32px;
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	label {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	label span {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	input {
+		background: var(--bg-2);
+		border: 1px solid var(--line);
+		color: var(--white);
+		font-family: var(--mono);
+		font-size: 13px;
+		padding: 12px 14px;
+		outline: none;
+		transition: border-color 0.2s;
+	}
+
+	input:focus {
+		border-color: var(--cyan);
+	}
+
+	.hero-cta {
+		justify-content: center;
+		margin-top: 4px;
+	}
+
+	.auth-error {
+		font-size: 12px;
+		color: var(--red);
+		min-height: 16px;
+	}
+</style>

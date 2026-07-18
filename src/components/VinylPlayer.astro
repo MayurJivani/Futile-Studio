@@ -5,7 +5,7 @@
 
 <div class="player vinyl-player" id="vinyl-player" data-format="vinyl" aria-hidden="true">
 	<div class="player-panel">
-		<button class="player-close" id="vinyl-close" aria-label="Close player">✕</button>
+		<button class="player-close" id="vinyl-close" aria-label="Close player" data-magnetic="0.4">✕</button>
 
 		<div class="player-label">/ TURNTABLE — DWG 01</div>
 
@@ -13,13 +13,13 @@
 			<div class="platter">
 				<div class="record" id="vinyl-record">
 					<svg viewBox="0 0 200 200" class="grooves">
-						<circle cx="100" cy="100" r="98" />
-						<circle cx="100" cy="100" r="88" />
-						<circle cx="100" cy="100" r="78" />
-						<circle cx="100" cy="100" r="68" />
-						<circle cx="100" cy="100" r="58" />
-						<circle cx="100" cy="100" r="48" />
-						<circle cx="100" cy="100" r="38" />
+						<circle cx="100" cy="100" r="98"></circle>
+						<circle cx="100" cy="100" r="88"></circle>
+						<circle cx="100" cy="100" r="78"></circle>
+						<circle cx="100" cy="100" r="68"></circle>
+						<circle cx="100" cy="100" r="58"></circle>
+						<circle cx="100" cy="100" r="48"></circle>
+						<circle cx="100" cy="100" r="38"></circle>
 					</svg>
 					<div class="vinyl-label">
 						<span id="vinyl-title">Album Title</span>
@@ -45,9 +45,13 @@
 		</div>
 
 		<div class="player-controls">
-			<button class="transport-btn" id="vinyl-play" aria-label="Play / pause">
-				<svg id="vinyl-play-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l10-5.5-10-5.5z"></path></svg>
-				<svg id="vinyl-pause-icon" viewBox="0 0 16 16" fill="currentColor" style="display:none"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"></path></svg>
+			<button class="transport-btn" id="vinyl-play" aria-label="Play / pause" data-magnetic="0.3">
+				<svg id="vinyl-play-icon" viewBox="0 0 16 16" fill="currentColor"
+					><path d="M4 2.5v11l10-5.5-10-5.5z"></path></svg
+				>
+				<svg id="vinyl-pause-icon" viewBox="0 0 16 16" fill="currentColor" style="display:none"
+					><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"></path></svg
+				>
 			</button>
 			<div class="scrub">
 				<span class="time" id="vinyl-time-current">00:00</span>

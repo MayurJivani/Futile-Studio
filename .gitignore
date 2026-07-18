@@ -17,6 +17,11 @@ pnpm-debug.log*
 .env
 .env.production
 
+# backend runtime data
+server/data/
+server/uploads/*
+!server/uploads/.gitkeep
+
 # macOS-specific files
 .DS_Store
 

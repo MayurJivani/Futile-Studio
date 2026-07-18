@@ -5,7 +5,7 @@
 
 <div class="player cassette-player" id="cassette-player" data-format="cassette" aria-hidden="true">
 	<div class="player-panel">
-		<button class="player-close" id="cassette-close" aria-label="Close player">✕</button>
+		<button class="player-close" id="cassette-close" aria-label="Close player" data-magnetic="0.4">✕</button>
 
 		<div class="player-label">/ TAPE DECK — DWG 02</div>
 
@@ -39,9 +39,13 @@
 		</div>
 
 		<div class="player-controls">
-			<button class="transport-btn" id="cassette-play" aria-label="Play / pause">
-				<svg id="cassette-play-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l10-5.5-10-5.5z"></path></svg>
-				<svg id="cassette-pause-icon" viewBox="0 0 16 16" fill="currentColor" style="display:none"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"></path></svg>
+			<button class="transport-btn" id="cassette-play" aria-label="Play / pause" data-magnetic="0.3">
+				<svg id="cassette-play-icon" viewBox="0 0 16 16" fill="currentColor"
+					><path d="M4 2.5v11l10-5.5-10-5.5z"></path></svg
+				>
+				<svg id="cassette-pause-icon" viewBox="0 0 16 16" fill="currentColor" style="display:none"
+					><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"></path></svg
+				>
 			</button>
 			<div class="scrub">
 				<span class="time counter" id="cassette-time-current">000</span>
@@ -164,10 +168,7 @@
 		position: absolute;
 		inset: 3px;
 		border-radius: 50%;
-		background: repeating-conic-gradient(
-			var(--bg-2) 0deg 8deg,
-			rgba(120, 179, 255, 0.18) 8deg 16deg
-		);
+		background: repeating-conic-gradient(var(--bg-2) 0deg 8deg, rgba(120, 179, 255, 0.18) 8deg 16deg);
 	}
 	.reel-hub {
 		width: 10px;

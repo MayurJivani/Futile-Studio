@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
+import Marquee from '../components/Marquee.astro';
 import VinylPlayer from '../components/VinylPlayer.astro';
 import CassettePlayer from '../components/CassettePlayer.astro';
 import { collection } from '../data/collection.js';
@@ -20,17 +21,23 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	<div class="intro">
 		<div class="sheet-label" data-reveal>SHEET 00 / 02 — FUTILE RECORDING CO</div>
 		<span class="label" data-reveal>/ The Collection</span>
-		<h1 data-reveal style="--d:60ms">The library.<br />Physical media.</h1>
+		<h1 data-split-group>
+			<span class="split-mask"><span class="split-word">The</span></span>
+			<span class="split-mask"><span class="split-word">library.</span></span><br />
+			<span class="split-mask"><span class="split-word hl">Physical</span></span>
+			<span class="split-mask"><span class="split-word hl">media.</span></span>
+		</h1>
 		<p data-reveal style="--d:120ms">
-			Every vinyl and cassette I own, shelved here and playable through the turntable
-			or tape deck below. Audio streams straight off my own server —
-			<strong>media.futile.studio</strong>. Click a sleeve to drop the needle.
+			Every vinyl and cassette I own, shelved here and playable through the turntable or tape deck below.
+			Audio streams straight off <strong>my own server</strong>. Click a sleeve to drop the needle.
 		</p>
 	</div>
 
+	<Marquee items={['On the turntable', 'In the deck', 'Needle drop', 'Tape hiss']} speed={28} />
+
 	<section id="vinyl-shelf">
 		<div class="section-label" data-reveal>/ 01 — Vinyl</div>
-		<h2 data-reveal style="--d:40ms">On the turntable</h2>
+		<h2 data-split data-split-group>On the turntable</h2>
 		<div class="shelf">
 			{
 				vinyls.map((item, i) => (
@@ -44,6 +51,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 						data-cover={item.cover}
 						data-audio={item.audioSrc}
 						data-reveal
+						data-magnetic="0.12"
 						style={`--d:${(i % 6) * 60}ms`}
 					>
 						<div class="tile-art">
@@ -66,12 +74,22 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	</section>
 
 	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"/></svg>
+		<svg width="100%" height="2" preserveAspectRatio="none"
+			><line
+				class="draw-path"
+				x1="0"
+				y1="1"
+				x2="100%"
+				y2="1"
+				stroke="var(--line-strong)"
+				stroke-width="1"
+				pathLength="1"></line></svg
+		>
 	</div>
 
 	<section id="cassette-shelf">
 		<div class="section-label" data-reveal>/ 02 — Cassette</div>
-		<h2 data-reveal style="--d:40ms">In the deck</h2>
+		<h2 data-split data-split-group>In the deck</h2>
 		<div class="shelf">
 			{
 				cassettes.map((item, i) => (
@@ -85,6 +103,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 						data-cover={item.cover}
 						data-audio={item.audioSrc}
 						data-reveal
+						data-magnetic="0.12"
 						style={`--d:${(i % 6) * 60}ms`}
 					>
 						<div class="tile-art tile-art-cassette">
@@ -105,6 +124,8 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 			<div class="add-tile">+ Add to deck</div>
 		</div>
 	</section>
+
+	<Marquee items={['Side A', 'Side B', 'Rewind', 'Play it loud']} speed={24} />
 
 	<VinylPlayer />
 	<CassettePlayer />
@@ -227,8 +248,12 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 			(document.getElementById('vinyl-time-total') as HTMLElement).textContent = fmtTime(audio.duration);
 		} else if (currentFormat === 'cassette') {
 			(document.getElementById('cassette-scrub-fill') as HTMLElement).style.width = pct + '%';
-			(document.getElementById('cassette-time-current') as HTMLElement).textContent = String(Math.floor(audio.currentTime * 4)).padStart(3, '0');
-			(document.getElementById('cassette-time-total') as HTMLElement).textContent = String(Math.floor((audio.duration || 0) * 4)).padStart(3, '0');
+			(document.getElementById('cassette-time-current') as HTMLElement).textContent = String(
+				Math.floor(audio.currentTime * 4),
+			).padStart(3, '0');
+			(document.getElementById('cassette-time-total') as HTMLElement).textContent = String(
+				Math.floor((audio.duration || 0) * 4),
+			).padStart(3, '0');
 		}
 	});
 </script>
@@ -274,6 +299,9 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	.intro p strong {
 		color: var(--white);
 		font-weight: 500;
+	}
+	.split-word.hl {
+		color: var(--cyan);
 	}
 
 	section {
@@ -321,7 +349,9 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		position: relative;
 		overflow: hidden;
 		cursor: pointer;
-		transition: border-color 0.2s, transform 0.2s;
+		transition:
+			border-color 0.2s,
+			transform 0.2s;
 		text-align: left;
 		font-family: var(--mono);
 		color: inherit;
