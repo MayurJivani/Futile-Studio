@@ -1,0 +1,147 @@
+---
+interface Props {
+	active?: 'home' | 'collection';
+}
+const { active = 'home' } = Astro.props;
+---
+
+<nav>
+	<a href="/" class="nav-logo">FUTILE<span>.</span>STUDIO</a>
+	<button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+		<span></span><span></span>
+	</button>
+	<ul id="nav-list">
+		<li><a href="/#about">About</a></li>
+		<li><a href="/#projects">Projects</a></li>
+		<li><a href="/#homelab">Homelab</a></li>
+		<li><a href="/collection" class={active === 'collection' ? 'is-active' : ''}>Collection</a></li>
+		<li><a href="/#thoughts">Thoughts</a></li>
+		<li><a href="https://radio.futile.studio" class="nav-radio">Radio <em>soon</em></a></li>
+	</ul>
+</nav>
+
+<script>
+	const toggle = document.getElementById('nav-toggle');
+	const list = document.getElementById('nav-list');
+	toggle?.addEventListener('click', () => {
+		const open = list?.classList.toggle('is-open');
+		toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+	});
+	list?.querySelectorAll('a').forEach((a) =>
+		a.addEventListener('click', () => {
+			list.classList.remove('is-open');
+			toggle?.setAttribute('aria-expanded', 'false');
+		})
+	);
+</script>
+
+<style>
+	nav {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 100;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 30px 40px 20px;
+		background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+	}
+
+	.nav-logo {
+		font-family: var(--display);
+		font-weight: 800;
+		font-size: 20px;
+		letter-spacing: 0.01em;
+		text-transform: uppercase;
+		color: var(--white);
+		text-decoration: none;
+	}
+
+	.nav-logo span {
+		color: var(--cyan);
+	}
+
+	#nav-list {
+		list-style: none;
+		display: flex;
+		gap: 30px;
+		align-items: center;
+	}
+
+	nav a {
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 11px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		transition: color 0.2s;
+	}
+
+	nav a:hover,
+	nav a.is-active {
+		color: var(--cyan);
+	}
+
+	.nav-radio {
+		border: 1px solid var(--line-strong);
+		padding: 6px 10px;
+		display: inline-flex;
+		gap: 6px;
+		align-items: baseline;
+	}
+	.nav-radio em {
+		font-style: normal;
+		color: var(--red);
+		font-size: 9px;
+	}
+
+	.nav-toggle {
+		display: none;
+		flex-direction: column;
+		gap: 5px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 8px;
+	}
+	.nav-toggle span {
+		width: 22px;
+		height: 1px;
+		background: var(--white);
+		display: block;
+	}
+
+	@media (max-width: 860px) {
+		nav {
+			padding: 22px 24px;
+		}
+		.nav-toggle {
+			display: flex;
+		}
+		#nav-list {
+			position: fixed;
+			top: 0;
+			right: 0;
+			height: 100vh;
+			width: min(280px, 80vw);
+			background: #0b1526;
+			box-shadow: -40px 0 40px 40px #0b1526;
+			border-left: 1px solid var(--line);
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: center;
+			gap: 28px;
+			padding: 40px;
+			transform: translateX(100%);
+			transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+		#nav-list.is-open {
+			transform: translateX(0);
+		}
+		nav a {
+			font-size: 13px;
+		}
+	}
+</style>

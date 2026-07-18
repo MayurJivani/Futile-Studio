@@ -1,0 +1,405 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import VinylPlayer from '../components/VinylPlayer.astro';
+import CassettePlayer from '../components/CassettePlayer.astro';
+import { collection } from '../data/collection.js';
+
+const vinyls = collection.filter((i) => i.format === 'vinyl');
+const cassettes = collection.filter((i) => i.format === 'cassette');
+---
+
+<Layout
+	title="Collection — Futile Studio"
+	description="The Futile Recording Co physical media collection — vinyl and cassette, digitized and playable."
+>
+	<Nav active="collection" />
+
+	<audio id="media-audio" preload="none"></audio>
+
+	<div class="intro">
+		<div class="sheet-label" data-reveal>SHEET 00 / 02 — FUTILE RECORDING CO</div>
+		<span class="label" data-reveal>/ The Collection</span>
+		<h1 data-reveal style="--d:60ms">The library.<br />Physical media.</h1>
+		<p data-reveal style="--d:120ms">
+			Every vinyl and cassette I own, shelved here and playable through the turntable
+			or tape deck below. Audio streams straight off my own server —
+			<strong>media.futile.studio</strong>. Click a sleeve to drop the needle.
+		</p>
+	</div>
+
+	<section id="vinyl-shelf">
+		<div class="section-label" data-reveal>/ 01 — Vinyl</div>
+		<h2 data-reveal style="--d:40ms">On the turntable</h2>
+		<div class="shelf">
+			{
+				vinyls.map((item, i) => (
+					<button
+						class="shelf-tile"
+						data-format="vinyl"
+						data-id={item.id}
+						data-title={item.title}
+						data-artist={item.artist}
+						data-year={item.year}
+						data-cover={item.cover}
+						data-audio={item.audioSrc}
+						data-reveal
+						style={`--d:${(i % 6) * 60}ms`}
+					>
+						<div class="tile-art">
+							<svg viewBox="0 0 100 100" fill="none">
+								<circle cx="50" cy="50" r="49" stroke="currentColor" stroke-width="1" />
+								<circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="0.5" />
+								<circle cx="50" cy="50" r="26" stroke="currentColor" stroke-width="0.5" />
+								<circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="0.5" />
+								<circle cx="50" cy="50" r="4" fill="currentColor" opacity="0.6" />
+							</svg>
+						</div>
+						<div class="tile-title">{item.title}</div>
+						<div class="tile-artist">{item.artist}</div>
+						<div class="tile-format">Vinyl · {item.year}</div>
+					</button>
+				))
+			}
+			<div class="add-tile">+ Add to shelf</div>
+		</div>
+	</section>
+
+	<div class="divider" data-reveal="line" aria-hidden="true">
+		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"/></svg>
+	</div>
+
+	<section id="cassette-shelf">
+		<div class="section-label" data-reveal>/ 02 — Cassette</div>
+		<h2 data-reveal style="--d:40ms">In the deck</h2>
+		<div class="shelf">
+			{
+				cassettes.map((item, i) => (
+					<button
+						class="shelf-tile"
+						data-format="cassette"
+						data-id={item.id}
+						data-title={item.title}
+						data-artist={item.artist}
+						data-year={item.year}
+						data-cover={item.cover}
+						data-audio={item.audioSrc}
+						data-reveal
+						style={`--d:${(i % 6) * 60}ms`}
+					>
+						<div class="tile-art tile-art-cassette">
+							<svg viewBox="0 0 100 64" fill="none">
+								<rect x="1" y="1" width="98" height="62" stroke="currentColor" stroke-width="1" />
+								<circle cx="30" cy="32" r="12" stroke="currentColor" stroke-width="1" />
+								<circle cx="70" cy="32" r="12" stroke="currentColor" stroke-width="1" />
+								<circle cx="30" cy="32" r="3" fill="currentColor" />
+								<circle cx="70" cy="32" r="3" fill="currentColor" />
+							</svg>
+						</div>
+						<div class="tile-title">{item.title}</div>
+						<div class="tile-artist">{item.artist}</div>
+						<div class="tile-format">Cassette · {item.year}</div>
+					</button>
+				))
+			}
+			<div class="add-tile">+ Add to deck</div>
+		</div>
+	</section>
+
+	<VinylPlayer />
+	<CassettePlayer />
+</Layout>
+
+<script>
+	const audio = document.getElementById('media-audio') as HTMLAudioElement;
+
+	const vinylPlayer = document.getElementById('vinyl-player')!;
+	const cassettePlayer = document.getElementById('cassette-player')!;
+
+	const record = document.getElementById('vinyl-record')!;
+	const tonearm = document.getElementById('tonearm')!;
+	const reelLeft = document.getElementById('reel-left')!;
+	const reelRight = document.getElementById('reel-right')!;
+
+	let currentFormat: 'vinyl' | 'cassette' | null = null;
+
+	function fmtTime(sec: number) {
+		if (!isFinite(sec)) return '00:00';
+		const m = Math.floor(sec / 60);
+		const s = Math.floor(sec % 60);
+		return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+	}
+
+	function setPlayingUI(playing: boolean) {
+		if (currentFormat === 'vinyl') {
+			record.classList.toggle('is-spinning', playing);
+			tonearm.classList.toggle('is-playing', playing);
+			(document.getElementById('vinyl-play-icon') as HTMLElement).style.display = playing ? 'none' : '';
+			(document.getElementById('vinyl-pause-icon') as HTMLElement).style.display = playing ? '' : 'none';
+		} else if (currentFormat === 'cassette') {
+			reelLeft.classList.toggle('is-spinning', playing);
+			reelRight.classList.toggle('is-spinning', playing);
+			(document.getElementById('cassette-play-icon') as HTMLElement).style.display = playing ? 'none' : '';
+			(document.getElementById('cassette-pause-icon') as HTMLElement).style.display = playing ? '' : 'none';
+		}
+	}
+
+	function openPlayer(tile: HTMLElement) {
+		const format = tile.dataset.format as 'vinyl' | 'cassette';
+		const title = tile.dataset.title || 'Untitled';
+		const artist = tile.dataset.artist || 'Unknown';
+		const year = tile.dataset.year || '';
+		const src = tile.dataset.audio || '';
+
+		currentFormat = format;
+		audio.pause();
+		audio.currentTime = 0;
+
+		const panel = format === 'vinyl' ? vinylPlayer : cassettePlayer;
+		const other = format === 'vinyl' ? cassettePlayer : vinylPlayer;
+		other.classList.remove('is-open');
+		panel.classList.add('is-open');
+
+		const prefix = format;
+		(document.getElementById(`${prefix}-title`) as HTMLElement).textContent = title;
+		(document.getElementById(`${prefix}-artist`) as HTMLElement).textContent = artist;
+		(document.getElementById(`${prefix}-meta-title`) as HTMLElement).textContent = title;
+		(document.getElementById(`${prefix}-meta-sub`) as HTMLElement).textContent = `${artist} · ${year}`;
+
+		const note = document.getElementById(`${prefix}-note`) as HTMLElement;
+
+		if (src) {
+			note.textContent = '';
+			audio.src = src;
+			audio.play().catch(() => {
+				note.textContent = 'Tap play to start — autoplay was blocked.';
+			});
+		} else {
+			audio.removeAttribute('src');
+			note.textContent = 'No audio uploaded for this one yet.';
+		}
+		setPlayingUI(!audio.paused && !!src);
+	}
+
+	document.querySelectorAll<HTMLElement>('.shelf-tile').forEach((tile) => {
+		tile.addEventListener('click', () => openPlayer(tile));
+	});
+
+	function closeAll() {
+		audio.pause();
+		vinylPlayer.classList.remove('is-open');
+		cassettePlayer.classList.remove('is-open');
+		setPlayingUI(false);
+		currentFormat = null;
+	}
+
+	document.getElementById('vinyl-close')?.addEventListener('click', closeAll);
+	document.getElementById('cassette-close')?.addEventListener('click', closeAll);
+	[vinylPlayer, cassettePlayer].forEach((panel) => {
+		panel.addEventListener('click', (e) => {
+			if (e.target === panel) closeAll();
+		});
+	});
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') closeAll();
+	});
+
+	function togglePlay() {
+		if (!audio.src) return;
+		if (audio.paused) {
+			audio.play();
+		} else {
+			audio.pause();
+		}
+	}
+	document.getElementById('vinyl-play')?.addEventListener('click', togglePlay);
+	document.getElementById('cassette-play')?.addEventListener('click', togglePlay);
+
+	audio.addEventListener('play', () => setPlayingUI(true));
+	audio.addEventListener('pause', () => setPlayingUI(false));
+	audio.addEventListener('ended', () => setPlayingUI(false));
+
+	audio.addEventListener('timeupdate', () => {
+		const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+		if (currentFormat === 'vinyl') {
+			(document.getElementById('vinyl-scrub-fill') as HTMLElement).style.width = pct + '%';
+			(document.getElementById('vinyl-time-current') as HTMLElement).textContent = fmtTime(audio.currentTime);
+			(document.getElementById('vinyl-time-total') as HTMLElement).textContent = fmtTime(audio.duration);
+		} else if (currentFormat === 'cassette') {
+			(document.getElementById('cassette-scrub-fill') as HTMLElement).style.width = pct + '%';
+			(document.getElementById('cassette-time-current') as HTMLElement).textContent = String(Math.floor(audio.currentTime * 4)).padStart(3, '0');
+			(document.getElementById('cassette-time-total') as HTMLElement).textContent = String(Math.floor((audio.duration || 0) * 4)).padStart(3, '0');
+		}
+	});
+</script>
+
+<style>
+	.intro {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 150px 40px 80px;
+		position: relative;
+	}
+	.sheet-label {
+		position: absolute;
+		top: 60px;
+		right: 40px;
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--faint);
+	}
+	.label {
+		display: inline-block;
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 20px;
+	}
+	.intro h1 {
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: clamp(38px, 6vw, 72px);
+		line-height: 1;
+		color: var(--white);
+		margin-bottom: 28px;
+	}
+	.intro p {
+		max-width: 560px;
+		color: var(--muted);
+		font-size: 14px;
+		line-height: 1.9;
+	}
+	.intro p strong {
+		color: var(--white);
+		font-weight: 500;
+	}
+
+	section {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 60px 40px 100px;
+	}
+	.section-label {
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 16px;
+	}
+	h2 {
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		font-size: clamp(26px, 3.6vw, 40px);
+		color: var(--white);
+		margin-bottom: 36px;
+	}
+
+	.divider {
+		width: 100%;
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 0 40px;
+	}
+
+	.shelf {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+		gap: 16px;
+	}
+
+	.shelf-tile {
+		aspect-ratio: 1;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		padding: 16px;
+		position: relative;
+		overflow: hidden;
+		cursor: pointer;
+		transition: border-color 0.2s, transform 0.2s;
+		text-align: left;
+		font-family: var(--mono);
+		color: inherit;
+	}
+	.shelf-tile:hover {
+		border-color: var(--cyan);
+		transform: translateY(-3px);
+	}
+
+	.tile-art {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.12;
+		color: var(--cyan-soft);
+	}
+	.tile-art svg {
+		width: 78%;
+		height: 78%;
+	}
+	.tile-art-cassette svg {
+		width: 88%;
+		height: auto;
+	}
+
+	.tile-title {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 15px;
+		color: var(--white);
+		position: relative;
+		z-index: 1;
+	}
+	.tile-artist {
+		font-size: 11px;
+		color: var(--muted);
+		position: relative;
+		z-index: 1;
+		margin-top: 2px;
+	}
+	.tile-format {
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		position: relative;
+		z-index: 1;
+		margin-top: 6px;
+	}
+
+	.add-tile {
+		aspect-ratio: 1;
+		border: 1px dashed var(--line);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	@media (max-width: 768px) {
+		.intro {
+			padding: 120px 24px 60px;
+		}
+		.sheet-label {
+			top: 32px;
+			right: 24px;
+		}
+		section {
+			padding: 40px 24px 72px;
+		}
+		.divider {
+			padding: 0 24px;
+		}
+	}
+</style>

@@ -1,731 +1,755 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Futile Studio — Mayur</title>
-  <meta name="description" content="Everything is futile at scale. We do it anyway, because there's beauty in it." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:        #0c0b09;
-      --surface:   #141210;
-      --border:    #2a2620;
-      --cream:     #e6ddd0;
-      --muted:     #7a7062;
-      --faint:     #2e2a24;
-      --rust:      #c4622d;
-      --rust-lt:   #d4874a;
-      --serif:     'Playfair Display', Georgia, serif;
-      --mono:      'Space Mono', 'Courier New', monospace;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--cream);
-      font-family: var(--mono);
-      font-size: 14px;
-      line-height: 1.7;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* grain overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      opacity: 0.04;
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    /* nav */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 48px;
-      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
-    }
-
-    .nav-logo {
-      font-family: var(--serif);
-      font-size: 16px;
-      letter-spacing: 0.02em;
-      color: var(--cream);
-      text-decoration: none;
-    }
-
-    .nav-logo span { color: var(--rust); }
-
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 32px;
-    }
-
-    nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      transition: color 0.2s;
-    }
-
-    nav a:hover { color: var(--cream); }
-
-    /* hero */
-    .hero {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 120px 48px 80px;
-      position: relative;
-    }
-
-    .hero-inner { max-width: 720px; }
-
-    .label {
-      display: inline-block;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--rust);
-      margin-bottom: 24px;
-    }
-
-    h1 {
-      font-family: var(--serif);
-      font-size: clamp(48px, 8vw, 96px);
-      font-weight: 400;
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-      color: var(--cream);
-      margin-bottom: 32px;
-    }
-
-    h1 em {
-      font-style: italic;
-      color: var(--rust-lt);
-    }
-
-    .hero-sub {
-      font-size: 15px;
-      color: var(--muted);
-      max-width: 480px;
-      margin: 0 auto 48px;
-      line-height: 1.9;
-    }
-
-    .hero-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      border: 1px solid var(--border);
-      color: var(--cream);
-      text-decoration: none;
-      padding: 12px 24px;
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    .hero-cta:hover { border-color: var(--rust); color: var(--rust-lt); }
-    .hero-cta svg { width: 14px; height: 14px; }
-
-    /* vinyl decorative */
-    .vinyl-deco {
-      position: absolute;
-      right: -80px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 340px;
-      height: 340px;
-      opacity: 0.08;
-      animation: spin 40s linear infinite;
-    }
-
-    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-
-    /* sections */
-    section { padding: 100px 48px; max-width: 1100px; margin: 0 auto; }
-
-    .section-label {
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--rust);
-      margin-bottom: 16px;
-    }
-
-    h2 {
-      font-family: var(--serif);
-      font-size: clamp(28px, 4vw, 48px);
-      font-weight: 400;
-      line-height: 1.1;
-      margin-bottom: 40px;
-      color: var(--cream);
-    }
-
-    .divider {
-      width: 100%;
-      height: 1px;
-      background: var(--border);
-      margin: 0 48px;
-      max-width: calc(1100px - 96px);
-    }
-
-    /* about */
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: start;
-    }
-
-    .about-text p {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.9;
-      margin-bottom: 20px;
-    }
-
-    .about-text p strong { color: var(--cream); font-weight: 400; }
-
-    .philosophy-quote {
-      border-left: 2px solid var(--rust);
-      padding-left: 28px;
-      margin-top: 40px;
-    }
-
-    .philosophy-quote blockquote {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 22px;
-      line-height: 1.5;
-      color: var(--cream);
-      opacity: 0.85;
-    }
-
-    .philosophy-quote cite {
-      display: block;
-      margin-top: 12px;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-style: normal;
-    }
-
-    /* stack cards */
-    .stack-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .stack-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px;
-    }
-
-    .stack-item span:first-child { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-    .stack-item span:last-child  { color: var(--cream); }
-
-    /* projects */
-    .projects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
-    }
-
-    .project-card {
-      border: 1px solid var(--border);
-      padding: 28px;
-      background: var(--surface);
-      transition: border-color 0.2s;
-      cursor: pointer;
-      text-decoration: none;
-      display: block;
-      color: inherit;
-    }
-
-    .project-card:hover { border-color: var(--rust); }
-
-    .project-tag {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--rust);
-      margin-bottom: 12px;
-    }
-
-    .project-name {
-      font-family: var(--serif);
-      font-size: 20px;
-      font-weight: 400;
-      color: var(--cream);
-      margin-bottom: 10px;
-    }
-
-    .project-desc {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.8;
-    }
-
-    .project-arrow {
-      margin-top: 20px;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      color: var(--rust);
-      text-transform: uppercase;
-    }
-
-    /* recording */
-    .recording-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 48px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .recording-header p {
-      font-size: 13px;
-      color: var(--muted);
-      max-width: 360px;
-      line-height: 1.8;
-    }
-
-    .vinyl-shelf {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
-    }
-
-    .vinyl-item {
-      aspect-ratio: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 14px;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-
-    .vinyl-item:hover { border-color: var(--rust); }
-
-    .vinyl-item .vinyl-bg {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0.12;
-    }
-
-    .vinyl-item .vinyl-bg svg { width: 80%; height: 80%; }
-
-    .vinyl-title {
-      font-family: var(--serif);
-      font-size: 14px;
-      color: var(--cream);
-      position: relative;
-      z-index: 1;
-    }
-
-    .vinyl-artist {
-      font-size: 11px;
-      color: var(--muted);
-      position: relative;
-      z-index: 1;
-      margin-top: 2px;
-    }
-
-    .vinyl-format {
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--rust);
-      position: relative;
-      z-index: 1;
-      margin-top: 6px;
-    }
-
-    .add-tile {
-      aspect-ratio: 1;
-      border: 1px dashed var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--faint);
-    }
-
-    /* thoughts */
-    .thoughts-list {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .thought-item {
-      display: grid;
-      grid-template-columns: 100px 1fr;
-      gap: 32px;
-      padding: 28px 0;
-      border-bottom: 1px solid var(--border);
-      align-items: start;
-      text-decoration: none;
-      color: inherit;
-      transition: opacity 0.2s;
-    }
-
-    .thought-item:hover { opacity: 0.7; }
-
-    .thought-date {
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      padding-top: 4px;
-    }
-
-    .thought-title {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-weight: 400;
-      color: var(--cream);
-      margin-bottom: 8px;
-    }
-
-    .thought-preview {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.8;
-    }
-
-    /* footer */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 48px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1100px;
-      margin: 0 auto;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .footer-logo {
-      font-family: var(--serif);
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 24px;
-      list-style: none;
-    }
-
-    .footer-links a {
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover { color: var(--rust); }
-
-    .footer-copy {
-      font-size: 11px;
-      color: var(--faint);
-      letter-spacing: 0.04em;
-    }
-
-    @media (max-width: 768px) {
-      nav { padding: 20px 24px; }
-      nav ul { gap: 20px; }
-      section { padding: 72px 24px; }
-      .about-grid { grid-template-columns: 1fr; gap: 40px; }
-      .recording-header { flex-direction: column; }
-      .thought-item { grid-template-columns: 1fr; gap: 8px; }
-      footer { padding: 40px 24px; flex-direction: column; align-items: flex-start; }
-      .vinyl-deco { display: none; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- NAV -->
-  <nav>
-    <a href="#" class="nav-logo">Futile<span>.</span>Studio</a>
-    <ul>
-      <li><a href="#about">About</a></li>
-      <li><a href="#projects">Projects</a></li>
-      <li><a href="#homelab">Homelab</a></li>
-      <li><a href="#recording">Recording Co</a></li>
-      <li><a href="#thoughts">Thoughts</a></li>
-    </ul>
-  </nav>
-
-  <!-- HERO -->
-  <div class="hero">
-    <!-- Vinyl decoration -->
-    <svg class="vinyl-deco" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="99" stroke="white" stroke-width="1"/>
-      <circle cx="100" cy="100" r="88" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="76" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="64" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="52" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="40" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="28" stroke="white" stroke-width="0.5"/>
-      <circle cx="100" cy="100" r="16" stroke="white" stroke-width="1"/>
-      <circle cx="100" cy="100" r="6"  fill="white" opacity="0.6"/>
-    </svg>
-
-    <div class="hero-inner">
-      <span class="label">futile.studio / est. 2025</span>
-      <h1>Everything is<br><em>futile.</em><br>Do it anyway.</h1>
-      <p class="hero-sub">
-        We are here briefly. At scale, nothing persists. Yet there is something worth doing
-        in the making — of music, of software, of objects that outlast you.
-      </p>
-      <a href="#about" class="hero-cta">
-        Explore the studio
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 8h10M9 4l4 4-4 4"/>
-        </svg>
-      </a>
-    </div>
-  </div>
-
-  <div class="divider"></div>
-
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="about-grid">
-      <div class="about-text">
-        <div class="section-label">/ About</div>
-        <h2>The person<br>behind the work</h2>
-        <p>
-          I'm Mayur. I build things — software, recordings, collections — with the full awareness
-          that <strong>none of it matters at a cosmic scale.</strong> That's the point.
-        </p>
-        <p>
-          Futile Studio is my personal corner of the internet. It's where my projects live,
-          where my thoughts collect dust until they're worth reading, and where Futile Recording Co
-          keeps a log of every piece of music that moved me enough to own it physically.
-        </p>
-        <p>
-          I collect vinyls and cassettes. Physical media. Things that represent a moment,
-          an emotion, a sound that mattered. They'll outlast me. So will the code, if it's good enough.
-        </p>
-        <p>
-          I also run a homelab. My server is called <strong>jinx</strong>
-          Self-hosted stack running Docker, Proxmox, Vaultwarden,
-          Coolify, and more cool stuff<strong> *.futile.studio</strong>.
-          I got into it because I wanted to understand infrastructure at the bare metal level —
-          total control xD
-        </p>
-
-        <!-- <div class="philosophy-quote">
-          <blockquote>
-            "We are on this planet for a brief time. The scale makes everything futile.
-            The beauty is in doing it anyway."
-          </blockquote>
-          <cite>— Mayur, futile.studio</cite>
-        </div> -->
-      </div>
-
-      <div>
-        <div class="section-label">/ The stack</div>
-        <div class="stack-list">
-          <div class="stack-item"><span>Building</span><span>Software &amp; infrastructure</span></div>
-          <div class="stack-item"><span>Collecting</span><span>Vinyl &amp; cassettes</span></div>
-          <div class="stack-item"><span>Making</span><span>Music / Futile Rec. Co</span></div>
-          <div class="stack-item"><span>Homelabbing</span><span>Jinx everything</span></div>
-          <div class="stack-item"><span>Based in</span><span>Paderborn, Germany</span></div>
-        </div>
-        <a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="hero-cta" style="margin-top:32px;display:inline-flex">
-          Download CV
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M8 3v7M5 7l3 3 3-3M3 13h10"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- PROJECTS -->
-  <section id="projects">
-    <div class="section-label">/ Projects</div>
-    <h2>Things I've built<br>& shipped</h2>
-
-    <div class="projects-grid">
-
-      <a href="https://qno.futile.studio/" target="_blank" rel="noopener" class="project-card">
-        <div class="project-tag">Game · Dec 2025</div>
-        <div class="project-name">Qno</div>
-        <div class="project-desc">A quantum-themed Uno card game built to teach quantum computing — superposition, entanglement, quantum gates — through multiplayer gameplay. React.js, Node.js, WebSockets.</div>
-        <div class="project-arrow">Play →</div>
-      </a>
-
-      <div class="project-card" aria-disabled="true">
-        <div class="project-tag">Video · 2025</div>
-        <div class="project-name">Mosaic</div>
-        <div class="project-desc">Multi-screen video mosaic canvas — sync playback across devices, clip routing to individual viewers, and LAN-friendly uploads. Astro, React, WebSockets.</div>
-        <div class="project-arrow">In development</div>
-      </div>
-
-      <a href="https://github.com/mayurjivani" target="_blank" rel="noopener" class="project-card">
-        <div class="project-tag">Music · Jan 2024</div>
-        <div class="project-name">Chorus</div>
-        <div class="project-desc">A Wordle-inspired music guessing game with Spotify integration. Pulls your listening history, streams audio in-browser via Spotify Playback SDK. React.js.</div>
-        <div class="project-arrow">View project →</div>
-      </a>
-
-
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- FUTILE RECORDING CO -->
-  <section id="recording">
-    <div class="recording-header">
-      <div>
-        <div class="section-label">/ Futile Recording Co</div>
-        <h2>The library.<br>Physical media.</h2>
-      </div>
-      <p>
-        Every vinyl, cassette, and tape in the collection. Music that moved me enough
-        to own in a form that requires effort. Things that'll stay when I'm long gone.
-      </p>
-    </div>
-
-    <div class="vinyl-shelf">
-
-      <!-- Vinyl records — fill in with your actual collection -->
-      <div class="vinyl-item">
-        <div class="vinyl-bg">
-          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
-        </div>
-        <div class="vinyl-title">Album One</div>
-        <div class="vinyl-artist">Artist Name</div>
-        <div class="vinyl-format">Vinyl · 1983</div>
-      </div>
-
-      <div class="vinyl-item">
-        <div class="vinyl-bg">
-          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
-        </div>
-        <div class="vinyl-title">Album Two</div>
-        <div class="vinyl-artist">Artist Name</div>
-        <div class="vinyl-format">Cassette · 1991</div>
-      </div>
-
-      <div class="vinyl-item">
-        <div class="vinyl-bg">
-          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
-        </div>
-        <div class="vinyl-title">Album Three</div>
-        <div class="vinyl-artist">Artist Name</div>
-        <div class="vinyl-format">Vinyl · 2001</div>
-      </div>
-
-      <div class="vinyl-item">
-        <div class="vinyl-bg">
-          <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="white" stroke-width="1"/><circle cx="50" cy="50" r="38" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="26" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="14" stroke="white" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="white" opacity="0.5"/></svg>
-        </div>
-        <div class="vinyl-title">My Recording</div>
-        <div class="vinyl-artist">Futile Recording Co</div>
-        <div class="vinyl-format">Original · 2025</div>
-      </div>
-
-      <div class="add-tile">+ Add to shelf</div>
-
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- THOUGHTS -->
-  <section id="thoughts">
-    <div class="section-label">/ Thoughts</div>
-    <h2>Writing.<br>Occasionally.</h2>
-
-    <div class="thoughts-list">
-
-      <!-- Thought entries — replace with real posts -->
-      <a href="#" class="thought-item">
-        <div class="thought-date">Mar 2025</div>
-        <div>
-          <div class="thought-title">On the permanence of impermanence</div>
-          <div class="thought-preview">Why physical media matters in a world of infinite streaming. A record doesn't disappear when a service shuts down.</div>
-        </div>
-      </a>
-
-      <a href="#" class="thought-item">
-        <div class="thought-date">Feb 2025</div>
-        <div>
-          <div class="thought-title">Why I build things no one will use</div>
-          <div class="thought-preview">On the act of making for its own sake. The output is irrelevant. The practice is the point.</div>
-        </div>
-      </a>
-
-      <a href="#" class="thought-item">
-        <div class="thought-date">Jan 2025</div>
-        <div>
-          <div class="thought-title">Futile, and that's okay</div>
-          <div class="thought-preview">The manifesto. Why this studio exists and what I'm trying to say by naming it after nothing mattering.</div>
-        </div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-logo">Futile.Studio</div>
-    <ul class="footer-links">
-      <li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
-      <li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a></li>
-      <li><a href="mailto:mayur@futile.studio">Email</a></li>
-      <li><a href="/cv.pdf" download="Mayur_Jivani_CV.pdf">CV</a></li>
-    </ul>
-    <div class="footer-copy">© 2026 Mayur · Everything is futile · Do it anyway</div>
-  </footer>
-
-</body>
-</html>
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+---
+
+<Layout>
+	<Nav active="home" />
+
+	<!-- HERO -->
+	<div class="hero">
+		<svg class="hero-diagram" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+			<circle cx="200" cy="200" r="190" stroke="currentColor" stroke-width="1"/>
+			<circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.5"/>
+			<circle cx="200" cy="200" r="90" stroke="currentColor" stroke-width="0.5"/>
+			<circle cx="200" cy="200" r="40" stroke="currentColor" stroke-width="0.5"/>
+			<circle cx="200" cy="200" r="4" fill="currentColor"/>
+			<line x1="200" y1="10" x2="200" y2="390" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"/>
+			<line x1="10" y1="200" x2="390" y2="200" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"/>
+		</svg>
+
+		<div class="hero-inner">
+			<span class="label" data-reveal>FUTILE.STUDIO — DWG NO. 001 — EST. 2025</span>
+			<h1 data-reveal style="--d:80ms">Everything<br />is <em>futile.</em><br />Do it anyway.</h1>
+			<p class="hero-sub" data-reveal style="--d:160ms">
+				We are here briefly. At scale, nothing persists. Yet there is something worth doing
+				in the making — of software, of recordings, of objects that outlast you.
+			</p>
+			<a href="#about" class="hero-cta" data-reveal style="--d:240ms">
+				Explore the studio
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+					<path d="M3 8h10M9 4l4 4-4 4"></path>
+				</svg>
+			</a>
+		</div>
+
+		<div class="scroll-cue" aria-hidden="true">
+			<span>SCROLL</span>
+			<div class="scroll-cue-line"></div>
+		</div>
+	</div>
+
+	<!-- ABOUT -->
+	<section id="about">
+		<div class="sheet-label" data-reveal>SHEET 01 / 05 — ABOUT</div>
+		<div class="about-grid">
+			<div class="about-text">
+				<div class="section-label" data-reveal>/ About</div>
+				<h2 data-reveal style="--d:40ms">The person<br />behind the work</h2>
+				<p data-reveal style="--d:80ms">
+					I'm Mayur. I build things — software, recordings, collections — with the full awareness
+					that <strong>none of it matters at a cosmic scale.</strong> That's the point.
+				</p>
+				<p data-reveal style="--d:120ms">
+					Futile Studio is my personal corner of the internet. It's where my projects live,
+					where my thoughts collect dust until they're worth reading, and where Futile Recording Co
+					keeps a log of every piece of music that moved me enough to own it physically.
+				</p>
+				<p data-reveal style="--d:160ms">
+					I collect vinyls and cassettes. Physical media. Things that represent a moment,
+					an emotion, a sound that mattered. They'll outlast me. So will the code, if it's good enough.
+				</p>
+			</div>
+
+			<div data-reveal style="--d:120ms">
+				<div class="section-label">/ Spec</div>
+				<div class="stack-list">
+					<div class="stack-item"><span>01</span><span>Building</span><span>Software &amp; infrastructure</span></div>
+					<div class="stack-item"><span>02</span><span>Collecting</span><span>Vinyl &amp; cassettes</span></div>
+					<div class="stack-item"><span>03</span><span>Making</span><span>Music / Futile Rec. Co</span></div>
+					<div class="stack-item"><span>04</span><span>Homelabbing</span><span>Jinx everything</span></div>
+					<div class="stack-item"><span>05</span><span>Based in</span><span>Paderborn, Germany</span></div>
+				</div>
+				<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="hero-cta" style="margin-top:32px;display:inline-flex">
+					Download CV
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
+					</svg>
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<div class="divider" data-reveal="line" aria-hidden="true">
+		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+	</div>
+
+	<!-- PROJECTS -->
+	<section id="projects">
+		<div class="sheet-label" data-reveal>SHEET 02 / 05 — PROJECTS</div>
+		<div class="section-label" data-reveal>/ Projects</div>
+		<h2 data-reveal style="--d:40ms">Things I've built<br />&amp; shipped</h2>
+
+		<div class="projects-grid">
+			<a href="https://qno.futile.studio/" target="_blank" rel="noopener" class="project-card" data-reveal style="--d:80ms">
+				<div class="project-tag">Game · Dec 2025</div>
+				<div class="project-name">Qno</div>
+				<div class="project-desc">A quantum-themed Uno card game built to teach quantum computing — superposition, entanglement, quantum gates — through multiplayer gameplay. React.js, Node.js, WebSockets.</div>
+				<div class="project-arrow">Play →</div>
+			</a>
+
+			<div class="project-card" aria-disabled="true" data-reveal style="--d:140ms">
+				<div class="project-tag">Video · 2025</div>
+				<div class="project-name">Mosaic</div>
+				<div class="project-desc">Multi-screen video mosaic canvas — sync playback across devices, clip routing to individual viewers, and LAN-friendly uploads. Astro, React, WebSockets.</div>
+				<div class="project-arrow">In development</div>
+			</div>
+
+			<a href="https://github.com/mayurjivani" target="_blank" rel="noopener" class="project-card" data-reveal style="--d:200ms">
+				<div class="project-tag">Music · Jan 2024</div>
+				<div class="project-name">Chorus</div>
+				<div class="project-desc">A Wordle-inspired music guessing game with Spotify integration. Pulls your listening history, streams audio in-browser via Spotify Playback SDK. React.js.</div>
+				<div class="project-arrow">View project →</div>
+			</a>
+		</div>
+	</section>
+
+	<div class="divider" data-reveal="line" aria-hidden="true">
+		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+	</div>
+
+	<!-- HOMELAB -->
+	<section id="homelab">
+		<div class="sheet-label" data-reveal>SHEET 03 / 05 — INFRASTRUCTURE</div>
+		<div class="homelab-grid">
+			<div>
+				<div class="section-label" data-reveal>/ Homelab</div>
+				<h2 data-reveal style="--d:40ms">The server<br />is called <em>jinx.</em></h2>
+				<p data-reveal style="--d:80ms">
+					A self-hosted stack running bare metal at home. I got into it because I wanted
+					to understand infrastructure at the lowest level I could reach — total control.
+					Everything under <strong>*.futile.studio</strong> runs off it.
+				</p>
+			</div>
+			<div class="rack" data-reveal style="--d:120ms">
+				<div class="section-label">/ Running on jinx</div>
+				<div class="rack-list">
+					<div class="rack-item"><span>Docker</span><span>Container runtime</span></div>
+					<div class="rack-item"><span>Proxmox</span><span>Hypervisor</span></div>
+					<div class="rack-item"><span>Vaultwarden</span><span>Secrets / passwords</span></div>
+					<div class="rack-item"><span>Coolify</span><span>Deploys &amp; app hosting</span></div>
+				</div>
+				<div class="section-label" style="margin-top:28px">/ Subdomains</div>
+				<div class="rack-list">
+					<div class="rack-item"><span>projects.futile.studio</span><span>Hosted apps — Qno, Mosaic</span></div>
+					<div class="rack-item"><span>media.futile.studio</span><span>FLAC library</span></div>
+					<div class="rack-item"><span>radio.futile.studio</span><span class="pending">Coming soon</span></div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<div class="divider" data-reveal="line" aria-hidden="true">
+		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+	</div>
+
+	<!-- FUTILE RECORDING CO / COLLECTION TEASER -->
+	<section id="recording">
+		<div class="sheet-label" data-reveal>SHEET 04 / 05 — FUTILE RECORDING CO</div>
+		<div class="recording-header">
+			<div>
+				<div class="section-label" data-reveal>/ The library</div>
+				<h2 data-reveal style="--d:40ms">Physical media,<br />played back digitally.</h2>
+			</div>
+			<p data-reveal style="--d:80ms">
+				Every vinyl and cassette in the collection, shelved and playable — turntable
+				crackle, tape hiss, and all. Music that moved me enough to own in a form that
+				requires effort.
+			</p>
+		</div>
+
+		<a href="/collection" class="collection-cta" data-reveal style="--d:120ms">
+			<div class="collection-cta-icon">
+				<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="1"/><circle cx="50" cy="50" r="34" stroke="currentColor" stroke-width="0.5"/><circle cx="50" cy="50" r="20" stroke="currentColor" stroke-width="0.5"/><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>
+			</div>
+			<div>
+				<div class="project-name">Enter the collection</div>
+				<div class="project-desc">Vinyl shelf &amp; cassette deck — press play →</div>
+			</div>
+		</a>
+	</section>
+
+	<div class="divider" data-reveal="line" aria-hidden="true">
+		<svg width="100%" height="2" preserveAspectRatio="none"><line class="draw-path" x1="0" y1="1" x2="100%" y2="1" stroke="var(--line-strong)" stroke-width="1" pathLength="1"></line></svg>
+	</div>
+
+	<!-- THOUGHTS -->
+	<section id="thoughts">
+		<div class="sheet-label" data-reveal>SHEET 05 / 05 — THOUGHTS</div>
+		<div class="section-label" data-reveal>/ Thoughts</div>
+		<h2 data-reveal style="--d:40ms">Writing.<br />Occasionally.</h2>
+
+		<div class="thoughts-list">
+			<a href="#" class="thought-item" data-reveal style="--d:80ms">
+				<div class="thought-date">Mar 2025</div>
+				<div>
+					<div class="thought-title">On the permanence of impermanence</div>
+					<div class="thought-preview">Why physical media matters in a world of infinite streaming. A record doesn't disappear when a service shuts down.</div>
+				</div>
+			</a>
+
+			<a href="#" class="thought-item" data-reveal style="--d:140ms">
+				<div class="thought-date">Feb 2025</div>
+				<div>
+					<div class="thought-title">Why I build things no one will use</div>
+					<div class="thought-preview">On the act of making for its own sake. The output is irrelevant. The practice is the point.</div>
+				</div>
+			</a>
+
+			<a href="#" class="thought-item" data-reveal style="--d:200ms">
+				<div class="thought-date">Jan 2025</div>
+				<div>
+					<div class="thought-title">Futile, and that's okay</div>
+					<div class="thought-preview">The manifesto. Why this studio exists and what I'm trying to say by naming it after nothing mattering.</div>
+				</div>
+			</a>
+		</div>
+	</section>
+
+	<!-- FOOTER -->
+	<footer>
+		<div class="footer-titleblock">
+			<div class="footer-logo">FUTILE.STUDIO</div>
+			<div class="footer-scale">SCALE 1:1 · REV 2026</div>
+		</div>
+		<ul class="footer-links">
+			<li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
+			<li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a></li>
+			<li><a href="mailto:mayur@futile.studio">Email</a></li>
+			<li><a href="/cv.pdf" download="Mayur_Jivani_CV.pdf">CV</a></li>
+		</ul>
+		<div class="footer-copy">© 2026 Mayur · Everything is futile · Do it anyway</div>
+	</footer>
+</Layout>
+
+<style>
+	section {
+		padding: 110px 40px;
+		max-width: 1140px;
+		margin: 0 auto;
+		position: relative;
+	}
+
+	.sheet-label {
+		position: absolute;
+		top: 40px;
+		right: 40px;
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--faint);
+	}
+
+	.label {
+		display: inline-block;
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 24px;
+	}
+
+	.section-label {
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 16px;
+	}
+
+	h1 {
+		font-size: clamp(52px, 9vw, 118px);
+		line-height: 0.96;
+		color: var(--white);
+		margin-bottom: 32px;
+	}
+
+	h1 em {
+		font-style: normal;
+		color: var(--cyan);
+	}
+
+	h2 {
+		font-size: clamp(30px, 4.4vw, 54px);
+		line-height: 1.02;
+		margin-bottom: 40px;
+		color: var(--white);
+	}
+
+	h2 em {
+		font-style: normal;
+		color: var(--cyan);
+	}
+
+	/* hero */
+	.hero {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		text-align: center;
+		padding: 140px 40px 100px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.hero-inner {
+		max-width: 760px;
+	}
+
+	.hero-sub {
+		font-size: 15px;
+		color: var(--muted);
+		max-width: 480px;
+		margin: 0 auto 48px;
+		line-height: 1.9;
+	}
+
+	.hero-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		border: 1px solid var(--line-strong);
+		color: var(--white);
+		text-decoration: none;
+		padding: 13px 26px;
+		font-size: 12px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		transition:
+			border-color 0.2s,
+			color 0.2s,
+			background 0.2s;
+	}
+
+	.hero-cta:hover {
+		border-color: var(--cyan);
+		color: var(--cyan);
+		background: rgba(94, 184, 255, 0.06);
+	}
+
+	.hero-cta svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	.hero-diagram {
+		position: absolute;
+		right: -120px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 460px;
+		height: 460px;
+		color: var(--cyan);
+		opacity: 0.1;
+		animation: spin 50s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: translateY(-50%) rotate(360deg);
+		}
+	}
+
+	.scroll-cue {
+		position: absolute;
+		bottom: 40px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+	}
+	.scroll-cue span {
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		color: var(--faint);
+	}
+	.scroll-cue-line {
+		width: 1px;
+		height: 32px;
+		background: linear-gradient(var(--cyan), transparent);
+		animation: scrollcue 1.8s ease-in-out infinite;
+	}
+	@keyframes scrollcue {
+		0% { transform: scaleY(0.2); transform-origin: top; opacity: 0.4; }
+		50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
+		100% { transform: scaleY(0.2); transform-origin: bottom; opacity: 0.4; }
+	}
+
+	.divider {
+		width: 100%;
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 0 40px;
+	}
+
+	/* about */
+	.about-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 64px;
+		align-items: start;
+	}
+
+	.about-text p {
+		color: var(--muted);
+		font-size: 14px;
+		line-height: 1.9;
+		margin-bottom: 20px;
+	}
+
+	.about-text p strong {
+		color: var(--white);
+		font-weight: 500;
+	}
+
+	.stack-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.stack-item {
+		display: grid;
+		grid-template-columns: 24px 1fr auto;
+		gap: 12px;
+		align-items: center;
+		padding: 14px 0;
+		border-bottom: 1px solid var(--line);
+		font-size: 12px;
+	}
+
+	.stack-item span:first-child {
+		color: var(--faint);
+		font-size: 10px;
+	}
+	.stack-item span:nth-child(2) {
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+	.stack-item span:last-child {
+		color: var(--white);
+	}
+
+	/* projects */
+	.projects-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 24px;
+	}
+
+	.project-card {
+		border: 1px solid var(--line);
+		padding: 28px;
+		background: var(--surface);
+		transition:
+			border-color 0.25s,
+			transform 0.25s;
+		cursor: pointer;
+		text-decoration: none;
+		display: block;
+		color: inherit;
+		position: relative;
+	}
+
+	.project-card::before,
+	.project-card::after {
+		content: '';
+		position: absolute;
+		width: 10px;
+		height: 10px;
+		border-top: 1px solid transparent;
+		border-left: 1px solid transparent;
+		top: 8px;
+		left: 8px;
+		transition: border-color 0.25s;
+	}
+	.project-card::after {
+		top: auto;
+		left: auto;
+		bottom: 8px;
+		right: 8px;
+		border-top: none;
+		border-left: none;
+		border-bottom: 1px solid transparent;
+		border-right: 1px solid transparent;
+	}
+
+	.project-card:hover {
+		border-color: var(--line-strong);
+		transform: translateY(-3px);
+	}
+	.project-card:hover::before,
+	.project-card:hover::after {
+		border-color: var(--cyan);
+	}
+
+	.project-tag {
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		margin-bottom: 12px;
+	}
+
+	.project-name {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 22px;
+		color: var(--white);
+		margin-bottom: 10px;
+	}
+
+	.project-desc {
+		font-size: 13px;
+		color: var(--muted);
+		line-height: 1.8;
+	}
+
+	.project-arrow {
+		margin-top: 20px;
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		color: var(--cyan);
+		text-transform: uppercase;
+	}
+
+	/* homelab */
+	.homelab-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 64px;
+		align-items: start;
+	}
+	.homelab-grid p {
+		color: var(--muted);
+		font-size: 14px;
+		line-height: 1.9;
+	}
+	.homelab-grid p strong {
+		color: var(--white);
+		font-weight: 500;
+	}
+	h2 em {
+		font-style: normal;
+		color: var(--cyan);
+	}
+	.rack {
+		border: 1px solid var(--line);
+		background: var(--surface);
+		padding: 24px;
+	}
+	.rack-list {
+		display: flex;
+		flex-direction: column;
+	}
+	.rack-item {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 0;
+		border-bottom: 1px solid var(--line);
+		font-size: 12px;
+	}
+	.rack-item span:first-child {
+		color: var(--white);
+	}
+	.rack-item span:last-child {
+		color: var(--muted);
+		text-align: right;
+	}
+	.rack-item span.pending {
+		color: var(--red);
+	}
+
+	/* recording teaser */
+	.recording-header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		margin-bottom: 48px;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+	.recording-header p {
+		font-size: 13px;
+		color: var(--muted);
+		max-width: 360px;
+		line-height: 1.8;
+	}
+
+	.collection-cta {
+		display: flex;
+		align-items: center;
+		gap: 28px;
+		border: 1px solid var(--line-strong);
+		background: var(--surface);
+		padding: 32px;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			border-color 0.25s,
+			background 0.25s;
+	}
+	.collection-cta:hover {
+		border-color: var(--cyan);
+		background: var(--surface-lt);
+	}
+	.collection-cta-icon {
+		width: 64px;
+		height: 64px;
+		color: var(--cyan);
+		flex-shrink: 0;
+		animation: spin 12s linear infinite;
+	}
+
+	/* thoughts */
+	.thoughts-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.thought-item {
+		display: grid;
+		grid-template-columns: 100px 1fr;
+		gap: 32px;
+		padding: 28px 0;
+		border-bottom: 1px solid var(--line);
+		align-items: start;
+		text-decoration: none;
+		color: inherit;
+		transition: opacity 0.2s;
+	}
+
+	.thought-item:hover {
+		opacity: 0.7;
+	}
+
+	.thought-date {
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		color: var(--muted);
+		padding-top: 4px;
+	}
+
+	.thought-title {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 19px;
+		color: var(--white);
+		margin-bottom: 8px;
+	}
+
+	.thought-preview {
+		font-size: 13px;
+		color: var(--muted);
+		line-height: 1.8;
+	}
+
+	/* footer */
+	footer {
+		border-top: 1px solid var(--line);
+		padding: 48px 40px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		max-width: 1140px;
+		margin: 0 auto;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.footer-titleblock {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.footer-logo {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 15px;
+		color: var(--muted);
+	}
+	.footer-scale {
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		color: var(--faint);
+	}
+
+	.footer-links {
+		display: flex;
+		gap: 24px;
+		list-style: none;
+	}
+
+	.footer-links a {
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--muted);
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+
+	.footer-links a:hover {
+		color: var(--cyan);
+	}
+
+	.footer-copy {
+		font-size: 11px;
+		color: var(--faint);
+		letter-spacing: 0.04em;
+	}
+
+	@media (max-width: 768px) {
+		section {
+			padding: 80px 24px;
+		}
+		.sheet-label {
+			top: 24px;
+			right: 24px;
+		}
+		.about-grid,
+		.homelab-grid {
+			grid-template-columns: 1fr;
+			gap: 40px;
+		}
+		.recording-header {
+			flex-direction: column;
+		}
+		.collection-cta {
+			flex-direction: column;
+			text-align: center;
+		}
+		.thought-item {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+		footer {
+			padding: 40px 24px;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+		.hero-diagram {
+			display: none;
+		}
+		.divider {
+			padding: 0 24px;
+		}
+	}
+</style>
