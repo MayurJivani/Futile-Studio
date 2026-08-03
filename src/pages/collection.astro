@@ -144,7 +144,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 </Layout>
 
 <script>
-	import { API_BASE, esc } from '../lib/api';
+	import { API_BASE, esc, apiFetch, setCsrfToken } from '../lib/api';
 
 	const audio = document.getElementById('media-audio') as HTMLAudioElement;
 
@@ -167,6 +167,21 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	// --- Server-discovered hi-res library -----------------------------------
 	const libAlbums: any[] = [];
 	let libState: { album: any; index: number } | null = null;
+
+	// Hearts are togglable only while signed in; guests see favorites but no
+	// buttons. checkAuth also primes the CSRF token for the toggle endpoint.
+	let isAuthed = false;
+	async function checkAuth() {
+		try {
+			const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
+			if (!res.ok) return;
+			const data = await res.json();
+			setCsrfToken(data.csrfToken);
+			isAuthed = true;
+		} catch {
+			// backend unreachable — hearts stay display-only
+		}
+	}
 
 	const probe = new Audio();
 	const MIME: Record<string, string> = {
@@ -241,6 +256,58 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		}
 	}
 
+	// Hearts: everyone sees favorited hearts, but only a signed-in user gets a
+	// clickable one (toggles via POST /api/favorites/toggle). Guests don't even
+	// see empty hearts.
+	function heartHtml(base: string, type: 'album' | 'track', id: string, fav: boolean, label: string) {
+		if (!isAuthed && !fav) return '';
+		const cls = `${base}${isAuthed ? ' is-btn' : ''}${fav ? '' : ' is-off'}`;
+		const attrs = isAuthed
+			? ` role="button" tabindex="0" aria-pressed="${fav ? 'true' : 'false'}"`
+			: '';
+		return `<span class="${cls}" data-type="${type}" data-id="${esc(id)}"${attrs} aria-label="${label}">♥</span>`;
+	}
+
+	async function onHeart(el: HTMLElement) {
+		if (!isAuthed) return;
+		const type = (el.dataset.type || 'album') as 'album' | 'track';
+		const id = el.dataset.id || '';
+		try {
+			const res = await apiFetch('/api/favorites/toggle', {
+				method: 'POST',
+				body: JSON.stringify({ type, id }),
+			});
+			if (!res.ok) {
+				if (res.status === 401) isAuthed = false;
+				return;
+			}
+			const data = await res.json();
+			el.classList.toggle('is-off', !data.fav);
+			el.setAttribute('aria-pressed', data.fav ? 'true' : 'false');
+			applyFav(type, id, !!data.fav);
+		} catch {
+			// network failure — leave the UI as-is
+		}
+	}
+
+	// Mirror the toggle into libAlbums + the catalog cache so re-renders (and
+	// the next page load) reflect it without waiting on the server.
+	function applyFav(type: string, id: string, fav: boolean) {
+		if (type === 'album') {
+			const a = libAlbums.find((x) => x.id === id);
+			if (a) a.fav = fav;
+		} else {
+			for (const a of libAlbums) {
+				const t = (a.tracks || []).find((x: any) => x.rel === id);
+				if (t) {
+					t.fav = fav;
+					break;
+				}
+			}
+		}
+		saveCatalog(libAlbums);
+	}
+
 	async function loadLibrary() {
 		// Paint the shelf from cache immediately, then revalidate below.
 		const cached = cachedCatalog();
@@ -297,7 +364,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 						<circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="0.5" />
 						<circle cx="50" cy="50" r="4" fill="currentColor" opacity="0.6" />
 					</svg>
-					${album.fav ? '<span class="tile-heart" aria-label="Favorite album">♥</span>' : ''}
+					${heartHtml('tile-heart', 'album', album.id, !!album.fav, 'Toggle favorite album')}
 				</div>
 				<div class="tile-title">${esc(album.title)}</div>
 				<div class="tile-artist">${esc(album.artist || 'Unknown artist')}</div>
@@ -323,7 +390,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 			li.innerHTML = `
 				<span class="tl-num">${String(i + 1).padStart(2, '0')}</span>
 				<span class="tl-title">${esc(track.title)}</span>
-				${track.fav ? '<span class="tl-heart" aria-label="Favorite track">♥</span>' : ''}
+				${heartHtml('tl-heart', 'track', track.rel, !!track.fav, 'Toggle favorite track')}
 				${isHiRes(track) ? '<span class="tl-hr">HI-RES</span>' : ''}
 				<span class="tl-time">${fmtTime(track.duration)}</span>
 			`;
@@ -559,7 +626,26 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		else setPlayingUI(false);
 	});
 
-	loadLibrary();
+	// Heart clicks: delegated so toggles survive every shelf/tracklist
+	// re-render. Capture phase so stopPropagation runs before the tile's own
+	// click handler (which opens the album / starts the track).
+	function onHeartEvent(e: Event) {
+		const h = (e.target as HTMLElement).closest<HTMLElement>('.tile-heart, .tl-heart');
+		if (!h) return;
+		e.preventDefault();
+		e.stopPropagation();
+		onHeart(h);
+	}
+	libShelf.addEventListener('click', onHeartEvent, true);
+	libShelf.addEventListener('keydown', onHeartEvent, true);
+	vinylTracklistOl.addEventListener('click', onHeartEvent, true);
+	vinylTracklistOl.addEventListener('keydown', onHeartEvent, true);
+
+	async function init() {
+		await checkAuth();
+		await loadLibrary();
+	}
+	init();
 
 	audio.addEventListener('timeupdate', () => {
 		const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
@@ -843,6 +929,14 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		color: #ff5b8a;
 		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 		pointer-events: none;
+	}
+	.lib-tile .tile-heart.is-btn {
+		pointer-events: auto;
+		cursor: pointer;
+	}
+	.lib-tile .tile-heart.is-off {
+		color: var(--faint);
+		text-shadow: none;
 	}
 	.lib-tile .tile-title {
 		font-family: var(--display);
