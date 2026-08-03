@@ -11,7 +11,6 @@ import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { SqliteSessionStore } from './lib/sessionStore.js';
 import { apiLimiter } from './lib/security.js';
-import { MUSIC_DIR } from './lib/music.js';
 import authRoutes from './routes/auth.js';
 import postsRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
@@ -75,32 +74,26 @@ app.use(
 		cookie: {
 			httpOnly: true,
 			sameSite: 'lax',
-			secure: isProd,
+			// 'auto' marks the cookie Secure only when the request is actually
+			// over HTTPS (trusted via X-Forwarded-Proto behind Caddy). A
+			// hardcoded `true` makes browsers drop the cookie on plain HTTP,
+			// which shows up as "login succeeds but /api/auth/me → 401".
+			secure: 'auto',
 			maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
 		},
 	}),
 );
 
-app.use('/media', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny', index: false }));
+// express-session evaluates `secure: 'auto'` when a session is (re)generated
+// (login, etc.). For sessions loaded from the store on later requests, sync
+// the flag to the current request's protocol so HTTP↔HTTPS handoffs never
+// strand a cookie the browser refuses to send.
+app.use((req, res, next) => {
+	if (req.session?.cookie) req.session.cookie.secure = Boolean(req.secure);
+	next();
+});
 
-// Hi-res music library: raw files served straight from MUSIC_DIR with
-// byte-range (Range) support so FLAC seeking works and playback is lossless.
-// The global CORS middleware above already applies, so the Astro frontend can
-// load these cross-origin in dev. Catalog/cover/transcode live under /api/music.
-app.use(
-	'/music',
-	express.static(MUSIC_DIR, {
-		dotfiles: 'deny',
-		index: false,
-		acceptRanges: true,
-		maxAge: isProd ? '1h' : 0,
-		setHeaders(res, filePath) {
-			res.setHeader('Accept-Ranges', 'bytes');
-			res.setHeader('X-Content-Type-Options', 'nosniff');
-			if (filePath.endsWith('.flac')) res.setHeader('Content-Type', 'audio/flac');
-		},
-	}),
-);
+app.use('/media', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny', index: false }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);

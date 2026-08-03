@@ -98,10 +98,6 @@ function stripTrackNum(name) {
 		.trim();
 }
 
-function encodeRel(rel) {
-	return rel.split('/').map((part) => encodeURIComponent(part)).join('/');
-}
-
 /**
  * Read tags for one audio file. Returns a compact, serializable record or
  * null if the file can't be parsed. Embedded pictures are skipped here —
@@ -121,7 +117,6 @@ async function readTrack(abs, rel, disc) {
 		return {
 			file: path.basename(rel),
 			rel,
-			url: `/music/${encodeRel(rel)}`,
 			ext: path.extname(rel).toLowerCase().slice(1),
 			track: null,
 			title: stripTrackNum(path.basename(rel)),
@@ -139,7 +134,6 @@ async function readTrack(abs, rel, disc) {
 	return {
 		file: path.basename(rel),
 		rel,
-		url: `/music/${encodeRel(rel)}`,
 		ext: path.extname(rel).toLowerCase().slice(1),
 		track: common.track?.no ?? null,
 		title: common.title || stripTrackNum(path.basename(rel)),

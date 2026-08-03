@@ -110,8 +110,12 @@ localhost, so no frontend changes are needed.
 - **Config fail-fast:** with `NODE_ENV=production` the server refuses to start unless
   `SESSION_SECRET` is ≥32 chars and `CORS_ORIGIN` is set explicitly.
 - **Sessions** are stored in SQLite (survive restarts, no MemoryStore leak), with
-  `httpOnly` + `SameSite=Lax` + `Secure` (prod) cookies, and the session ID is
-  regenerated on login. Expired rows are pruned hourly.
+  `httpOnly` + `SameSite=Lax` cookies and the session ID regenerated on login.
+  The cookie is flagged `Secure` automatically when the request is HTTPS (trusted
+  via the reverse proxy) and relaxed to plain HTTP otherwise — otherwise a
+  reverse proxy without TLS silently breaks login ("signs in" but
+  `/api/auth/me` returns 401, because browsers refuse to store the Secure cookie).
+  Expired rows are pruned hourly.
 - **CSRF:** state-changing endpoints require an `X-CSRF-Token` header; the token is
   issued at login and via `GET /api/auth/me`. The frontend's `apiFetch` attaches it
   automatically.

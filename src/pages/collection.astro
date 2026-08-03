@@ -188,10 +188,17 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		if (ext === 'flac' && isSafari && (sampleRate || 0) > 48000) return false;
 		return probe.canPlayType(mime) !== '';
 	}
+	// track.url is already the tokenized /api/music/stream URL minted by the
+	// server. Add ?to= only when the browser can't play the raw lossless
+	// format; the token is bound to the file, not the format, so it's safe.
 	function trackSrc(track: any) {
-		if (canPlayRaw(track.ext, track.sampleRate)) return API_BASE + track.url;
-		const to = probe.canPlayType('audio/flac') ? 'flac' : 'aac';
-		return `${API_BASE}/api/music/stream?path=${encodeURIComponent(track.rel)}&to=${to}`;
+		const to = canPlayRaw(track.ext, track.sampleRate)
+			? ''
+			: probe.canPlayType('audio/flac')
+				? 'flac'
+				: 'aac';
+		const sep = track.url.includes('?') ? '&' : '?';
+		return `${API_BASE}${track.url}${to ? `${sep}to=${to}` : ''}`;
 	}
 	function isHiRes(track: any) {
 		return (track.sampleRate || 0) > 48000 || (track.bitDepth || 0) > 16;
@@ -205,17 +212,71 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		return [track.codec || String(track.ext || '').toUpperCase(), bits].filter(Boolean).join(' · ') || 'AUDIO';
 	}
 
+	// The catalog is cached locally so revisits paint instantly. The cached
+	// copy carries signed stream URLs that stay valid for ~6h (the server's
+	// token TTL), so anything younger than that still plays; after that it's
+	// revalidated and replaced on every load. Favorites/artists changing on
+	// the server are picked up by the background refresh.
+	const CATALOG_CACHE_KEY = 'futile-library-catalog';
+	const CATALOG_MAX_AGE = 6 * 60 * 60 * 1000;
+
+	function cachedCatalog(): any[] | null {
+		try {
+			const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+			if (!raw) return null;
+			const { at, albums } = JSON.parse(raw);
+			if (!Array.isArray(albums) || Date.now() - at > CATALOG_MAX_AGE) return null;
+			return albums;
+		} catch {
+			return null;
+		}
+	}
+
+	function saveCatalog(albums: any[]) {
+		try {
+			localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ at: Date.now(), albums }));
+		} catch {
+			// quota / disabled storage — cache is best-effort
+		}
+	}
+
 	async function loadLibrary() {
+		// Paint the shelf from cache immediately, then revalidate below.
+		const cached = cachedCatalog();
+		if (cached?.length) {
+			libAlbums.push(...cached);
+			renderLibrary();
+		}
 		try {
 			const res = await fetch(`${API_BASE}/api/music`, { credentials: 'include' });
 			if (!res.ok) throw new Error(String(res.status));
 			const data = await res.json();
-			libAlbums.push(...(data.albums || []));
+			const albums = data.albums || [];
+			libAlbums.length = 0;
+			libAlbums.push(...albums);
+			saveCatalog(albums);
+			// Don't clobber a player session that's mid-playback — the audio
+			// element holds its own src and the open album is referenced by
+			// object, so the shelf re-renders independently.
+			if (!libState) renderLibrary();
 		} catch {
-			libShelf.innerHTML =
-				'<div class="lib-message">Library server unreachable — is the backend running?</div>';
-			return;
+			if (!libAlbums.length) {
+				libShelf.innerHTML =
+					'<div class="lib-message">Library server unreachable — is the backend running?</div>';
+			}
 		}
+	}
+
+	// Covers are served downscaled on the server (?s=) so a ~200px shelf tile
+	// pulls a few dozen KB instead of a multi-MB folder.jpg. Two candidates
+	// cover the DPR range; the 2x one kicks in on retina screens.
+	function coverImg(cover: string) {
+		if (!cover) return '';
+		const base = `${API_BASE}${esc(cover)}`;
+		return `<img src="${base}" srcset="${base}&amp;s=400 1x, ${base}&amp;s=800 2x" alt="" loading="lazy" decoding="async" fetchpriority="low">`;
+	}
+
+	function renderLibrary() {
 		if (!libAlbums.length) {
 			libShelf.innerHTML =
 				'<div class="lib-message">The library folder is empty — drop some FLACs in and refresh.</div>';
@@ -227,7 +288,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 			btn.className = 'shelf-tile lib-tile';
 			btn.innerHTML = `
 				<div class="tile-art lib-art">
-					${album.cover ? `<img src="${API_BASE}${esc(album.cover)}" alt="" loading="lazy" decoding="async" fetchpriority="low">` : ''}
+					${coverImg(album.cover)}
 					<svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
 						<circle cx="50" cy="50" r="49" stroke="currentColor" stroke-width="1" />
 						<circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="0.5" />
