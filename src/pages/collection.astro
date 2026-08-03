@@ -17,9 +17,10 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	<Nav active="collection" />
 
 	<audio id="media-audio" preload="none"></audio>
+	<audio id="vinyl-hiss" preload="auto" src="/hiss.mp3"></audio>
 
 	<div class="intro">
-		<div class="sheet-label" data-reveal>SHEET 00 / 02 — FUTILE RECORDING CO</div>
+		<div class="sheet-label" data-reveal>SHEET 00 / 03 — FUTILE RECORDING CO</div>
 		<span class="label" data-reveal>/ The Collection</span>
 		<h1 data-split-group>
 			<span class="split-mask"><span class="split-word">The</span></span>
@@ -125,6 +126,18 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		</div>
 	</section>
 
+	<section id="library-shelf">
+		<div class="section-label" data-reveal>/ 03 — Hi-Res library</div>
+		<h2 data-split data-split-group>On the stream.</h2>
+		<p class="lib-note" data-reveal style="--d:120ms">
+			Streams straight off <strong>my collection</strong> — lossless playback, at its native
+			sample rate.
+		</p>
+		<div class="shelf" id="lib-shelf">
+			<div class="lib-message">Scanning the shelf…</div>
+		</div>
+	</section>
+
 	<Marquee items={['Side A', 'Side B', 'Rewind', 'Play it loud']} speed={24} />
 
 	<VinylPlayer />
@@ -132,6 +145,8 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 </Layout>
 
 <script>
+	import { API_BASE, esc } from '../lib/api';
+
 	const audio = document.getElementById('media-audio') as HTMLAudioElement;
 
 	const vinylPlayer = document.getElementById('vinyl-player')!;
@@ -142,7 +157,197 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	const reelLeft = document.getElementById('reel-left')!;
 	const reelRight = document.getElementById('reel-right')!;
 
-	let currentFormat: 'vinyl' | 'cassette' | null = null;
+	const libShelf = document.getElementById('lib-shelf')!;
+	const vinylTracklist = document.getElementById('vinyl-tracklist')!;
+	const vinylTracklistOl = document.getElementById('vinyl-tracklist-ol')!;
+	const vinylBadge = document.getElementById('vinyl-format-badge')!;
+
+	let currentFormat: 'vinyl' | 'cassette' | 'library' | null = null;
+
+	// --- Server-discovered hi-res library -----------------------------------
+	const libAlbums: any[] = [];
+	let libState: { album: any; index: number } | null = null;
+
+	const probe = new Audio();
+	const MIME: Record<string, string> = {
+		flac: 'audio/flac',
+		mp3: 'audio/mpeg',
+		wav: 'audio/wav',
+		ogg: 'audio/ogg',
+		opus: 'audio/ogg',
+		m4a: 'audio/mp4',
+		aac: 'audio/aac',
+	};
+	const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+	// True when the browser can decode this exact file natively (raw stream,
+	// byte-range seeking, zero loss). Everything else goes through the server's
+	// ffmpeg transcode: lossless FLAC where possible, AAC as last resort.
+	function canPlayRaw(ext: string, sampleRate?: number | null) {
+		const mime = MIME[ext];
+		if (!mime) return false;
+		if (ext === 'flac' && isSafari && (sampleRate || 0) > 48000) return false;
+		return probe.canPlayType(mime) !== '';
+	}
+	function trackSrc(track: any) {
+		if (canPlayRaw(track.ext, track.sampleRate)) return API_BASE + track.url;
+		const to = probe.canPlayType('audio/flac') ? 'flac' : 'aac';
+		return `${API_BASE}/api/music/stream?path=${encodeURIComponent(track.rel)}&to=${to}`;
+	}
+	function isHiRes(track: any) {
+		return (track.sampleRate || 0) > 48000 || (track.bitDepth || 0) > 16;
+	}
+	function badgeText(track: any) {
+		const bits = track.bitDepth
+			? `${track.bitDepth}/${Math.round((track.sampleRate || 0) / 1000)}`
+			: track.sampleRate
+				? `${Math.round(track.sampleRate / 1000)}kHz`
+				: '';
+		return [track.codec || String(track.ext || '').toUpperCase(), bits].filter(Boolean).join(' · ') || 'AUDIO';
+	}
+
+	async function loadLibrary() {
+		try {
+			const res = await fetch(`${API_BASE}/api/music`, { credentials: 'include' });
+			if (!res.ok) throw new Error(String(res.status));
+			const data = await res.json();
+			libAlbums.push(...(data.albums || []));
+		} catch {
+			libShelf.innerHTML =
+				'<div class="lib-message">Library server unreachable — is the backend running?</div>';
+			return;
+		}
+		if (!libAlbums.length) {
+			libShelf.innerHTML =
+				'<div class="lib-message">The library folder is empty — drop some FLACs in and refresh.</div>';
+			return;
+		}
+		libShelf.innerHTML = '';
+		libAlbums.forEach((album) => {
+			const btn = document.createElement('button');
+			btn.className = 'shelf-tile lib-tile';
+			btn.innerHTML = `
+				<div class="tile-art lib-art">
+					${album.cover ? `<img src="${API_BASE}${esc(album.cover)}" alt="" loading="lazy">` : ''}
+					<svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+						<circle cx="50" cy="50" r="49" stroke="currentColor" stroke-width="1" />
+						<circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="0.5" />
+						<circle cx="50" cy="50" r="26" stroke="currentColor" stroke-width="0.5" />
+						<circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="0.5" />
+						<circle cx="50" cy="50" r="4" fill="currentColor" opacity="0.6" />
+					</svg>
+					${album.fav ? '<span class="tile-heart" aria-label="Favorite album">♥</span>' : ''}
+				</div>
+				<div class="tile-title">${esc(album.title)}</div>
+				<div class="tile-artist">${esc(album.artist || 'Unknown artist')}</div>
+				<div class="tile-format">${esc(album.format || '')}${album.discs > 1 ? ` · ${album.discs} discs` : ''}${album.year ? ` · ${album.year}` : ''}</div>
+				${album.hiRes ? '<div class="tile-hires">HI-RES</div>' : ''}
+			`;
+			const img = btn.querySelector('img');
+			img?.addEventListener('error', () => (img.style.display = 'none'));
+			btn.addEventListener('click', () => openAlbum(album, 0, false));
+			libShelf.appendChild(btn);
+		});
+	}
+
+	function currentTrack() {
+		return libState ? libState.album.tracks[libState.index] : null;
+	}
+
+	function setTracklist(album: any) {
+		vinylTracklistOl.innerHTML = '';
+		album.tracks.forEach((track: any, i: number) => {
+			const li = document.createElement('li');
+			li.dataset.i = String(i);
+			li.innerHTML = `
+				<span class="tl-num">${String(i + 1).padStart(2, '0')}</span>
+				<span class="tl-title">${esc(track.title)}</span>
+				${track.fav ? '<span class="tl-heart" aria-label="Favorite track">♥</span>' : ''}
+				${isHiRes(track) ? '<span class="tl-hr">HI-RES</span>' : ''}
+				<span class="tl-time">${fmtTime(track.duration)}</span>
+			`;
+			li.addEventListener('click', () => openAlbum(album, i, true));
+			vinylTracklistOl.appendChild(li);
+		});
+		vinylTracklist.hidden = false;
+	}
+
+	function setCurrentTrackUI() {
+		vinylTracklistOl.querySelectorAll('li').forEach((li) => {
+			li.classList.toggle('is-current', Number((li as HTMLElement).dataset.i) === libState!.index);
+		});
+		const t = currentTrack();
+		if (!t) return;
+		vinylBadge.textContent = badgeText(t);
+		vinylBadge.classList.toggle('is-hires', isHiRes(t));
+	}
+
+	// A short burst of surface hiss before the music starts — the needle
+	// dropping into the groove. Played on fresh track starts and between
+	// tracks; the real audio follows once it fades out.
+	const hissEl = document.getElementById('vinyl-hiss') as HTMLAudioElement;
+	const HISS_DUR_MS = 1400;
+
+	function playHiss(after: () => void) {
+		hissEl.currentTime = 0;
+		hissEl.volume = 0.5;
+		hissEl.play().catch(after);
+		const timer = setTimeout(() => {
+			hissEl.pause();
+			after();
+		}, HISS_DUR_MS + 250);
+		hissEl.onended = () => {
+			clearTimeout(timer);
+			after();
+		};
+	}
+
+	function loadCurrent(autoplay: boolean) {
+		const t = currentTrack();
+		if (!t) return;
+		audio.src = trackSrc(t);
+		if (autoplay) {
+			playHiss(() => {
+				audio.play().catch(() => {
+					(document.getElementById('vinyl-note') as HTMLElement).textContent =
+						'Tap play to start — autoplay was blocked.';
+				});
+				setPlayingUI(!audio.paused);
+			});
+		} else {
+			setPlayingUI(false);
+		}
+	}
+
+	function openAlbum(album: any, index: number, autoplay = false) {
+		libState = { album, index };
+		currentFormat = 'library';
+		audio.pause();
+		audio.currentTime = 0;
+
+		cassettePlayer.classList.remove('is-open');
+		vinylPlayer.classList.add('is-open');
+
+		(document.getElementById('vinyl-title') as HTMLElement).textContent = album.title;
+		(document.getElementById('vinyl-artist') as HTMLElement).textContent = album.artist || '';
+		(document.getElementById('vinyl-meta-title') as HTMLElement).textContent = album.title;
+		(document.getElementById('vinyl-meta-sub') as HTMLElement).textContent = [album.artist, album.year].filter(Boolean).join(' · ');
+		(document.getElementById('vinyl-note') as HTMLElement).textContent = '';
+		setTracklist(album);
+		setCurrentTrackUI();
+		loadCurrent(autoplay);
+	}
+
+	function stepTrack(dir: number) {
+		if (!libState) return;
+		const tracks = libState.album.tracks;
+		if (!tracks.length) return;
+		libState.index = (libState.index + dir + tracks.length) % tracks.length;
+		setCurrentTrackUI();
+		loadCurrent(true);
+	}
+
+	// ----------------------------------------------------------------------
 
 	function fmtTime(sec: number) {
 		if (!isFinite(sec)) return '00:00';
@@ -152,7 +357,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	}
 
 	function setPlayingUI(playing: boolean) {
-		if (currentFormat === 'vinyl') {
+		if (currentFormat === 'vinyl' || currentFormat === 'library') {
 			record.classList.toggle('is-spinning', playing);
 			tonearm.classList.toggle('is-playing', playing);
 			(document.getElementById('vinyl-play-icon') as HTMLElement).style.display = playing ? 'none' : '';
@@ -173,6 +378,10 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		const src = tile.dataset.audio || '';
 
 		currentFormat = format;
+		libState = null;
+		vinylTracklist.hidden = true;
+		vinylBadge.textContent = 'VINYL';
+		vinylBadge.classList.remove('is-hires');
 		audio.pause();
 		audio.currentTime = 0;
 
@@ -192,9 +401,12 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		if (src) {
 			note.textContent = '';
 			audio.src = src;
-			audio.play().catch(() => {
-				note.textContent = 'Tap play to start — autoplay was blocked.';
-			});
+			const start = () =>
+				audio.play().catch(() => {
+					note.textContent = 'Tap play to start — autoplay was blocked.';
+				});
+			if (format === 'vinyl') playHiss(start);
+			else start();
 		} else {
 			audio.removeAttribute('src');
 			note.textContent = 'No audio uploaded for this one yet.';
@@ -210,8 +422,11 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		audio.pause();
 		vinylPlayer.classList.remove('is-open');
 		cassettePlayer.classList.remove('is-open');
+		vinylTracklist.hidden = true;
+		vinylBadge.classList.remove('is-hires');
 		setPlayingUI(false);
 		currentFormat = null;
+		libState = null;
 	}
 
 	document.getElementById('vinyl-close')?.addEventListener('click', closeAll);
@@ -228,21 +443,33 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	function togglePlay() {
 		if (!audio.src) return;
 		if (audio.paused) {
-			audio.play();
+			// Fresh track start → needle-drop hiss first; mid-track resume → direct.
+			if (audio.currentTime === 0) {
+				playHiss(() => audio.play().catch(() => {}));
+			} else {
+				audio.play();
+			}
 		} else {
 			audio.pause();
 		}
 	}
 	document.getElementById('vinyl-play')?.addEventListener('click', togglePlay);
 	document.getElementById('cassette-play')?.addEventListener('click', togglePlay);
+	document.getElementById('vinyl-prev')?.addEventListener('click', () => stepTrack(-1));
+	document.getElementById('vinyl-next')?.addEventListener('click', () => stepTrack(1));
 
 	audio.addEventListener('play', () => setPlayingUI(true));
 	audio.addEventListener('pause', () => setPlayingUI(false));
-	audio.addEventListener('ended', () => setPlayingUI(false));
+	audio.addEventListener('ended', () => {
+		if (libState) stepTrack(1);
+		else setPlayingUI(false);
+	});
+
+	loadLibrary();
 
 	audio.addEventListener('timeupdate', () => {
 		const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-		if (currentFormat === 'vinyl') {
+		if (currentFormat === 'vinyl' || currentFormat === 'library') {
 			(document.getElementById('vinyl-scrub-fill') as HTMLElement).style.width = pct + '%';
 			(document.getElementById('vinyl-time-current') as HTMLElement).textContent = fmtTime(audio.currentTime);
 			(document.getElementById('vinyl-time-total') as HTMLElement).textContent = fmtTime(audio.duration);
@@ -417,6 +644,31 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		color: var(--faint);
 	}
 
+	.lib-note {
+		color: var(--muted);
+		font-size: 14px;
+		line-height: 1.9;
+		max-width: 560px;
+		margin: -12px 0 36px;
+	}
+	.lib-note strong {
+		color: var(--white);
+		font-weight: 500;
+	}
+	.lib-message {
+		grid-column: 1 / -1;
+		padding: 48px 24px;
+		border: 1px dashed var(--line);
+		text-align: center;
+		font-size: 12px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+	.lib-tile .lib-art img + svg {
+		opacity: 0;
+	}
+
 	@media (max-width: 768px) {
 		.intro {
 			padding: 120px 24px 60px;
@@ -431,5 +683,107 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		.divider {
 			padding: 0 24px;
 		}
+	}
+</style>
+
+<!--
+	The hi-res library tiles are built at runtime by JS, so Astro's scoped
+	attribute never lands on them — these must stay global or nothing styles
+	the dynamic tiles.
+-->
+<style is:global>
+	.lib-tile {
+		aspect-ratio: 1;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		padding: 16px;
+		position: relative;
+		overflow: hidden;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--mono);
+		color: inherit;
+		transition:
+			border-color 0.2s,
+			transform 0.2s;
+	}
+	.lib-tile:hover {
+		border-color: var(--cyan);
+		transform: translateY(-3px);
+	}
+	.lib-tile .tile-art {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 1;
+		color: var(--cyan-soft);
+	}
+	.lib-tile .lib-art svg {
+		width: 78%;
+		height: 78%;
+		opacity: 0.14;
+	}
+	.lib-tile .lib-art img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0.85;
+	}
+	.lib-tile .lib-art img + svg {
+		opacity: 0;
+	}
+	.lib-tile .tile-heart {
+		position: absolute;
+		top: 8px;
+		right: 10px;
+		z-index: 2;
+		font-size: 14px;
+		line-height: 1;
+		color: #ff5b8a;
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+		pointer-events: none;
+	}
+	.lib-tile .tile-title {
+		font-family: var(--display);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 15px;
+		color: var(--white);
+		position: relative;
+		z-index: 1;
+	}
+	.lib-tile .tile-artist {
+		font-size: 11px;
+		color: var(--muted);
+		position: relative;
+		z-index: 1;
+		margin-top: 2px;
+	}
+	.lib-tile .tile-format {
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--cyan);
+		position: relative;
+		z-index: 1;
+		margin-top: 6px;
+	}
+	.tile-hires {
+		position: absolute;
+		top: 12px;
+		right: 12px;
+		z-index: 2;
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		color: #0b1e33;
+		background: var(--cyan);
+		padding: 3px 6px;
 	}
 </style>

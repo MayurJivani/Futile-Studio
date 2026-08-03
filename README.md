@@ -63,7 +63,9 @@ points at `http://localhost:4000` automatically when the frontend is on localhos
 
 **Endpoints:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`,
 `GET/POST/PUT/DELETE /api/posts`, `POST /api/media` (protected, multipart `file` field,
-returns `{ url }`), static files served at `/media/*`.
+returns `{ url }`), static files served at `/media/*`. Plus the read-only hi-res
+library (no auth): `GET /api/music`, `GET /api/music/cover?album=...`,
+`GET /api/music/stream?path=...&to=flac|aac|mp3|wav`, and raw files at `/music/*`.
 
 **Writing a post:** sign in at `/login`, then `/write`. Drag an image into the body
 field (or use "Insert image") to upload it and drop a markdown reference at the cursor.
@@ -73,9 +75,34 @@ Posts are markdown; the public pages render it with `marked`.
 (FLAC/MP3/WAV/OGG/AAC, up to 200MB) — upload one (e.g. via the write page's image
 button, or `curl`) and point a `collection.js` entry's `audioSrc` at the returned URL.
 
-**Deploying:** in production, reverse-proxy `/api` and `/media` on the portfolio's
-domain to this Express process, and set `CORS_ORIGIN` / `NODE_ENV=production` in
-`server/.env`. `src/lib/api.js` uses same-origin relative paths once it's not on
+**Hi-res library (auto-allocated):** the `/collection` page also serves an
+auto-discovered "Hi-Res library" shelf. Point `MUSIC_DIR` in `server/.env` at a
+folder (default `/opt/media/Music`) and drop music in — no registration needed.
+Accepted layouts:
+
+```
+/opt/media/Music/Test Album/01 Intro.flac      → flat album
+/opt/media/Music/Sampler/Disc 1/01 A Side.flac → multi-disc album (Disc 1, Disc 2, …)
+/opt/media/Music/00 Loose One.mp3              → "Singles & Loose Tracks"
+```
+
+Tags (title, artist, duration, sample rate, bit depth) and cover art (a
+`folder.jpg`/`cover.jpg` in the album dir, or embedded artwork) come from
+`music-metadata`. Playback is lossless:
+
+- FLAC/MP3/WAV/OGG/OPUS/M4A/AAC are streamed as-is with HTTP byte-range support
+  (seeking works, quality untouched — 24/96 FLAC plays natively in
+  Chrome/Firefox/Edge; Safari gets hi-res FLAC from this library via transcode).
+- Anything else (DSD `.dsf`/`.dff`, APE, WavPack, AIFF, …) is transcoded on the
+  fly to lossless FLAC via `ffmpeg` (AAC 320k as a last resort for browsers that
+  can't play FLAC). Requires `ffmpeg` on the server's `PATH`.
+
+The shelf re-scans automatically (30s cache), so files added to `MUSIC_DIR`
+appear without a redeploy.
+
+**Deploying:** in production, reverse-proxy `/api`, `/music`, and `/media` on the
+portfolio's domain to this Express process, and set `CORS_ORIGIN` / `NODE_ENV=production`
+in `server/.env`. `src/lib/api.js` uses same-origin relative paths once it's not on
 localhost, so no frontend changes are needed.
 
 ### Security model

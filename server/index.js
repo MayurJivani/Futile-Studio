@@ -11,9 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { SqliteSessionStore } from './lib/sessionStore.js';
 import { apiLimiter } from './lib/security.js';
+import { MUSIC_DIR } from './lib/music.js';
 import authRoutes from './routes/auth.js';
 import postsRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
+import musicRoutes from './routes/music.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -81,9 +83,29 @@ app.use(
 
 app.use('/media', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny', index: false }));
 
+// Hi-res music library: raw files served straight from MUSIC_DIR with
+// byte-range (Range) support so FLAC seeking works and playback is lossless.
+// The global CORS middleware above already applies, so the Astro frontend can
+// load these cross-origin in dev. Catalog/cover/transcode live under /api/music.
+app.use(
+	'/music',
+	express.static(MUSIC_DIR, {
+		dotfiles: 'deny',
+		index: false,
+		acceptRanges: true,
+		maxAge: isProd ? '1h' : 0,
+		setHeaders(res, filePath) {
+			res.setHeader('Accept-Ranges', 'bytes');
+			res.setHeader('X-Content-Type-Options', 'nosniff');
+			if (filePath.endsWith('.flac')) res.setHeader('Content-Type', 'audio/flac');
+		},
+	}),
+);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/music', musicRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

@@ -41,10 +41,13 @@
 				<div class="meta-title" id="vinyl-meta-title">Album Title</div>
 				<div class="meta-sub" id="vinyl-meta-sub">Artist · Year</div>
 			</div>
-			<div class="format-badge">VINYL</div>
+			<div class="format-badge" id="vinyl-format-badge">VINYL</div>
 		</div>
 
 		<div class="player-controls">
+			<button class="transport-btn transport-skip" id="vinyl-prev" aria-label="Previous track" data-magnetic="0.3">
+				<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11L14 8 4 2.5zM12 2.5v11h1.5v-11H12z" opacity="0" /><path d="M11 2.5v11L1 8l10-5.5zM13 2.5v11h1v-11h-1z"></path></svg>
+			</button>
 			<button class="transport-btn" id="vinyl-play" aria-label="Play / pause" data-magnetic="0.3">
 				<svg id="vinyl-play-icon" viewBox="0 0 16 16" fill="currentColor"
 					><path d="M4 2.5v11l10-5.5-10-5.5z"></path></svg
@@ -53,11 +56,19 @@
 					><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"></path></svg
 				>
 			</button>
+			<button class="transport-btn transport-skip" id="vinyl-next" aria-label="Next track" data-magnetic="0.3">
+				<svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 2.5v11l10-5.5L5 2.5zM3 2.5v11h1v-11H3z"></path></svg>
+			</button>
 			<div class="scrub">
 				<span class="time" id="vinyl-time-current">00:00</span>
 				<div class="scrub-track"><div class="scrub-fill" id="vinyl-scrub-fill"></div></div>
 				<span class="time" id="vinyl-time-total">00:00</span>
 			</div>
+		</div>
+
+		<div class="tracklist-wrap" id="vinyl-tracklist" hidden>
+			<div class="tracklist-label">/ TRACKLIST</div>
+			<ol class="tracklist" id="vinyl-tracklist-ol"></ol>
 		</div>
 
 		<p class="player-note" id="vinyl-note"></p>
@@ -82,10 +93,12 @@
 
 	.player-panel {
 		position: relative;
-		width: min(520px, 100%);
+		width: min(560px, 100%);
 		background: var(--surface);
 		border: 1px solid var(--line-strong);
 		padding: 36px;
+		max-height: calc(100vh - 48px);
+		overflow-y: auto;
 	}
 
 	.player-close {
@@ -207,35 +220,32 @@
 
 	.tonearm {
 		position: absolute;
-		top: 8%;
-		right: 8%;
-		width: 40%;
-		height: 70%;
+		inset: 0;
 		pointer-events: none;
 	}
 	.tonearm-pivot {
 		position: absolute;
-		top: 0;
-		right: 0;
-		width: 14px;
-		height: 14px;
+		top: 5%;
+		right: 5%;
+		width: 16px;
+		height: 16px;
 		border-radius: 50%;
 		border: 1px solid var(--line-strong);
 		background: var(--bg-2);
 	}
 	.tonearm-arm {
 		position: absolute;
-		top: 6px;
-		right: 6px;
+		top: calc(5% + 7px);
+		right: calc(5% + 7px);
 		width: 2px;
-		height: 88%;
+		height: 46%;
 		background: var(--cyan-soft);
-		transform-origin: top center;
-		transform: rotate(-32deg);
+		transform-origin: 50% 0;
+		transform: rotate(0deg);
 		transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
 	}
 	.tonearm.is-playing .tonearm-arm {
-		transform: rotate(4deg);
+		transform: rotate(30deg);
 	}
 	.tonearm-head {
 		position: absolute;
@@ -274,11 +284,16 @@
 		padding: 5px 10px;
 		flex-shrink: 0;
 	}
+	.format-badge.is-hires {
+		color: #0b1e33;
+		background: var(--cyan);
+		border-color: var(--cyan);
+	}
 
 	.player-controls {
 		display: flex;
 		align-items: center;
-		gap: 20px;
+		gap: 10px;
 	}
 	.transport-btn {
 		width: 46px;
@@ -294,6 +309,14 @@
 			border-color 0.2s,
 			color 0.2s;
 	}
+	.transport-skip {
+		width: 34px;
+		height: 34px;
+	}
+	.transport-skip svg {
+		width: 12px;
+		height: 12px;
+	}
 	.transport-btn svg {
 		width: 16px;
 		height: 16px;
@@ -301,6 +324,48 @@
 	.transport-btn:hover {
 		border-color: var(--cyan);
 		color: var(--cyan);
+	}
+
+	.tracklist-wrap {
+		margin-top: 22px;
+		border-top: 1px solid var(--line);
+		padding-top: 16px;
+	}
+	.tracklist-label {
+		font-size: 10px;
+		letter-spacing: 0.14em;
+		color: var(--cyan);
+		margin-bottom: 8px;
+	}
+	.tracklist {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	.player-panel,
+	.tracklist {
+		scrollbar-width: thin;
+		scrollbar-color: var(--line-strong) transparent;
+	}
+	.player-panel::-webkit-scrollbar,
+	.tracklist::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	.player-panel::-webkit-scrollbar-thumb,
+	.tracklist::-webkit-scrollbar-thumb {
+		background: var(--line-strong);
+	}
+	.player-panel::-webkit-scrollbar-thumb:hover,
+	.tracklist::-webkit-scrollbar-thumb:hover {
+		background: var(--cyan);
+	}
+	.player-panel::-webkit-scrollbar-track,
+	.tracklist::-webkit-scrollbar-track {
+		background: transparent;
 	}
 
 	.scrub {
@@ -340,5 +405,65 @@
 		.player-panel {
 			padding: 24px 18px;
 		}
+	}
+</style>
+
+<!-- Tracklist items are created at runtime by JS, so their styles must be
+     global — scoped CSS never reaches the dynamic <li> elements. -->
+<style is:global>
+	.tracklist li {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 10px;
+		margin: 0 -10px;
+		border: 1px solid transparent;
+		cursor: pointer;
+		font-size: 12px;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.tracklist li:hover {
+		background: var(--bg-2);
+	}
+	.tracklist li.is-current {
+		border-color: var(--cyan);
+		background: var(--bg-2);
+	}
+	.tracklist .tl-num {
+		font-family: var(--mono);
+		color: var(--faint);
+		width: 20px;
+		flex-shrink: 0;
+	}
+	.tracklist .tl-title {
+		flex: 1;
+		color: var(--white);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.tracklist li.is-current .tl-title {
+		color: var(--cyan);
+	}
+	.tracklist .tl-time {
+		font-family: var(--mono);
+		color: var(--faint);
+		flex-shrink: 0;
+	}
+	.tracklist .tl-hr {
+		flex-shrink: 0;
+		font-size: 9px;
+		letter-spacing: 0.08em;
+		color: var(--cyan);
+		border: 1px solid var(--line-strong);
+		padding: 2px 5px;
+	}
+	.tracklist .tl-heart {
+		flex-shrink: 0;
+		font-size: 11px;
+		line-height: 1;
+		color: #ff5b8a;
 	}
 </style>
