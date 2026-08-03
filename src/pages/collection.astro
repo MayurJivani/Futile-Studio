@@ -364,12 +364,11 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 						<circle cx="50" cy="50" r="14" stroke="currentColor" stroke-width="0.5" />
 						<circle cx="50" cy="50" r="4" fill="currentColor" opacity="0.6" />
 					</svg>
-					${heartHtml('tile-heart', 'album', album.id, !!album.fav, 'Toggle favorite album')}
-				</div>
-				<div class="tile-title">${esc(album.title)}</div>
-				<div class="tile-artist">${esc(album.artist || 'Unknown artist')}</div>
-				<div class="tile-format">${esc(album.format || '')}${album.discs > 1 ? ` · ${album.discs} discs` : ''}${album.year ? ` · ${album.year}` : ''}</div>
-				${album.hiRes ? '<div class="tile-hires">HI-RES</div>' : ''}
+				${heartHtml('tile-heart', 'album', album.id, !!album.fav, 'Toggle favorite album')}
+			</div>
+			<div class="tile-title">${esc(album.title)}</div>
+			<div class="tile-artist">${esc(album.artist || 'Unknown artist')}</div>
+			<div class="tile-format">${esc(album.format || '')}${album.discs > 1 ? ` · ${album.discs} discs` : ''}${album.year ? ` · ${album.year}` : ''}</div>
 			`;
 			const img = btn.querySelector('img');
 			img?.addEventListener('error', () => (img.style.display = 'none'));
@@ -924,7 +923,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		top: 8px;
 		right: 10px;
 		z-index: 2;
-		font-size: 14px;
+		font-size: 18px;
 		line-height: 1;
 		color: #ff5b8a;
 		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
@@ -959,19 +958,6 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--cyan);
-		position: relative;
-		z-index: 1;
 		margin-top: 6px;
-	}
-	.tile-hires {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		z-index: 2;
-		font-size: 9px;
-		letter-spacing: 0.1em;
-		color: #0b1e33;
-		background: var(--cyan);
-		padding: 3px 6px;
 	}
 </style>
