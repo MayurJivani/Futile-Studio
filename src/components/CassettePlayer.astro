@@ -54,6 +54,24 @@
 			</div>
 		</div>
 
+		<div class="volume">
+			<span class="volume-label">VOLUME</span>
+			<svg class="volume-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"
+				><path d="M3 6v4h3l3-3V5L6 6H3z"></path><path d="M11 5.5a4 4 0 010 5"></path
+				><path d="M13 3.5a7 7 0 010 9"></path
+			></svg>
+			<input
+				type="range"
+				class="volume-slider"
+				id="cassette-volume"
+				min="0"
+				max="1"
+				step="0.01"
+				value="1"
+				aria-label="Volume"
+			/>
+		</div>
+
 		<p class="player-note" id="cassette-note"></p>
 	</div>
 </div>
@@ -289,6 +307,63 @@
 	.transport-btn:hover {
 		border-color: var(--cyan);
 		color: var(--cyan);
+	}
+
+	.volume {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 16px;
+	}
+	.volume-label {
+		font-size: 9px;
+		letter-spacing: 0.14em;
+		color: var(--faint);
+		flex-shrink: 0;
+	}
+	.volume-icon {
+		width: 14px;
+		height: 14px;
+		color: var(--muted);
+		flex-shrink: 0;
+	}
+	.volume-slider {
+		flex: 1;
+		appearance: none;
+		-webkit-appearance: none;
+		height: 2px;
+		background: var(--line);
+		outline: none;
+		cursor: pointer;
+	}
+	.volume-slider::-webkit-slider-thumb {
+		appearance: none;
+		-webkit-appearance: none;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--cyan);
+		border: 1px solid rgba(11, 30, 51, 0.8);
+		transition: transform 0.15s;
+	}
+	.volume-slider::-moz-range-thumb {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--cyan);
+		border: 1px solid rgba(11, 30, 51, 0.8);
+	}
+	.volume-slider::-moz-range-track {
+		height: 2px;
+		background: var(--line);
+	}
+	.volume-slider:hover::-webkit-slider-thumb,
+	.volume-slider:focus-visible::-webkit-slider-thumb {
+		transform: scale(1.25);
+	}
+	.volume-slider:focus-visible {
+		outline: 1px solid var(--cyan);
+		outline-offset: 4px;
 	}
 
 	.scrub {

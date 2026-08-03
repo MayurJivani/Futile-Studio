@@ -56,6 +56,12 @@ import Nav from '../../components/Nav.astro';
 				(document.getElementById('post-body') as HTMLElement).innerHTML = DOMPurify.sanitize(
 					marked.parse(post.body) as string,
 				);
+				// Post images are injected via innerHTML — make them lazy so a long
+				// post doesn't block the page with eager image downloads.
+				(document.getElementById('post-body') as HTMLElement).querySelectorAll('img').forEach((img) => {
+					if (!img.loading) img.loading = 'lazy';
+					if (!img.decoding) img.decoding = 'async';
+				});
 				content.style.display = '';
 			})
 			.catch(() => {

@@ -24,7 +24,15 @@ const {
 		<link
 			href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
 			rel="stylesheet"
+			media="print"
+			onload="this.media='all'"
 		/>
+		<noscript>
+			<link
+				href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+				rel="stylesheet"
+			/>
+		</noscript>
 	</head>
 	<body>
 		<!-- PRELOADER -->
@@ -105,7 +113,7 @@ const {
 					sessionStorage.setItem('futile-visited', '1');
 					gsap.to(el, {
 						yPercent: -100,
-						duration: fast || reduceMotion ? 0.35 : 0.9,
+						duration: fast || reduceMotion ? 0.3 : 0.6,
 						ease: 'power4.inOut',
 						onComplete: () => el.remove(),
 					});
@@ -122,7 +130,7 @@ const {
 				const proxy = { v: 0 };
 				gsap.to(proxy, {
 					v: 100,
-					duration: 1.5,
+					duration: 1.0,
 					ease: 'power2.inOut',
 					onUpdate: () => {
 						const v = Math.round(proxy.v);
@@ -131,7 +139,7 @@ const {
 						const idx = Math.min(tags.length - 1, Math.floor((v / 100) * tags.length));
 						if (tag.textContent !== tags[idx]) tag.textContent = tags[idx];
 					},
-					onComplete: () => gsap.delayedCall(0.25, finish),
+					onComplete: () => gsap.delayedCall(0.15, finish),
 				});
 			})();
 
