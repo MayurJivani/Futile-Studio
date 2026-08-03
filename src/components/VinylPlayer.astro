@@ -41,7 +41,10 @@
 				<div class="meta-title" id="vinyl-meta-title">Album Title</div>
 				<div class="meta-sub" id="vinyl-meta-sub">Artist · Year</div>
 			</div>
-			<div class="format-badge" id="vinyl-format-badge">VINYL</div>
+			<div class="badge-stack">
+				<div class="format-badge" id="vinyl-format-badge">VINYL</div>
+				<div class="format-badge delivery-badge" id="vinyl-delivery-badge" hidden>RAW</div>
+			</div>
 		</div>
 
 		<div class="player-controls">
@@ -306,6 +309,27 @@
 		color: #0b1e33;
 		background: var(--cyan);
 		border-color: var(--cyan);
+	}
+	.badge-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+	.delivery-badge {
+		color: var(--muted);
+		border-style: dashed;
+	}
+	.delivery-badge.is-raw {
+		color: var(--cyan-soft);
+		border-color: var(--cyan);
+	}
+	.delivery-badge.is-reencode {
+		color: var(--cyan);
+	}
+	.delivery-badge.is-lossy {
+		color: var(--red);
+		border-color: var(--red);
 	}
 
 	.player-controls {

@@ -15,6 +15,7 @@ import authRoutes from './routes/auth.js';
 import postsRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
 import musicRoutes from './routes/music.js';
+import favoritesRoutes from './routes/favorites.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -99,6 +100,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/music', musicRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

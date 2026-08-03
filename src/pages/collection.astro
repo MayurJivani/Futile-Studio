@@ -160,6 +160,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	const vinylTracklist = document.getElementById('vinyl-tracklist')!;
 	const vinylTracklistOl = document.getElementById('vinyl-tracklist-ol')!;
 	const vinylBadge = document.getElementById('vinyl-format-badge')!;
+	const vinylDeliveryBadge = document.getElementById('vinyl-delivery-badge')!;
 
 	let currentFormat: 'vinyl' | 'cassette' | 'library' | null = null;
 
@@ -346,6 +347,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		const t = currentTrack();
 		if (!t) return;
 		audio.src = trackSrc(t);
+		startBitrateMeter(t);
 		if (autoplay) {
 			audio.play().catch(() => {
 				(document.getElementById('vinyl-note') as HTMLElement).textContent =
@@ -383,6 +385,54 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		libState.index = (libState.index + dir + tracks.length) % tracks.length;
 		setCurrentTrackUI();
 		loadCurrent(true);
+	}
+
+	// Live delivery bitrate in the badge next to the format: the browser
+	// exposes how many compressed bytes it has decoded so far, so we measure
+	// real throughput of whatever the server actually sent (raw FLAC ~real
+	// lossless rate, an AAC transcode ~320k). Averaged over a 10s window so
+	// initial buffering doesn't spike the number. The badge color still flags
+	// delivery path from the ?to= on the URL (green = raw, amber = lossy).
+	let bitrateTimer: number | null = null;
+	let bitrateSamples: { t: number; b: number }[] = [];
+
+	function decodedAudioBytes() {
+		const a = audio as any;
+		return a.webkitAudioDecodedByteCount ?? a.mozAudioDecodedByteCount ?? 0;
+	}
+
+	function staticKbps(t: any) {
+		return t.size && t.duration ? (t.size * 8) / t.duration / 1000 : null;
+	}
+
+	function startBitrateMeter(t: any) {
+		if (bitrateTimer !== null) clearInterval(bitrateTimer);
+		const to = /[?&]to=([a-z0-9]+)/i.exec(trackSrc(t))?.[1];
+		vinylDeliveryBadge.className = to === 'aac'
+			? 'format-badge delivery-badge is-lossy'
+			: to
+				? 'format-badge delivery-badge is-reencode'
+				: 'format-badge delivery-badge is-raw';
+		vinylDeliveryBadge.hidden = false;
+		bitrateSamples = [];
+		const update = () => {
+			const now = audio.currentTime;
+			bitrateSamples.push({ t: now, b: decodedAudioBytes() });
+			while (bitrateSamples.length && now - bitrateSamples[0].t > 10) bitrateSamples.shift();
+			const first = bitrateSamples[0];
+			const last = bitrateSamples[bitrateSamples.length - 1];
+			const span = last.t - first.t;
+			if (audio.paused || bitrateSamples.length < 2 || span < 0.5) {
+				const stat = staticKbps(t);
+				vinylDeliveryBadge.textContent = stat ? `${Math.round(stat)} kbps` : '— kbps';
+				return;
+			}
+			const kbps = ((last.b - first.b) * 8) / span / 1000;
+			vinylDeliveryBadge.textContent =
+				kbps > 0 && isFinite(kbps) ? `${Math.round(kbps)} kbps` : '— kbps';
+		};
+		update();
+		bitrateTimer = window.setInterval(update, 1000);
 	}
 
 	// ----------------------------------------------------------------------
