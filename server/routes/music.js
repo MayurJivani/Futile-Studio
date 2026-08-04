@@ -68,12 +68,16 @@ const coverCache = new Map();
 const COVER_CACHE_TTL_MS = 60 * 60 * 1000;
 const THUMB_CACHE_DIR = path.join(MUSIC_DIR, '.covers', 'thumbs');
 
-function sendCover(res, req, payload, tag) {
-	const etag = `"${tag}"`;
+function sendCover(res, req, payload) {
+	// Content-derived ETag (not per-album) so a swapped cover.jpg / newly
+	// fetched remote art invalidates caches instead of an endless 304 against
+	// the old image. No `immutable`: that would pin the first-seen cover for
+	// the whole max-age without revalidating, so user swaps would never show.
+	const etag = `"${crypto.createHash('sha1').update(payload.data).digest('hex').slice(0, 20)}"`;
 	res.setHeader('ETag', etag);
 	if (req.headers['if-none-match'] === etag) return res.status(304).end();
 	res.setHeader('Content-Type', payload.mime);
-	res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+	res.setHeader('Cache-Control', 'public, max-age=3600');
 	res.send(payload.data);
 }
 
@@ -108,7 +112,13 @@ function makeThumb(data, size) {
 
 /** Thumbnail from disk cache, else generate + persist. Returns null on any failure. */
 async function thumbOrCache(payload, album, size) {
-	const file = path.join(THUMB_CACHE_DIR, `${crypto.createHash('sha1').update(`${album}@${size}`).digest('hex').slice(0, 16)}.jpg`);
+	// Key on a hash of the source bytes too, so a changed cover.jpg produces a
+	// fresh thumbnail instead of a stale cached one.
+	const sourceHash = crypto.createHash('sha1').update(payload.data).digest('hex').slice(0, 8);
+	const file = path.join(
+		THUMB_CACHE_DIR,
+		`${crypto.createHash('sha1').update(`${album}@${size}@${sourceHash}`).digest('hex').slice(0, 16)}.jpg`,
+	);
 	try {
 		const cached = await fs.readFile(file);
 		if (cached.length) return cached;
@@ -134,26 +144,16 @@ router.get('/cover', async (req, res, next) => {
 	const key = size ? `${album}@${size}` : album;
 	const hit = coverCache.get(key);
 	if (hit && Date.now() - hit.at < COVER_CACHE_TTL_MS) {
-		return sendCover(res, req, hit.payload, hit.tag);
+		return sendCover(res, req, hit.payload);
 	}
 
 	try {
-		// ETag changes per source so browsers that cached a placeholder get the
-		// newly-discovered/fetched art instead of a misleading 304.
-		const nameTag = crypto.createHash('sha1').update(album).digest('hex').slice(0, 12);
-
 		let payload = null;
-		let source = '';
 		const disk = await findAlbumCover(album);
 		if (disk) {
 			payload = disk;
-			source = 'a';
 		} else {
-			const fetched = await fetchCover(album);
-			if (fetched) {
-				payload = fetched;
-				source = 'f';
-			}
+			payload = await fetchCover(album);
 		}
 
 		// Requested a small thumbnail and have raster art — downscale it.
@@ -162,23 +162,20 @@ router.get('/cover', async (req, res, next) => {
 			const thumb = await thumbOrCache(payload, album, size);
 			if (thumb) {
 				const thumbPayload = { mime: 'image/jpeg', data: thumb };
-				const tag = `${nameTag}t${size}`;
-				coverCache.set(key, { at: Date.now(), tag, payload: thumbPayload });
-				return sendCover(res, req, thumbPayload, tag);
+				coverCache.set(key, { at: Date.now(), payload: thumbPayload });
+				return sendCover(res, req, thumbPayload);
 			}
 		}
 
 		if (payload) {
-			const tag = `${nameTag}${source}`;
-			coverCache.set(key, { at: Date.now(), tag, payload });
-			return sendCover(res, req, payload, tag);
+			coverCache.set(key, { at: Date.now(), payload });
+			return sendCover(res, req, payload);
 		}
 
 		// No art anywhere — send a generated blueprint cover.
 		const placeholder = { mime: 'image/svg+xml', data: placeholderCover(album) };
-		const tag = nameTag;
-		coverCache.set(key, { at: Date.now(), tag, payload: placeholder });
-		return sendCover(res, req, placeholder, tag);
+		coverCache.set(key, { at: Date.now(), payload: placeholder });
+		return sendCover(res, req, placeholder);
 	} catch (err) {
 		next(err);
 	}

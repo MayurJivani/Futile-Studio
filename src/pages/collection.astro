@@ -366,9 +366,10 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 					</svg>
 				${heartHtml('tile-heart', 'album', album.id, !!album.fav, 'Toggle favorite album')}
 			</div>
-			<div class="tile-title">${esc(album.title)}</div>
-			<div class="tile-artist">${esc(album.artist || 'Unknown artist')}</div>
-			<div class="tile-format">${esc(album.format || '')}${album.discs > 1 ? ` · ${album.discs} discs` : ''}${album.year ? ` · ${album.year}` : ''}</div>
+			<div class="tile-caption">
+				<div class="tile-title">${esc(album.title)}</div>
+				<div class="tile-artist">${esc(album.artist || 'Unknown artist')}${album.year ? ` · ${esc(album.year)}` : ''}</div>
+			</div>
 			`;
 			const img = btn.querySelector('img');
 			img?.addEventListener('error', () => (img.style.display = 'none'));
@@ -943,21 +944,35 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		text-transform: uppercase;
 		font-size: 15px;
 		color: var(--white);
-		position: relative;
-		z-index: 1;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+	}
+	.lib-tile .tile-caption {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 2;
+		padding: 12px 14px 14px;
+		background: rgba(6, 12, 24, 0.5);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-top: 1px solid rgba(120, 179, 255, 0.18);
+		opacity: 0;
+		transform: translateY(6px);
+		transition:
+			opacity 0.25s ease,
+			transform 0.25s ease;
+		pointer-events: none;
+	}
+	.lib-tile:hover .tile-caption,
+	.lib-tile:focus-within .tile-caption {
+		opacity: 1;
+		transform: translateY(0);
 	}
 	.lib-tile .tile-artist {
 		font-size: 11px;
-		color: var(--muted);
-		position: relative;
-		z-index: 1;
+		color: var(--white);
 		margin-top: 2px;
-	}
-	.lib-tile .tile-format {
-		font-size: 10px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--cyan);
-		margin-top: 6px;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 	}
 </style>
