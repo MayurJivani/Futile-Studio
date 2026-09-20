@@ -168,26 +168,33 @@ import Marquee from '../components/Marquee.astro';
 					</template>
 				</a>
 
-				<div class="project-card" aria-disabled="true" data-magnetic="0.15" data-glimpse>
-					<div class="project-tag">Video · 2025</div>
+				<a
+					href="https://mosaic.futile.studio/"
+					target="_blank"
+					rel="noopener"
+					class="project-card"
+					data-magnetic="0.15"
+					data-glimpse
+				>
+					<div class="project-tag">Streaming · 2025</div>
 					<div class="project-name">Mosaic</div>
 					<div class="project-desc">
-						Multi-screen video mosaic canvas — sync playback across devices, clip routing to individual
-						viewers, and LAN-friendly uploads. Astro, React, WebSockets.
+						A live overlay your mods control. They drag emotes, clips, sounds and text onto a shared
+						board and it lands on stream instantly — while you keep playing. Astro, React, WebSockets.
 					</div>
-					<div class="project-arrow">In development</div>
+					<div class="project-arrow">Open →</div>
 					<template>
 						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<rect x="8" y="8" width="72" height="60"></rect>
-							<rect x="88" y="8" width="72" height="60" fill="currentColor" fill-opacity="0.12"></rect>
-							<path d="M115 28l16 10-16 10z" fill="currentColor" stroke="none"></path>
-							<rect x="168" y="8" width="64" height="60"></rect>
-							<rect x="8" y="76" width="110" height="66"></rect>
-							<rect x="126" y="76" width="106" height="66"></rect>
+							<rect x="20" y="16" width="200" height="118" rx="3"></rect>
+							<path d="M104 62l22 13-22 13z" fill="currentColor" stroke="none"></path>
+							<rect x="36" y="30" width="44" height="26" rx="3" fill="currentColor" fill-opacity="0.14"></rect>
+							<circle cx="178" cy="46" r="13" fill="currentColor" fill-opacity="0.14"></circle>
+							<rect x="150" y="98" width="54" height="18" rx="9" fill="currentColor" fill-opacity="0.14"></rect>
+							<path d="M44 108h30M44 116h48" stroke-linecap="round"></path>
 						</svg>
-						<div class="glimpse-tag">Synced playback across every screen in the room</div>
+						<div class="glimpse-tag">Your mods, dropping chaos on stream in real time</div>
 					</template>
-				</div>
+				</a>
 
 				<a
 					href="https://chorus.futile.studio"
