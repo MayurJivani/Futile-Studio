@@ -6,6 +6,9 @@
 ![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-node%3Asqlite-003B57?style=flat-square&logo=sqlite&logoColor=white)
 [![Last commit](https://img.shields.io/github/last-commit/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/commits/main)
+[![Stars](https://img.shields.io/github/stars/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/stargazers)
+[![Issues](https://img.shields.io/github/issues/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/issues)
+![Code size](https://img.shields.io/github/languages/code-size/MayurJivani/Futile-Studio?style=flat-square)
 
 Portfolio (`futile.studio`) plus a small backend for the blog and hosted media.
 
