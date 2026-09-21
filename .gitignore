@@ -27,3 +27,7 @@ server/uploads/*
 
 # jetbrains setting folder
 .idea/
+
+# Claude Code and local tooling
+.claude/
+.codegraph/
