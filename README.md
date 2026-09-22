@@ -9,6 +9,9 @@
 [![Stars](https://img.shields.io/github/stars/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/stargazers)
 [![Issues](https://img.shields.io/github/issues/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/issues)
 ![Code size](https://img.shields.io/github/languages/code-size/MayurJivani/Futile-Studio?style=flat-square)
+![palette](https://img.shields.io/badge/palette-blueprint%20blue-0b3d91?style=flat-square)
+![cursor](https://img.shields.io/badge/cursor-custom-1E90FF?style=flat-square)
+![headlines](https://img.shields.io/badge/headlines-condensed%20and%20shouting-e67e22?style=flat-square)
 
 Portfolio (`futile.studio`) plus a small backend for the blog and hosted media.
 
