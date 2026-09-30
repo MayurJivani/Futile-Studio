@@ -5,7 +5,7 @@ import Marquee from '../components/Marquee.astro';
 ---
 
 <Layout>
-	<Nav active="home" />
+	<Nav />
 
 	<!-- HERO -->
 	<div class="hero">
@@ -65,7 +65,7 @@ import Marquee from '../components/Marquee.astro';
 
 	<!-- ABOUT -->
 	<section id="about">
-		<div class="sheet-label" data-reveal>SHEET 01 / 05 — ABOUT</div>
+		<div class="sheet-label" data-reveal>SHEET 01 / 03 — ABOUT</div>
 		<div class="about-grid">
 			<div class="about-text">
 				<div class="section-label" data-reveal>/ About</div>
@@ -76,9 +76,8 @@ import Marquee from '../components/Marquee.astro';
 					> That's the point.
 				</p>
 				<p data-reveal style="--d:120ms">
-					Futile Studio is my personal corner of the internet. It's where my projects live, where my thoughts
-					collect dust until they're worth reading, and where Futile Recording Co keeps a log of every piece
-					of music that moved me enough to own it physically.
+					Futile Studio is my personal corner of the internet — where my projects live and ship, built
+					and served off a homelab I run and maintain myself, end to end.
 				</p>
 				<p data-reveal style="--d:160ms">
 					I collect vinyls and cassettes. Physical media. Things that represent a moment, an emotion, a sound
@@ -132,7 +131,7 @@ import Marquee from '../components/Marquee.astro';
 	<!-- PROJECTS (horizontal pinned scroll on desktop) -->
 	<section id="projects" class="projects-section">
 		<div class="projects-head">
-			<div class="sheet-label" data-reveal>SHEET 02 / 05 — PROJECTS</div>
+			<div class="sheet-label" data-reveal>SHEET 02 / 03 — PROJECTS</div>
 			<div class="section-label" data-reveal>/ Projects</div>
 			<h2 data-split data-split-group>Things I've built &amp; shipped</h2>
 			<div class="projects-hint" data-reveal style="--d:80ms">Scroll →</div>
@@ -151,8 +150,9 @@ import Marquee from '../components/Marquee.astro';
 					<div class="project-tag">Game · Dec 2025</div>
 					<div class="project-name">Qno</div>
 					<div class="project-desc">
-						A quantum-themed Uno card game built to teach quantum computing — superposition, entanglement,
-						quantum gates — through multiplayer gameplay. React.js, Node.js, WebSockets.
+						Built a quantum-themed Uno so superposition and entanglement click through play instead of a
+						lecture slide — quantum gates as actual card mechanics, multiplayer over WebSockets. React.js,
+						Node.js.
 					</div>
 					<div class="project-arrow">Play →</div>
 					<template>
@@ -179,8 +179,9 @@ import Marquee from '../components/Marquee.astro';
 					<div class="project-tag">Streaming · 2025</div>
 					<div class="project-name">Mosaic</div>
 					<div class="project-desc">
-						A live overlay your mods control. They drag emotes, clips, sounds and text onto a shared
-						board and it lands on stream instantly — while you keep playing. Astro, React, WebSockets.
+						Built a live overlay so mods can drop emotes, clips and sound straight onto the broadcast
+						while the streamer keeps playing — no OBS scenes, changes hit the stream the moment they're
+						dropped. Astro, React, WebSockets.
 					</div>
 					<div class="project-arrow">Open →</div>
 					<template>
@@ -207,8 +208,9 @@ import Marquee from '../components/Marquee.astro';
 					<div class="project-tag">Music · Jan 2024</div>
 					<div class="project-name">Chorus</div>
 					<div class="project-desc">
-						A Wordle-inspired music guessing game with Spotify integration. Pulls your listening history,
-						streams audio in-browser via Spotify Playback SDK. React.js.
+						Built a Wordle-style guessing game on the Spotify API that pulls your own listening
+						history, so every round is a track you've actually heard, streamed in-browser via the
+						Spotify SDK. React.js.
 					</div>
 					<div class="project-arrow">Play →</div>
 					<template>
@@ -227,15 +229,16 @@ import Marquee from '../components/Marquee.astro';
 					href="https://noggin.futile.studio"
 					target="_blank"
 					rel="noopener"
-					class="project-card project-card-end"
+					class="project-card"
 					data-magnetic="0.15"
 					data-glimpse
 				>
 					<div class="project-tag">Game · 2026</div>
 					<div class="project-name">Noggin'</div>
 					<div class="project-desc">
-						A quiz-board game show for a room with a TV and a pile of phones. Image, audio and video
-						clues, millisecond buzzer racing, teams and lifelines. Astro, React, WebSockets.
+						Built a TV quiz show for a room full of phones — image, audio and video clues, millisecond
+						buzzer racing over WebSockets, teams and lifelines, zero extra hardware. Astro, React,
+						WebSockets.
 					</div>
 					<div class="project-arrow">Play →</div>
 					<template>
@@ -258,6 +261,36 @@ import Marquee from '../components/Marquee.astro';
 						<div class="glimpse-tag">One TV, a pile of phones, a real buzzer race</div>
 					</template>
 				</a>
+
+				<a
+					href="https://patina.futile.studio/"
+					target="_blank"
+					rel="noopener"
+					class="project-card project-card-end"
+					data-magnetic="0.15"
+					data-glimpse
+				>
+					<div class="project-tag">Canvas · 2026</div>
+					<div class="project-name">Patina</div>
+					<div class="project-desc">
+						Built a shared 4096×4096 canvas that runs for a year, one pixel at a time, no account.
+						Unlike r/place, nothing gets overwritten on this one — paint just ages and cures in place.
+						Vanilla JS, zero dependencies.
+					</div>
+					<div class="project-arrow">Open →</div>
+					<template>
+						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
+							<rect x="45" y="15" width="150" height="120" rx="2"></rect>
+							<path d="M75 15v120M105 15v120M135 15v120M165 15v120" stroke-opacity="0.5"></path>
+							<path d="M45 45h150M45 75h150M45 105h150" stroke-opacity="0.5"></path>
+							<rect x="75" y="15" width="30" height="30" fill="currentColor" fill-opacity="0.16" stroke="none"></rect>
+							<rect x="135" y="45" width="30" height="30" fill="currentColor" fill-opacity="0.14" stroke="none"></rect>
+							<rect x="45" y="75" width="30" height="30" fill="currentColor" fill-opacity="0.12" stroke="none"></rect>
+							<rect x="165" y="105" width="30" height="30" fill="currentColor" fill-opacity="0.16" stroke="none"></rect>
+						</svg>
+						<div class="glimpse-tag">4096×4096 cells that age instead of resetting</div>
+					</template>
+				</a>
 			</div>
 		</div>
 	</section>
@@ -278,7 +311,7 @@ import Marquee from '../components/Marquee.astro';
 
 	<!-- HOMELAB -->
 	<section id="homelab">
-		<div class="sheet-label" data-reveal>SHEET 03 / 05 — INFRASTRUCTURE</div>
+		<div class="sheet-label" data-reveal>SHEET 03 / 03 — INFRASTRUCTURE</div>
 		<div class="homelab-grid">
 			<div>
 				<div class="section-label" data-reveal>
@@ -286,68 +319,21 @@ import Marquee from '../components/Marquee.astro';
 				</div>
 				<h2 data-reveal style="--d:40ms">The server<br />is called <em>jinx.</em></h2>
 				<p data-reveal style="--d:80ms">
-					A self-hosted stack running bare metal at home. I got into it because I wanted to understand
-					infrastructure at the lowest level I could reach — total control. Every project, every recording,
-					every word I've written runs off it.
+					A self-hosted stack running bare metal at home, built to actually own the infrastructure end to
+					end instead of deploying to someone else's cloud. Every project on this site runs off it.
 				</p>
 			</div>
 			<div class="rack" data-reveal style="--d:120ms">
 				<div class="section-label">/ Running on jinx</div>
 				<div class="rack-list">
 					<div class="rack-item"><span>Docker</span><span>Container runtime</span></div>
-					<div class="rack-item"><span>Proxmox</span><span>Hypervisor</span></div>
-					<div class="rack-item"><span>Vaultwarden</span><span>Secrets / passwords</span></div>
-					<div class="rack-item"><span>Coolify</span><span>Deploys &amp; app hosting</span></div>
-				</div>
-				<div class="section-label" style="margin-top:28px">/ Also on the rack</div>
-				<div class="rack-list">
-					<div class="rack-item"><span>Reverse proxy</span><span>Routes every project by name</span></div>
-					<div class="rack-item"><span>Object storage</span><span>Recordings &amp; written media</span></div>
-					<div class="rack-item"><span>Backups</span><span>Nightly, offsite</span></div>
+					<div class="rack-item"><span>Proxmox</span><span>Virtualization</span></div>
+					<div class="rack-item"><span>Reverse proxy</span><span>Routes every project by domain</span></div>
+					<div class="rack-item"><span>CI/CD</span><span>Automated builds &amp; deploys</span></div>
+					<div class="rack-item"><span>Backups</span><span>Nightly, offsite, tested restores</span></div>
 				</div>
 			</div>
 		</div>
-	</section>
-
-	<Marquee items={['Physical media', 'Vinyl', 'Cassette', 'FLAC']} speed={30} />
-
-	<!-- FUTILE RECORDING CO / COLLECTION TEASER -->
-	<section id="recording">
-		<div class="sheet-label" data-reveal>SHEET 04 / 05 — FUTILE RECORDING CO</div>
-		<div class="recording-header">
-			<div>
-				<div class="section-label" data-reveal>
-					<span class="status-dot status-dot-red"></span> / The library
-				</div>
-				<h2 data-split data-split-group>Physical media, played back digitally.</h2>
-			</div>
-			<p data-reveal style="--d:80ms">
-				Every vinyl and cassette in the collection, shelved and playable — all of it
-				digitized and streaming off the homelab. Music that moved me enough to own in a form that requires effort.
-			</p>
-		</div>
-
-		<a href="/collection" class="collection-cta" data-reveal data-magnetic="0.12" style="--d:120ms">
-			<div class="collection-cta-icon">
-				<svg viewBox="0 0 100 100" fill="none"
-					><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="1"></circle><circle
-						cx="50"
-						cy="50"
-						r="34"
-						stroke="currentColor"
-						stroke-width="0.5"></circle><circle
-						cx="50"
-						cy="50"
-						r="20"
-						stroke="currentColor"
-						stroke-width="0.5"></circle><circle cx="50" cy="50" r="4" fill="currentColor"></circle></svg
-				>
-			</div>
-			<div>
-				<div class="project-name">Enter the collection</div>
-				<div class="project-desc">Vinyl shelf &amp; cassette deck — press play →</div>
-			</div>
-		</a>
 	</section>
 
 	<div class="divider" data-reveal="line" aria-hidden="true">
@@ -363,26 +349,6 @@ import Marquee from '../components/Marquee.astro';
 				pathLength="1"></line></svg
 		>
 	</div>
-
-	<!-- THOUGHTS -->
-	<section id="thoughts">
-		<div class="sheet-label" data-reveal>SHEET 05 / 05 — THOUGHTS</div>
-		<div class="thoughts-top">
-			<div>
-				<div class="section-label" data-reveal>/ Thoughts</div>
-				<h2 data-split data-split-group>Writing. Occasionally.</h2>
-			</div>
-			<a href="/thoughts" class="hero-cta" data-reveal data-magnetic style="--d:80ms">
-				All writing
-				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-					<path d="M3 8h10M9 4l4 4-4 4"></path>
-				</svg>
-			</a>
-		</div>
-
-		<div id="thoughts-status" class="list-status" data-reveal>Loading…</div>
-		<div class="thoughts-list" id="thoughts-list"></div>
-	</section>
 
 	<Marquee items={['Everything is futile', 'Do it anyway']} speed={24} />
 
@@ -446,45 +412,6 @@ import Marquee from '../components/Marquee.astro';
 		});
 	}
 	setupProjectsRail();
-
-	/* latest thoughts, pulled from the backend */
-	import { apiFetch, esc } from '../lib/api.js';
-
-	function fmtDate(iso: string) {
-		const d = new Date(iso.replace(' ', 'T') + 'Z');
-		return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-	}
-
-	const thoughtsStatus = document.getElementById('thoughts-status');
-	const thoughtsList = document.getElementById('thoughts-list');
-
-	apiFetch('/api/posts')
-		.then((res) => (res.ok ? res.json() : []))
-		.then((posts) => {
-			if (!thoughtsStatus || !thoughtsList) return;
-			if (!posts.length) {
-				thoughtsStatus.textContent = 'Nothing published yet — the first entry is coming.';
-				return;
-			}
-			thoughtsStatus.style.display = 'none';
-			for (const post of posts.slice(0, 3)) {
-				const a = document.createElement('a');
-				a.href = `/thoughts/post?slug=${encodeURIComponent(post.slug)}`;
-				a.className = 'thought-item';
-				a.innerHTML = `
-					<div class="thought-date">${fmtDate(post.created_at)}</div>
-					<div>
-						<div class="thought-title">${esc(post.title)}</div>
-						<div class="thought-preview">${esc(post.excerpt || '')}</div>
-					</div>
-					<div class="thought-stamp" aria-hidden="true">READ</div>
-				`;
-				thoughtsList.appendChild(a);
-			}
-		})
-		.catch(() => {
-			if (thoughtsStatus) thoughtsStatus.textContent = 'Could not reach the backend.';
-		});
 
 	window.addEventListener('load', () => ScrollTrigger.refresh());
 </script>
@@ -879,134 +806,6 @@ import Marquee from '../components/Marquee.astro';
 		text-align: right;
 	}
 
-	/* recording teaser */
-	.recording-header {
-		display: flex;
-		align-items: flex-end;
-		justify-content: space-between;
-		margin-bottom: 48px;
-		flex-wrap: wrap;
-		gap: 16px;
-	}
-	.recording-header p {
-		font-size: 13px;
-		color: var(--muted);
-		max-width: 360px;
-		line-height: 1.8;
-	}
-
-	.collection-cta {
-		display: flex;
-		align-items: center;
-		gap: 28px;
-		border: 1px solid var(--line-strong);
-		background: var(--surface);
-		padding: 32px;
-		text-decoration: none;
-		color: inherit;
-		transition:
-			border-color 0.25s,
-			background 0.25s;
-	}
-	.collection-cta:hover {
-		border-color: var(--cyan);
-		background: var(--surface-lt);
-	}
-	.collection-cta-icon {
-		width: 64px;
-		height: 64px;
-		color: var(--cyan);
-		flex-shrink: 0;
-		animation: spin 12s linear infinite;
-	}
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	/* thoughts */
-	.thoughts-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-	.thoughts-top h2 {
-		margin-bottom: 0;
-	}
-	.list-status {
-		font-size: 13px;
-		color: var(--muted);
-		padding: 24px 0;
-	}
-	.thoughts-list {
-		display: flex;
-		flex-direction: column;
-		margin-top: 40px;
-	}
-
-	.thought-item {
-		display: grid;
-		grid-template-columns: 100px 1fr auto;
-		gap: 32px;
-		padding: 28px 0;
-		border-bottom: 1px solid var(--line);
-		align-items: center;
-		text-decoration: none;
-		color: inherit;
-		transition: opacity 0.2s;
-		position: relative;
-		overflow: hidden;
-	}
-
-	.thought-item:hover {
-		opacity: 0.85;
-	}
-
-	.thought-date {
-		font-size: 11px;
-		letter-spacing: 0.06em;
-		color: var(--muted);
-		padding-top: 4px;
-	}
-
-	.thought-title {
-		font-family: var(--display);
-		font-weight: 700;
-		text-transform: uppercase;
-		font-size: 19px;
-		color: var(--white);
-		margin-bottom: 8px;
-	}
-
-	.thought-preview {
-		font-size: 13px;
-		color: var(--muted);
-		line-height: 1.8;
-	}
-
-	.thought-stamp {
-		font-family: var(--display);
-		font-weight: 800;
-		font-size: 12px;
-		letter-spacing: 0.1em;
-		color: var(--red);
-		border: 1.5px solid var(--red);
-		padding: 4px 10px;
-		transform: rotate(-8deg) scale(0.8);
-		opacity: 0;
-		transition:
-			opacity 0.25s,
-			transform 0.25s;
-		white-space: nowrap;
-	}
-	.thought-item:hover .thought-stamp {
-		opacity: 0.85;
-		transform: rotate(-8deg) scale(1);
-	}
-
 	/* footer */
 	footer {
 		border-top: 1px solid var(--line);
@@ -1077,20 +876,6 @@ import Marquee from '../components/Marquee.astro';
 		.homelab-grid {
 			grid-template-columns: 1fr;
 			gap: 40px;
-		}
-		.recording-header {
-			flex-direction: column;
-		}
-		.collection-cta {
-			flex-direction: column;
-			text-align: center;
-		}
-		.thought-item {
-			grid-template-columns: 1fr;
-			gap: 8px;
-		}
-		.thought-stamp {
-			display: none;
 		}
 		footer {
 			padding: 40px 24px;
