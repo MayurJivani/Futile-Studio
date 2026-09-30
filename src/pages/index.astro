@@ -395,7 +395,11 @@ import Marquee from '../components/Marquee.astro';
 
 		const mm = gsap.matchMedia();
 		mm.add('(min-width: 900px)', () => {
-			const amount = () => track.scrollWidth - pin.clientWidth;
+			// pin.clientWidth is unreliable here: once ScrollTrigger's pin-spacer
+			// takes over the element it can feed back into later refreshes and
+			// balloon past the viewport, which pushed the last card off-screen.
+			// window.innerWidth is stable regardless of the pin's own state.
+			const amount = () => track.scrollWidth - window.innerWidth;
 			const tween = gsap.to(track, {
 				x: () => -amount(),
 				ease: 'none',
@@ -662,6 +666,7 @@ import Marquee from '../components/Marquee.astro';
 	}
 
 	.projects-pin {
+		width: 100%;
 		margin-top: 56px;
 		overflow: hidden;
 	}

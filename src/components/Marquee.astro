@@ -4,12 +4,19 @@ interface Props {
 	speed?: number; // seconds per loop
 }
 const { items, speed = 26 } = Astro.props;
-const doubled = [...items, ...items];
+
+// Short item lists (e.g. 2 phrases) don't fill wide viewports even doubled,
+// so the translateX(-50%) reset point ends up visible mid-screen instead of
+// off past the edge. Repeat until there's enough width to hide the seam,
+// and scale the loop distance to match.
+const repeats = Math.max(2, Math.ceil(20 / items.length));
+const repeated = Array.from({ length: repeats }, () => items).flat();
+const loopEnd = 100 / repeats;
 ---
 
-<div class="marquee" style={`--speed:${speed}s`}>
+<div class="marquee" style={`--speed:${speed}s;--loop-end:${loopEnd}%`}>
 	<div class="marquee-track">
-		{doubled.map((item, i) => <span class={i % 2 === 0 ? 'is-fill' : 'is-outline'}>{item}</span>)}
+		{repeated.map((item, i) => <span class={i % 2 === 0 ? 'is-fill' : 'is-outline'}>{item}</span>)}
 	</div>
 </div>
 
@@ -68,7 +75,7 @@ const doubled = [...items, ...items];
 			transform: translateX(0);
 		}
 		to {
-			transform: translateX(-50%);
+			transform: translateX(calc(-1 * var(--loop-end, 50%)));
 		}
 	}
 
