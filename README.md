@@ -6,11 +6,8 @@
 ![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-node%3Asqlite-003B57?style=flat-square&logo=sqlite&logoColor=white)
 [![Last commit](https://img.shields.io/github/last-commit/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/commits/main)
-[![Stars](https://img.shields.io/github/stars/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/stargazers)
-[![Issues](https://img.shields.io/github/issues/MayurJivani/Futile-Studio?style=flat-square)](https://github.com/MayurJivani/Futile-Studio/issues)
-![Code size](https://img.shields.io/github/languages/code-size/MayurJivani/Futile-Studio?style=flat-square)
 
-Portfolio (`futile.studio`) plus a small backend for the blog and hosted media.
+Portfolio (`futile.studio`) plus a small backend for hosted media and the collection player.
 
 ## Design system
 
@@ -44,23 +41,18 @@ Futile-Studio/
 │   │   ├── VinylPlayer.astro    # Turntable modal (see Collection below)
 │   │   └── CassettePlayer.astro # Tape deck modal
 │   ├── data/collection.js       # Vinyl/cassette entries, edit this to add media
-│   ├── data/recordings.js       # Tape runs + unlock codes sold at /recordings
 │   ├── lib/api.js               # Fetch helper for talking to server/
 │   └── pages/
 │       ├── index.astro          # Portfolio (futile.studio)
-│       ├── collection.astro     # Vinyl/cassette shelf + players (/collection)
-│       ├── recordings.astro     # Futile Recording Co. storefront (/recordings)
-│       ├── login.astro          # Studio sign-in
-│       ├── write.astro          # Protected post editor (/write)
-│       └── thoughts/            # Public blog listing + post detail
+│       └── collection.astro     # Vinyl/cassette shelf + players (/collection, unlisted)
 ├── server/                      # Backend, see below
 └── public/
 ```
 
 ## Backend (`server/`)
 
-A small Express + SQLite (`node:sqlite`, built into Node 22+, no native deps) API for:
-sign-in, blog posts, and media uploads (images for posts, or audio for the collection).
+A small Express + SQLite (`node:sqlite`, built into Node 22+, no native deps) API for
+sign-in and media uploads (audio for the collection).
 
 ```bash
 cd server
@@ -74,18 +66,14 @@ Run the frontend (`npm run dev` in the repo root, port 4321) alongside it. `src/
 points at `http://localhost:4000` automatically when the frontend is on localhost.
 
 **Endpoints:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`,
-`GET/POST/PUT/DELETE /api/posts`, `POST /api/media` (protected, multipart `file` field,
-returns `{ url }`), static files served at `/media/*`. Plus the read-only hi-res
-library (no auth): `GET /api/music`, `GET /api/music/cover?album=...`,
+`POST /api/media` (protected, multipart `file` field, returns `{ url }`), static
+files served at `/media/*`. Plus the read-only hi-res library (no auth):
+`GET /api/music`, `GET /api/music/cover?album=...`,
 `GET /api/music/stream?path=...&to=flac|aac|mp3|wav`, and raw files at `/music/*`.
 
-**Writing a post:** sign in at `/login`, then `/write`. Drag an image into the body
-field (or use "Insert image") to upload it and drop a markdown reference at the cursor.
-Posts are markdown; the public pages render it with `marked`.
-
-**Hosting an album:** the same `/api/media` upload endpoint accepts audio files
-(FLAC/MP3/WAV/OGG/AAC, up to 200MB). Upload one (e.g. via the write page's image
-button, or `curl`) and point a `collection.js` entry's `audioSrc` at the returned URL.
+**Hosting an album:** the `/api/media` upload endpoint accepts audio files
+(FLAC/MP3/WAV/OGG/AAC, up to 200MB). Upload one (e.g. via `curl`) and point a
+`collection.js` entry's `audioSrc` at the returned URL.
 
 **Hi-res library (auto-allocated):** the `/collection` page also serves an
 auto-discovered "Hi-Res library" shelf. Point `MUSIC_DIR` in `server/.env` at a
@@ -134,9 +122,6 @@ localhost, so no frontend changes are needed.
 - **Rate limits:** 10 login attempts / 15 min, 30 uploads / 15 min, 120 requests / min
   overall. Login uses a constant-time compare against a dummy hash so usernames can't
   be enumerated by timing.
-- **Stored XSS:** post title/excerpt/body are stripped of HTML server-side
-  (`sanitize-html`); the post page additionally runs `marked` output through
-  `DOMPurify`, and list templates escape all interpolated text.
 - **Uploads:** file type is verified from magic bytes (`file-type`), never the
   client's declared mimetype; SVG is deliberately rejected (script-in-XML vector);
   files are stored under generated names with extensions derived from the detected type.
@@ -160,29 +145,10 @@ Known accepted risk: `npm audit` reports a low-severity esbuild advisory affecti
 the **dev server only** (fix requires the Astro 7 major); it does not ship to
 production builds.
 
-## Recordings page (Futile Recording Co.)
-
-`/recordings` sells two things, both driven by `src/data/recordings.js`:
-
-1. **The limited run**: a numbered tape edition (`tapes[]`: tracklist with
-   `kind: 'track' | 'voice' | 'transmission' | 'ambient' | 'clue'` rows, `run`,
-   `claimed`, price, what's in the box). Bump `claimed` by hand as copies go out;
-   the edition meter and the "next free number" in the reserve email follow it.
-2. **A custom tape**: a spec form that renders a live work order and prices it
-   (`BASE` per runtime + a flat add per between-tracks extra, in the page script).
-
-Both buttons open a prefilled `mailto:mayur@futile.studio`. There is no cart,
-no payment integration, and nothing is stored server-side. Swap in a real
-checkout only if the volume ever justifies it.
-
-The `/recordings#transmission` decoder is where a tape's QR sticker lands
-(`/recordings?code=XXX` auto-submits). Codes live in `unlocks[]` and are checked
-client-side, so treat them as delight, not DRM. The note in the data file has
-the upgrade path.
-
 ## Collection page (vinyl + cassette players)
 
-`/collection` reads from `src/data/collection.js`. Each entry looks like:
+`/collection` is unlisted — no nav link, `noindex`, reachable only by direct URL.
+It reads from `src/data/collection.js`. Each entry looks like:
 
 ```js
 {

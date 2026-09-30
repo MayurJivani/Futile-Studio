@@ -2,11 +2,13 @@
 interface Props {
 	title?: string;
 	description?: string;
+	noindex?: boolean;
 }
 
 const {
 	title = 'Futile Studio — Mayur Jivani',
 	description = "Everything is futile at scale. We do it anyway, because there's beauty in it.",
+	noindex = false,
 } = Astro.props;
 ---
 
@@ -17,6 +19,7 @@ const {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
