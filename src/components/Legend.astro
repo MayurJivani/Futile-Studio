@@ -1,0 +1,259 @@
+---
+/**
+ * How to read the page. The reference site earns a lot of its charm by
+ * explaining its own notation instead of leaving you to infer it, so this does
+ * the same for the scrapbook's marks. A <details> rather than a modal: it needs
+ * no JS, it is keyboard-operable for free, and it prints open.
+ */
+---
+
+<details class="legend">
+	<summary class="legend-summary">
+		<span class="legend-summary-mark" aria-hidden="true">?</span>
+		How to read this page
+	</summary>
+
+	<div class="legend-body">
+		<div class="legend-col">
+			<h3>Mounts</h3>
+			<p class="legend-note">
+				How a thing is stuck down means nothing. Pin, tape, clip or corners just depended on what was nearest,
+				and a mix looks like a hand did it.
+			</p>
+			<ul>
+				<li><span class="legend-chip legend-chip-pin" aria-hidden="true"></span> Drawing pin</li>
+				<li><span class="legend-chip legend-chip-tape" aria-hidden="true"></span> Tape</li>
+				<li><span class="legend-chip legend-chip-clip" aria-hidden="true"></span> Paperclip</li>
+				<li><span class="legend-chip legend-chip-corner" aria-hidden="true"></span> Photo corners</li>
+				<li>
+					<span class="legend-swatch legend-swatch-catear" aria-hidden="true"></span> A cat-eared corner, which
+					is just what paper does
+				</li>
+			</ul>
+		</div>
+
+		<div class="legend-col">
+			<h3>Marks that do mean something</h3>
+			<ul class="legend-meaning">
+				<li>
+					<span class="legend-dot legend-dot-live" aria-hidden="true"></span>
+					<span><strong>Green dot</strong> — awake and answering right now, on my own hardware.</span>
+				</li>
+				<li>
+					<span class="legend-swatch legend-swatch-marker" aria-hidden="true"></span>
+					<span><strong>Highlighter</strong> — the one I would show you first.</span>
+				</li>
+				<li>
+					<span class="legend-swatch legend-swatch-blob" aria-hidden="true"></span>
+					<span><strong>Painted cell</strong> in the log — a month something new turned up in.</span>
+				</li>
+				<li>
+					<span class="legend-swatch legend-swatch-dash" aria-hidden="true"></span>
+					<span><strong>Dashed cell</strong> — a month that has not come round yet.</span>
+				</li>
+				<li>
+					<span class="legend-chit" aria-hidden="true"></span>
+					<span>
+						<strong>A chit in the loose tray</strong> — that year, but I never wrote the month down.
+					</span>
+				</li>
+			</ul>
+		</div>
+	</div>
+</details>
+
+<style>
+	.legend {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 0 2.2rem;
+	}
+
+	.legend-summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+		cursor: pointer;
+		list-style: none;
+		background: var(--card-2);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 8px;
+		padding: 0.4rem 0.85rem;
+		box-shadow: 3px 3px 0 var(--shadow);
+		transform: rotate(-0.8deg);
+		transition:
+			transform 0.14s ease,
+			box-shadow 0.14s ease;
+	}
+	.legend-summary::-webkit-details-marker {
+		display: none;
+	}
+	.legend-summary:hover {
+		transform: rotate(0deg) translate(-1px, -1px);
+		box-shadow: 4px 4px 0 var(--shadow);
+	}
+	.legend-summary-mark {
+		display: grid;
+		place-items: center;
+		width: 1.15rem;
+		height: 1.15rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.7rem;
+		color: #fff;
+		background: var(--ink-soft);
+		border-radius: 50%;
+	}
+	.legend[open] .legend-summary {
+		background: var(--marker);
+		color: #1b2132;
+		border-color: var(--ink);
+	}
+	.legend[open] .legend-summary-mark {
+		background: var(--ink);
+	}
+
+	.legend-body {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		gap: 1.8rem 2.6rem;
+		margin-top: 1rem;
+		padding: 1.4rem 1.6rem;
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 8px;
+		box-shadow: 4px 4px 0 var(--shadow);
+	}
+
+	.legend-col h3 {
+		font-size: 0.95rem;
+		margin-bottom: 0.5rem;
+	}
+	.legend-note {
+		font-size: 0.78rem;
+		font-style: italic;
+		color: var(--ink-faint);
+		line-height: 1.55;
+		margin-bottom: 0.8rem;
+	}
+
+	.legend-col ul {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.55rem;
+		font-size: 0.82rem;
+		color: var(--ink-soft);
+	}
+	.legend-col li {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+	.legend-meaning li {
+		align-items: flex-start;
+	}
+	.legend-col strong {
+		color: var(--ink);
+		font-weight: 700;
+	}
+
+	/* Each sample is the real thing, shrunk, so the legend cannot drift
+	   out of step with the page it explains. */
+	.legend-chip {
+		flex: 0 0 auto;
+		width: 1.4rem;
+		height: 1rem;
+	}
+	.legend-chip-pin {
+		width: 0.85rem;
+		height: 0.85rem;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #8f2c1b 100%);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+	}
+	.legend-chip-tape {
+		background: rgba(255, 255, 255, 0.5);
+		border: 1px solid var(--ink-ghost);
+		transform: rotate(-4deg);
+	}
+	.legend-chip-clip {
+		width: 0.6rem;
+		height: 1.1rem;
+		border: 2px solid var(--ink-faint);
+		border-radius: 5px;
+	}
+	.legend-chip-corner {
+		background: var(--ink-soft);
+		opacity: 0.55;
+		clip-path: polygon(0 0, 100% 0, 0 100%);
+	}
+
+	.legend-dot {
+		flex: 0 0 auto;
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 50%;
+		margin-top: 0.4rem;
+	}
+	.legend-dot-live {
+		background: var(--live);
+	}
+
+	.legend-swatch {
+		flex: 0 0 auto;
+		width: 1.4rem;
+		height: 1.1rem;
+		margin-top: 0.15rem;
+		border-radius: 3px;
+	}
+	.legend-swatch-marker {
+		background: linear-gradient(to top, var(--marker) 0 55%, transparent 55%);
+	}
+	.legend-swatch-blob {
+		background: var(--stamp);
+		opacity: 0.82;
+		border-radius: 62% 38% 55% 45% / 48% 58% 42% 52%;
+		transform: rotate(-6deg);
+	}
+	.legend-swatch-dash {
+		border: 1.5px dashed var(--ink-ghost);
+		background: transparent;
+	}
+	.legend-chit {
+		flex: 0 0 auto;
+		width: 1.4rem;
+		height: 1.1rem;
+		margin-top: 0.15rem;
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 4px;
+		box-shadow: 2px 2px 0 var(--shadow);
+		transform: rotate(-4deg);
+	}
+
+	.legend-swatch-catear {
+		background: var(--card-2);
+		border: 1px solid var(--ink-ghost);
+		background-image: linear-gradient(
+			135deg,
+			transparent 58%,
+			rgba(0, 0, 0, 0.16) 58%,
+			rgba(0, 0, 0, 0.08) 64%,
+			var(--paper) 64%
+		);
+	}
+
+	@media (max-width: 640px) {
+		.legend {
+			padding: 0 1.4rem;
+		}
+		.legend-body {
+			padding: 1.1rem 1.2rem;
+		}
+	}
+</style>

@@ -1,0 +1,253 @@
+---
+/**
+ * Other people's cursors, drifting over the same page.
+ *
+ * Off by default and switched on in the desk drawer, because showing a stranger
+ * where your pointer is should be a thing you chose. Nothing identifying goes
+ * over the wire: the server hands out a throwaway id and a colour, and the only
+ * payload is a position.
+ *
+ * Positions travel as a fraction of document width plus an absolute page Y, so
+ * a phone and a widescreen agree on which bit of paper is being pointed at.
+ * Pointer devices only; a finger has no hover position worth broadcasting.
+ */
+---
+
+<div class="peers" id="peers" aria-hidden="true"></div>
+
+<script>
+	import { API_BASE } from '../lib/api.js';
+
+	const layer = document.getElementById('peers');
+
+	if (layer) {
+		/* Page coordinates, so the layer must not sit in a positioned ancestor. */
+		document.body.appendChild(layer);
+
+		const KEY = 'futile-desk';
+		const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+		type Peer = { el: HTMLElement; x: number; y: number; tx: number; ty: number };
+		const peers = new Map<string, Peer>();
+
+		let socket: WebSocket | null = null;
+		let raf = 0;
+
+		const wsUrl = () => {
+			const base = API_BASE || location.origin;
+			return base.replace(/^http/, 'ws') + '/ws/presence';
+		};
+
+		function makeCursor(id: string, colour: number) {
+			const el = document.createElement('div');
+			el.className = 'peer';
+			el.dataset.colour = String(colour % 8);
+			el.innerHTML =
+				'<svg viewBox="0 0 24 24" aria-hidden="true">' +
+				'<path d="M4 2l7 18 2.5-7.5L21 10z" fill="currentColor" stroke="rgba(27,33,50,.75)" stroke-width="1.4" stroke-linejoin="round"/>' +
+				'</svg><span class="peer-tag">someone</span>';
+			layer!.appendChild(el);
+			peers.set(id, { el, x: 0, y: 0, tx: 0, ty: 0 });
+		}
+
+		function place(id: string, x: number, y: number) {
+			const p = peers.get(id);
+			if (!p) return;
+			/* x arrives as a fraction of document width. */
+			p.tx = x * document.documentElement.scrollWidth;
+			p.ty = y;
+		}
+
+		/** Ease toward the last reported spot so 28 msg/s still looks smooth. */
+		function tick() {
+			for (const p of peers.values()) {
+				p.x += (p.tx - p.x) * 0.22;
+				p.y += (p.ty - p.y) * 0.22;
+				p.el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+			}
+			raf = requestAnimationFrame(tick);
+		}
+
+		function drop(id: string) {
+			peers.get(id)?.el.remove();
+			peers.delete(id);
+		}
+
+		function clearAll() {
+			for (const id of [...peers.keys()]) drop(id);
+		}
+
+		let lastSent = 0;
+		function onMove(e: PointerEvent) {
+			if (!socket || socket.readyState !== WebSocket.OPEN) return;
+			const now = performance.now();
+			if (now - lastSent < 45) return;
+			lastSent = now;
+			socket.send(
+				JSON.stringify({
+					t: 'm',
+					x: (e.clientX + scrollX) / document.documentElement.scrollWidth,
+					y: e.clientY + scrollY,
+				}),
+			);
+		}
+
+		function connect() {
+			if (socket || !fine) return;
+			let ws: WebSocket;
+			try {
+				ws = new WebSocket(wsUrl());
+			} catch {
+				return; // no relay reachable; the page is fine without it
+			}
+			socket = ws;
+
+			ws.addEventListener('open', () => {
+				ws.send(JSON.stringify({ t: 'hello', room: location.pathname }));
+				window.addEventListener('pointermove', onMove, { passive: true });
+				raf = requestAnimationFrame(tick);
+			});
+
+			ws.addEventListener('message', (ev) => {
+				let m;
+				try {
+					m = JSON.parse(ev.data);
+				} catch {
+					return;
+				}
+				if (m.t === 'welcome') {
+					for (const p of m.peers) {
+						makeCursor(p.id, p.colour);
+						place(p.id, p.x, p.y);
+					}
+				} else if (m.t === 'hi') {
+					makeCursor(m.id, m.colour);
+				} else if (m.t === 'm') {
+					if (!peers.has(m.id)) makeCursor(m.id, 0);
+					place(m.id, m.x, m.y);
+				} else if (m.t === 'bye') {
+					drop(m.id);
+				}
+				layer!.classList.toggle('has-peers', peers.size > 0);
+			});
+
+			const shut = () => {
+				window.removeEventListener('pointermove', onMove);
+				cancelAnimationFrame(raf);
+				clearAll();
+				layer!.classList.remove('has-peers');
+				socket = null;
+			};
+			ws.addEventListener('close', shut);
+			ws.addEventListener('error', shut);
+		}
+
+		function disconnect() {
+			socket?.close();
+			socket = null;
+			window.removeEventListener('pointermove', onMove);
+			cancelAnimationFrame(raf);
+			clearAll();
+			layer!.classList.remove('has-peers');
+		}
+
+		function wanted() {
+			try {
+				return JSON.parse(localStorage.getItem(KEY) || '{}').cursors === true;
+			} catch {
+				return false;
+			}
+		}
+
+		function sync() {
+			if (wanted()) connect();
+			else disconnect();
+		}
+
+		/* The desk drawer fires this when the checkbox moves. */
+		window.addEventListener('futile-desk-change', sync);
+		sync();
+
+		/* Don't hold a socket open for a tab nobody is looking at. */
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') disconnect();
+			else sync();
+		});
+	}
+</script>
+
+<style is:global>
+	.peers {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 0;
+		z-index: 400;
+		pointer-events: none;
+	}
+
+	.peer {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1.4rem;
+		height: 1.4rem;
+		color: var(--peer, #e0574a);
+		will-change: transform;
+	}
+	.peer svg {
+		width: 100%;
+		height: 100%;
+		display: block;
+		filter: drop-shadow(1px 1px 0 var(--shadow));
+	}
+
+	/* A torn paper tag trailing the arrow, same as every other label here. */
+	.peer-tag {
+		position: absolute;
+		top: 1.15rem;
+		left: 0.9rem;
+		padding: 0.08rem 0.35rem;
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.6rem;
+		white-space: nowrap;
+		color: #1b2132;
+		background: var(--peer, #e0574a);
+		border: 1.2px solid rgba(27, 33, 50, 0.6);
+		border-radius: 4px;
+		opacity: 0.92;
+	}
+
+	.peer[data-colour='0'] {
+		--peer: #e0574a;
+	}
+	.peer[data-colour='1'] {
+		--peer: #f5d547;
+	}
+	.peer[data-colour='2'] {
+		--peer: #3fa34d;
+	}
+	.peer[data-colour='3'] {
+		--peer: #a8d2ef;
+	}
+	.peer[data-colour='4'] {
+		--peer: #f3b0c8;
+	}
+	.peer[data-colour='5'] {
+		--peer: #f2bb84;
+	}
+	.peer[data-colour='6'] {
+		--peer: #b9a3e3;
+	}
+	.peer[data-colour='7'] {
+		--peer: #8fd3c7;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.peer {
+			transition: none;
+		}
+	}
+</style>

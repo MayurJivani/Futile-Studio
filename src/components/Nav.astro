@@ -1,15 +1,30 @@
-<nav>
-	<a href="/" class="nav-logo">FUTILE<span>.</span>STUDIO</a>
-	<button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-		<span></span><span></span>
+---
+import LampCord from './LampCord.astro';
+---
+
+<nav class="nav" aria-label="Sections">
+	<a href="/" class="nav-logo">
+		<span class="nav-logo-text">futile<span class="nav-dot">.</span>studio</span>
+	</a>
+
+	<button class="nav-toggle btn" id="nav-toggle" aria-label="Open sections" aria-expanded="false">
+		<span class="nav-toggle-bars" aria-hidden="true"><span></span><span></span></span>
+		Sections
 	</button>
-	<ul id="nav-list">
-		<li><a href="/#about">About</a></li>
-		<li><a href="/#projects">Projects</a></li>
-		<li><a href="/#homelab">Homelab</a></li>
+
+	<ul id="nav-list" class="nav-list">
+		<li><a href="/#about" class="nav-tab">About</a></li>
+		<li><a href="/#work" class="nav-tab">The board</a></li>
+		<li><a href="/#log" class="nav-tab">Log book</a></li>
+		<li><a href="/jinx" class="nav-tab">Jinx</a></li>
+		<li class="nav-desk">
+			<button class="nav-tab" id="desk-open" aria-expanded="false" aria-controls="desk-panel">Desk</button>
+		</li>
 	</ul>
 </nav>
 <div class="nav-backdrop" id="nav-backdrop"></div>
+
+<LampCord />
 
 <script>
 	const toggle = document.getElementById('nav-toggle');
@@ -28,129 +43,180 @@
 	document.addEventListener('keydown', (e) => {
 		if (e.key === 'Escape') setOpen(false);
 	});
+	/* Close on navigation, but not when the drawer's own desk controls are hit. */
 	list?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
 </script>
 
 <style>
-	nav {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 100;
+	/* The nav is a row of paper tabs taped along the top of the page. It does
+	   not float over the content: a scrapbook has its tabs on the page. */
+	.nav {
+		position: relative;
+		z-index: 80;
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		padding: 30px 40px 20px;
-		background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+		align-items: flex-end;
+		gap: 1rem;
+		max-width: 1140px;
+		margin: 0 auto;
+		/* Extra right padding is the lamp cord's lane, so the two never collide. */
+		padding: 1.4rem 3.6rem 0 2.2rem;
 	}
 
 	.nav-logo {
-		font-family: var(--display);
-		font-weight: 800;
-		font-size: 20px;
-		letter-spacing: 0.01em;
-		text-transform: uppercase;
-		color: var(--white);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
 		text-decoration: none;
+		transform: rotate(-1.5deg);
+	}
+	.nav-logo-text {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.1rem;
+		color: var(--ink);
+	}
+	.nav-dot {
+		color: var(--stamp);
 	}
 
-	.nav-logo span {
-		color: var(--cyan);
-	}
-
-	#nav-list {
+	.nav-list {
 		list-style: none;
 		display: flex;
-		gap: 30px;
+		align-items: flex-end;
+		gap: 0.3rem;
+	}
+
+	/* Tabs sit on the page edge, so only the top corners round. */
+	.nav-tab {
+		display: inline-flex;
 		align-items: center;
-	}
-
-	nav a {
-		color: var(--muted);
+		gap: 0.35rem;
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.8rem;
+		color: var(--ink-soft);
 		text-decoration: none;
-		font-size: 11px;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		transition: color 0.2s;
+		background: var(--card-2);
+		border: 1.5px solid var(--ink-soft);
+		border-bottom: none;
+		border-radius: 7px 7px 0 0;
+		padding: 0.4rem 0.85rem 0.5rem;
+		cursor: pointer;
+		translate: 0 1.5px;
+		transition:
+			translate 0.14s ease,
+			background 0.2s ease,
+			color 0.2s ease;
+	}
+	.nav-tab:hover,
+	.nav-tab:focus-visible {
+		translate: 0 -3px;
+		color: var(--ink);
+		background: var(--card);
 	}
 
-	nav a:hover,
-	nav a.is-active {
-		color: var(--cyan);
+	.nav-desk {
+		display: flex;
+		align-items: flex-end;
+		gap: 0.3rem;
+		margin-left: 0.7rem;
+		padding-left: 0.7rem;
+		border-left: 2px dashed var(--ink-ghost);
 	}
 
 	.nav-toggle {
 		display: none;
-		flex-direction: column;
-		gap: 5px;
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 8px;
 	}
-	.nav-toggle span {
-		width: 22px;
-		height: 1px;
-		background: var(--white);
-		display: block;
-		transition:
-			transform 0.25s ease,
-			opacity 0.25s ease;
+	.nav-toggle-bars {
+		display: inline-flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+	.nav-toggle-bars span {
+		width: 15px;
+		height: 2px;
+		background: var(--ink);
+		border-radius: 2px;
+		transition: transform 0.25s ease;
+	}
+	.nav-toggle.is-open .nav-toggle-bars span:first-child {
+		transform: translateY(2.5px) rotate(45deg);
+	}
+	.nav-toggle.is-open .nav-toggle-bars span:last-child {
+		transform: translateY(-2.5px) rotate(-45deg);
 	}
 
 	.nav-backdrop {
 		display: none;
 	}
 
-	@media (max-width: 860px) {
-		nav {
-			padding: 22px 24px;
+	@media (max-width: 880px) {
+		.nav {
+			padding: 1.1rem 3.1rem 0 1.4rem;
+			align-items: center;
 		}
 		.nav-toggle {
-			display: flex;
-		}
-		.nav-toggle.is-open span:first-child {
-			transform: translateY(3px) rotate(45deg);
-		}
-		.nav-toggle.is-open span:last-child {
-			transform: translateY(-3px) rotate(-45deg);
+			display: inline-flex;
 		}
 		.nav-backdrop {
 			display: block;
 			position: fixed;
 			inset: 0;
 			z-index: 90;
-			background: rgba(5, 10, 20, 0.6);
+			background: rgba(20, 16, 10, 0.5);
 			opacity: 0;
 			pointer-events: none;
-			transition: opacity 0.35s ease;
+			transition: opacity 0.3s ease;
 		}
 		.nav-backdrop.is-open {
 			opacity: 1;
 			pointer-events: auto;
 		}
-		#nav-list {
+
+		/* On a phone the tabs become a stack of notes clipped to the edge. */
+		.nav-list {
 			position: fixed;
 			top: 0;
 			right: 0;
+			z-index: 95;
 			height: 100vh;
-			width: min(280px, 80vw);
-			background: #0b1526;
-			border-left: 1px solid var(--line);
+			width: min(270px, 82vw);
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: stretch;
 			justify-content: center;
-			gap: 28px;
-			padding: 40px;
+			gap: 0.55rem;
+			padding: 2rem 1.5rem;
+			background: var(--card);
+			border-left: 2px solid var(--ink-soft);
+			box-shadow: -6px 0 0 var(--shadow);
 			transform: translateX(100%);
-			transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+			transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 		}
-		#nav-list.is-open {
+		.nav-list.is-open {
 			transform: translateX(0);
 		}
-		nav a {
-			font-size: 13px;
+		.nav-tab {
+			border: 1.5px solid var(--ink-soft);
+			border-radius: 7px;
+			box-shadow: 3px 3px 0 var(--shadow);
+			translate: 0;
+			font-size: 0.92rem;
+			padding: 0.55rem 0.9rem;
+		}
+		.nav-tab:hover,
+		.nav-tab:focus-visible {
+			translate: -1px -1px;
+		}
+		.nav-desk {
+			margin: 0.4rem 0 0;
+			padding: 0.8rem 0 0;
+			border-left: none;
+			border-top: 2px dashed var(--ink-ghost);
+		}
+		.nav-desk .nav-tab {
+			flex: 1;
+			justify-content: center;
 		}
 	}
 </style>

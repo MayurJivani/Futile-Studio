@@ -21,13 +21,10 @@ const loopEnd = 100 / repeats;
 </div>
 
 <style>
+	/* ---------- structure, shared by both themes ---------- */
 	.marquee {
 		width: 100%;
 		overflow: hidden;
-		border-top: 1px solid var(--line);
-		border-bottom: 1px solid var(--line);
-		padding: 18px 0;
-		background: var(--bg-2);
 	}
 
 	.marquee-track {
@@ -40,34 +37,84 @@ const loopEnd = 100 / repeats;
 		display: flex;
 		align-items: center;
 		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.marquee:hover .marquee-track {
+		animation-play-state: paused;
+	}
+
+	/* ---------- Guideline B: a strip of ticker tape ---------- */
+	:global([data-theme='scrapbook']) .marquee {
+		padding: 0.7rem 0;
+		background: var(--card-2);
+		border-top: 1.5px solid var(--ink-soft);
+		border-bottom: 1.5px solid var(--ink-soft);
+		/* Torn top and bottom edge, cut with a repeating gradient. */
+		box-shadow:
+			inset 0 3px 0 var(--paper),
+			inset 0 -3px 0 var(--paper);
+	}
+
+	:global([data-theme='scrapbook']) .marquee-track span {
+		padding: 0 0.9rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: clamp(1rem, 2.4vw, 1.5rem);
+		color: var(--ink);
+	}
+
+	/* Alternating words sit slightly off the line, like hand-set type. */
+	:global([data-theme='scrapbook']) .marquee-track span.is-outline {
+		color: var(--ink-faint);
+		transform: rotate(1.2deg);
+	}
+	:global([data-theme='scrapbook']) .marquee-track span.is-fill {
+		transform: rotate(-1deg);
+	}
+
+	/* Snipped-tape separator between items. */
+	:global([data-theme='scrapbook']) .marquee-track span::before {
+		content: '✂';
+		margin-right: 0.9rem;
+		font-family: var(--hand);
+		font-size: 0.7rem;
+		color: var(--stamp);
+		transform: rotate(0deg);
+	}
+
+	/* ---------- Guideline A: the blueprint ticker ---------- */
+	:global([data-theme='booth']) .marquee {
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		padding: 18px 0;
+		background: var(--bg-2);
+	}
+
+	:global([data-theme='booth']) .marquee-track span {
 		padding: 0 22px;
 		font-family: var(--display);
 		font-weight: 800;
 		text-transform: uppercase;
 		font-size: clamp(20px, 3vw, 34px);
 		letter-spacing: 0.01em;
-		white-space: nowrap;
 	}
 
-	.marquee-track span.is-outline {
+	:global([data-theme='booth']) .marquee-track span.is-outline {
 		color: transparent;
 		-webkit-text-stroke: 1px var(--line-strong);
 	}
 
-	.marquee-track span.is-fill {
+	:global([data-theme='booth']) .marquee-track span.is-fill {
 		color: var(--cyan);
 	}
 
-	.marquee-track span::before {
+	:global([data-theme='booth']) .marquee-track span::before {
 		content: '◆';
 		margin-right: 22px;
 		font-size: 10px;
 		color: var(--cyan);
 		-webkit-text-stroke: 0;
-	}
-
-	.marquee:hover .marquee-track {
-		animation-play-state: paused;
 	}
 
 	@keyframes marquee {
@@ -80,8 +127,12 @@ const loopEnd = 100 / repeats;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.marquee-track {
+		:global(html:not([data-motion='on'])) .marquee-track {
 			animation: none;
 		}
+	}
+	/* The desk's motion setting wins over the OS one in both directions. */
+	:global(html[data-motion='off']) .marquee-track {
+		animation: none;
 	}
 </style>

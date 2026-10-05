@@ -65,6 +65,13 @@ npm run dev                  # http://localhost:4000
 Run the frontend (`npm run dev` in the repo root, port 4321) alongside it. `src/lib/api.js`
 points at `http://localhost:4000` automatically when the frontend is on localhost.
 
+**Live bits:** `GET /api/jinx` returns the read-only vitals the `/jinx` page shows
+(process and host uptime, load, memory, cores, platform). It reports no hostname,
+no interfaces and only the Node major version, so the page can show it is awake
+without handing over a fingerprint. `/ws/presence` is an anonymous cursor relay
+for the opt-in "show other people's cursors" setting: throwaway ids, positions
+only, nothing logged, capped per IP, per room and overall.
+
 **Endpoints:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`,
 `POST /api/media` (protected, multipart `file` field, returns `{ url }`), static
 files served at `/media/*`. Plus the read-only hi-res library (no auth):
@@ -100,9 +107,12 @@ Tags (title, artist, duration, sample rate, bit depth) and cover art (a
 The shelf re-scans automatically (30s cache), so files added to `MUSIC_DIR`
 appear without a redeploy.
 
-**Deploying:** in production, reverse-proxy `/api`, `/music`, and `/media` on the
-portfolio's domain to this Express process, and set `CORS_ORIGIN` / `NODE_ENV=production`
-in `server/.env`. `src/lib/api.js` uses same-origin relative paths once it's not on
+**Deploying:** in production, reverse-proxy `/api`, `/music`, `/media` and
+`/ws/presence` on the portfolio's domain to this Express process, and set
+`CORS_ORIGIN` / `NODE_ENV=production` in `server/.env`. `/ws/presence` needs
+WebSocket upgrades passed through; if the proxy swallows them the cursors simply
+never appear and the rest of the site is unaffected. In production the relay also
+rejects any upgrade whose `Origin` is not `CORS_ORIGIN`. `src/lib/api.js` uses same-origin relative paths once it's not on
 localhost, so no frontend changes are needed.
 
 ### Security model

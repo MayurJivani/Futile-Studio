@@ -1,0 +1,85 @@
+---
+/**
+ * A ticking clock in my timezone, lifted from the reference site's "his time"
+ * readout and re-pointed at the desk this page is made at.
+ *
+ * Europe/Berlin is hardcoded on purpose: this says what time it is where I am,
+ * not where the reader is, which is the entire point of putting it here. The
+ * IANA zone handles the summer-time switch on its own, so there is nothing to
+ * remember twice a year.
+ */
+---
+
+<p class="clock" id="clock">
+	<span class="clock-face"><time id="clock-time">--:--:--</time></span>
+	<span class="clock-label" id="clock-label">my time</span>
+</p>
+
+<script>
+	const timeEl = document.getElementById('clock-time');
+	const labelEl = document.getElementById('clock-label');
+
+	if (timeEl) {
+		const ZONE = 'Europe/Berlin';
+		const fmt = new Intl.DateTimeFormat('en-GB', {
+			timeZone: ZONE,
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false,
+		});
+
+		/* "my time" is only interesting if it is not also your time. */
+		try {
+			const here = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			if (here === ZONE && labelEl) labelEl.textContent = 'same as yours';
+		} catch {
+			/* no resolvedOptions: the default label is still true */
+		}
+
+		const hour = () =>
+			Number(
+				new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, hour: '2-digit', hour12: false }).format(
+					new Date(),
+				),
+			);
+
+		const tick = () => {
+			const now = new Date();
+			timeEl.textContent = fmt.format(now);
+			timeEl.setAttribute('datetime', now.toISOString());
+			const h = hour();
+			/* A quiet nod to whether I am plausibly awake. */
+			document.getElementById('clock')?.classList.toggle('is-late', h >= 23 || h < 7);
+		};
+
+		tick();
+		setInterval(tick, 1000);
+	}
+</script>
+
+<style>
+	.clock {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.45rem;
+		font-family: var(--hand);
+		font-size: 0.78rem;
+		color: var(--ink-faint);
+	}
+	.clock-face {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.02em;
+	}
+	.clock-label {
+		font-style: italic;
+	}
+	/* Past eleven: the lamp is doing the work. */
+	.clock.is-late .clock-face {
+		color: var(--stamp);
+	}
+</style>

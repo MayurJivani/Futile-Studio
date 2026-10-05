@@ -1,0 +1,443 @@
+---
+import { open, dated, undated, unlogged } from '../data/projects.js';
+import Sketch from './Sketch.astro';
+
+/**
+ * The log book. Guideline B's feature bank flags the reference site's
+ * calendar as worth re-skinning "if Futile Studio ever wants a public
+ * schedule/changelog page", so this takes the craft from it (a painted blob
+ * behind the date, runs merged into one shape, inked up to today and outline
+ * after, a dedicated guide to reading it) and drops the grid.
+ *
+ * A month grid per year would be mostly empty here, because only two entries
+ * have a known month. One continuous tape of months reads as a denser artifact
+ * at this data size, and the year-only entries hang off their year band on a
+ * thread instead of being assigned a month nobody recorded.
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const now = new Date();
+const thisYear = now.getFullYear();
+const thisMonth = now.getMonth() + 1;
+
+const firstYear = Math.min(...open.filter((p) => p.shipped).map((p) => Number(p.shipped.slice(0, 4))));
+
+/** One cell per month from the first shipment to the end of the current year. */
+const cells = [];
+for (let y = firstYear; y <= thisYear; y++) {
+	for (let m = 1; m <= 12; m++) {
+		const key = `${y}-${String(m).padStart(2, '0')}`;
+		cells.push({
+			key,
+			year: y,
+			month: m,
+			label: MONTHS[m - 1],
+			future: y === thisYear && m > thisMonth,
+			today: y === thisYear && m === thisMonth,
+			shipped: dated.filter((p) => p.shipped === key),
+		});
+	}
+}
+
+/** Year bands, for the labels that run under the tape. */
+const bands = [];
+for (let y = firstYear; y <= thisYear; y++) {
+	bands.push({ year: y, loose: undated.filter((p) => p.shipped === String(y)) });
+}
+
+const onTheBoard = open.length;
+
+/* Built here rather than inline: JSX collapses the newlines around a
+   conditional fragment into stray spaces, which lands as "a year , and". */
+const breakdown = [
+	`${dated.length} with a month against them`,
+	`${undated.length} with only a year`,
+	unlogged.length > 0 ? `${unlogged.length} I never wrote a date on at all` : null,
+]
+	.filter(Boolean)
+	.join(', ');
+---
+
+<section id="log" class="log">
+	<div class="log-head">
+		<h2 class="sect-label">
+			The log book
+			<span class="sect-doodle"><Sketch name="snips" /></span>
+		</h2>
+		<p class="log-intro">
+			A cell a month, counting from the first one. Painted means something new turned up that month, plain
+			means the month has already been and gone, and dashed means it has not come round yet.
+		</p>
+	</div>
+
+	<div class="log-tape-wrap">
+		<div class="log-tape" role="list" aria-label="Months since the first release">
+			{
+				cells.map((cell) => (
+					<div
+						role="listitem"
+						class:list={[
+							'log-cell',
+							{
+								'is-future': cell.future,
+								'is-today': cell.today,
+								'has-ship': cell.shipped.length > 0,
+								'is-busy': cell.shipped.length > 1,
+							},
+						]}
+						data-month={cell.key}
+						aria-label={`${cell.label} ${cell.year}${
+							cell.shipped.length ? `, shipped ${cell.shipped.map((p) => p.name).join(', ')}` : ''
+						}`}
+					>
+						{cell.shipped.length > 0 && (
+							/* The painted blob. Hand-cut border radii, never a circle. */
+							<span class="log-blob" aria-hidden="true" />
+						)}
+						<span class="log-cell-label">{cell.label}</span>
+						{cell.today && (
+							<span class="log-today-flag" aria-hidden="true">
+								now
+							</span>
+						)}
+						{cell.shipped.length > 0 && (
+							<span class="log-pop">
+								{cell.shipped.map((p) => (
+									<span class="log-pop-name">{p.name}</span>
+								))}
+								<span class="log-pop-date">
+									{cell.label} {cell.year}
+								</span>
+							</span>
+						)}
+					</div>
+				))
+			}
+		</div>
+
+		<div class="log-bands" aria-hidden="true">
+			{
+				bands.map((band) => (
+					<div class="log-band">
+						<span class="log-band-year">{band.year}</span>
+					</div>
+				))
+			}
+		</div>
+	</div>
+
+	{
+		undated.length > 0 && (
+			<div class="log-loose">
+				<p class="log-loose-head">
+					Tucked in loose: year on the back, month not
+					<span class="log-loose-rule" />
+				</p>
+				<ul class="log-loose-list">
+					{bands
+						.filter((b) => b.loose.length)
+						.map((band) => (
+							<li class="log-loose-year">
+								<span class="log-loose-tag">{band.year}</span>
+								<ul class="log-loose-items">
+									{band.loose.map((p) => (
+										<li>
+											<a class="log-loose-chit" href={p.href} data-paste>
+												<span class="mount mount-pin" aria-hidden="true" />
+												{p.name}
+											</a>
+										</li>
+									))}
+								</ul>
+							</li>
+						))}
+				</ul>
+			</div>
+		)
+	}
+
+	<p class="log-stat">
+		<span class="stamp">{onTheBoard} on the board</span>
+		<span class="log-stat-note">{breakdown}.</span>
+	</p>
+</section>
+
+<style>
+	.log {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 3.5rem 2.2rem 4rem;
+		position: relative;
+	}
+
+	.log-head {
+		max-width: 44rem;
+		margin-bottom: 2rem;
+	}
+	.sect-doodle {
+		width: 3.2rem;
+		height: 1.3rem;
+		color: var(--ink-faint);
+		opacity: 0.75;
+	}
+	.log-intro {
+		font-size: 0.92rem;
+		color: var(--ink-soft);
+		line-height: 1.7;
+		max-width: 38rem;
+	}
+
+	/* ---------- the tape ---------- */
+	.log-tape-wrap {
+		position: relative;
+		/* Wide content scrolls inside its own box; the page never scrolls sideways. */
+		overflow-x: auto;
+		overflow-y: visible;
+		padding: 2.6rem 0 0.4rem;
+		scrollbar-width: thin;
+	}
+
+	.log-tape {
+		display: flex;
+		gap: 2px;
+		min-width: max-content;
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 6px;
+		background: var(--card-2);
+		padding: 2px;
+		box-shadow: 4px 4px 0 var(--shadow);
+	}
+
+	.log-cell {
+		position: relative;
+		flex: 0 0 auto;
+		width: 2.5rem;
+		height: 3.1rem;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		padding-bottom: 0.3rem;
+		background: var(--card);
+		border-radius: 3px;
+		font-size: 0.6rem;
+		font-weight: 700;
+		color: var(--ink-faint);
+	}
+
+	/* Months that have not happened: outline only, nothing inked in yet. */
+	.log-cell.is-future {
+		background: transparent;
+		border: 1.5px dashed var(--ink-ghost);
+		color: var(--ink-ghost);
+	}
+
+	.log-cell-label {
+		position: relative;
+		z-index: 2;
+	}
+
+	.log-cell.is-today {
+		border: 2px solid var(--ink);
+		color: var(--ink);
+	}
+	.log-today-flag {
+		position: absolute;
+		top: -1.5rem;
+		left: 50%;
+		transform: translateX(-50%) rotate(-5deg);
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.55rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #fff;
+		background: var(--ink);
+		border-radius: 4px;
+		padding: 1px 5px;
+		white-space: nowrap;
+	}
+
+	/* The blob: brushed paint behind the month, not a tidy circle. */
+	.log-blob {
+		position: absolute;
+		inset: 0.18rem;
+		z-index: 1;
+		background: var(--stamp);
+		opacity: 0.82;
+		border-radius: 62% 38% 55% 45% / 48% 58% 42% 52%;
+		transform: rotate(-6deg);
+	}
+	.log-cell.has-ship {
+		color: #fff;
+	}
+	.log-cell.has-ship .log-cell-label {
+		font-weight: 700;
+	}
+
+	/* A busy month gets a corner dot rather than a crowded cell. */
+	.log-cell.is-busy::after {
+		content: '';
+		position: absolute;
+		top: 3px;
+		right: 3px;
+		z-index: 3;
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: #fff;
+	}
+
+	/* What shipped, on hover or keyboard focus of the cell. */
+	.log-pop {
+		position: absolute;
+		bottom: calc(100% + 0.5rem);
+		left: 50%;
+		z-index: 20;
+		transform: translateX(-50%) rotate(-1.5deg);
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		min-width: 6.5rem;
+		padding: 0.4rem 0.6rem;
+		background: var(--marker);
+		color: #1b2132;
+		border: 1.5px solid var(--ink);
+		border-radius: 5px;
+		box-shadow: 3px 3px 0 var(--shadow-deep);
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			opacity 0.18s ease,
+			translate 0.18s ease;
+		translate: 0 4px;
+	}
+	.log-cell:hover .log-pop,
+	.log-cell:focus-within .log-pop {
+		opacity: 1;
+		translate: 0 0;
+	}
+	.log-pop-name {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.8rem;
+		white-space: nowrap;
+	}
+	.log-pop-date {
+		font-size: 0.65rem;
+		opacity: 0.7;
+		white-space: nowrap;
+	}
+
+	/* Year labels running under the tape, one band per 12 cells. */
+	.log-bands {
+		display: flex;
+		min-width: max-content;
+		/* No gap here: the band width below already carries the one that
+		   separates two years, so adding another accumulates drift per year. */
+		padding: 0 2px;
+		margin-top: 0.4rem;
+	}
+	.log-band {
+		/* 12 cells, their 11 inner gaps, and the one that follows the year. */
+		width: calc((2.5rem * 12) + (2px * 12));
+		border-top: 2px solid var(--ink-ghost);
+		padding-top: 0.25rem;
+		text-align: center;
+	}
+	.log-band-year {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.78rem;
+		color: var(--ink-faint);
+	}
+
+	/* ---------- the loose tray ---------- */
+	.log-loose {
+		margin-top: 2.4rem;
+	}
+	.log-loose-head {
+		display: flex;
+		align-items: center;
+		gap: 0.8rem;
+		font-family: var(--hand);
+		font-style: italic;
+		font-size: 0.8rem;
+		color: var(--ink-faint);
+		margin-bottom: 1.1rem;
+	}
+	.log-loose-rule {
+		flex: 1;
+		height: 0;
+		border-top: 2px dashed var(--ink-ghost);
+	}
+
+	.log-loose-list,
+	.log-loose-items {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.4rem;
+		align-items: flex-start;
+	}
+	.log-loose-year {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+	}
+	.log-loose-tag {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+		border: 1.5px solid var(--ink-ghost);
+		border-radius: 5px;
+		padding: 0.15rem 0.45rem;
+	}
+	.log-loose-items {
+		gap: 0.7rem;
+	}
+
+	/* A little chit of paper, pinned. */
+	.log-loose-chit {
+		position: relative;
+		display: inline-block;
+		margin-top: 0.4rem;
+		padding: 0.45rem 0.8rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.85rem;
+		text-decoration: none;
+		color: var(--ink);
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 6px;
+		box-shadow: 3px 3px 0 var(--shadow);
+		transform: rotate(var(--rot, -1.5deg));
+		transition:
+			transform 0.14s ease,
+			box-shadow 0.14s ease;
+	}
+	.log-loose-chit:hover {
+		transform: rotate(0deg) translateY(-3px);
+		box-shadow: 4px 6px 0 var(--shadow);
+	}
+
+	.log-stat {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		flex-wrap: wrap;
+		margin-top: 2.4rem;
+	}
+	.log-stat-note {
+		font-size: 0.82rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+
+	@media (max-width: 640px) {
+		.log {
+			padding: 2.8rem 1.4rem 3rem;
+		}
+	}
+</style>

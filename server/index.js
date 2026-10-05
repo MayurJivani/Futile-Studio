@@ -15,6 +15,8 @@ import authRoutes from './routes/auth.js';
 import mediaRoutes from './routes/media.js';
 import musicRoutes from './routes/music.js';
 import favoritesRoutes from './routes/favorites.js';
+import jinxRoutes from './routes/jinx.js';
+import { attachPresence } from './lib/presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -99,6 +101,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/music', musicRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/jinx', jinxRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
@@ -141,6 +144,9 @@ function shutdown(signal) {
 	// Don't hang forever waiting for in-flight requests.
 	setTimeout(() => process.exit(1), 10_000).unref();
 }
+
+// Anonymous cursor presence rides the same HTTP server on /ws/presence.
+attachPresence(server, { allowedOrigin: isProd ? ORIGIN : null });
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));

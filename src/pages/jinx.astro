@@ -1,0 +1,648 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import DeskPanel from '../components/DeskPanel.astro';
+import Cursors from '../components/Cursors.astro';
+import Marquee from '../components/Marquee.astro';
+import Sketch from '../components/Sketch.astro';
+import { layers, serves } from '../data/jinx.js';
+---
+
+<Layout
+	title="Jinx — Futile Studio"
+	description="The homelab behind futile.studio: what the box is made of, what it hands out, and how awake it has been."
+>
+	<Nav />
+	<DeskPanel />
+	<Cursors />
+
+	<header class="jhero">
+		<!-- The page's one toy. Jinx is a cat, so of course it knocks things over. -->
+		<button class="jcat" id="jcat" aria-label="Say hello to Jinx" title="say hello">
+			<Sketch name="cat" />
+		</button>
+		<div class="jcat-shelf" aria-hidden="true">
+			<span class="jcat-mug" id="jcat-mug"></span>
+		</div>
+
+		<p class="cover-tag" data-reveal>the box under all of it</p>
+
+		<h1 class="jhero-title" data-split-group>
+			<span class="split-mask"><span class="split-word">This</span></span>
+			<span class="split-mask"><span class="split-word">is</span></span>
+			<span class="underline-wrap">
+				<span class="split-mask"><span class="split-word">Jinx.</span></span>
+				<svg viewBox="0 0 160 12" preserveAspectRatio="none" aria-hidden="true">
+					<path
+						d="M2 7c24-7 114-7 156 2"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="4"
+						stroke-linecap="round"></path>
+				</svg>
+			</span>
+		</h1>
+
+		<p class="jhero-sub" data-reveal style="--d:140ms">
+			Bare metal in my flat, not a box I rent by the month. Every page on this domain is handed out by it,
+			which is the point: when something falls over I am the one who has to go and look, and that changes how
+			carefully you build.
+		</p>
+		<p class="margin-note jhero-note" data-reveal style="--d:220ms">
+			Named after the cat, who remains responsible for most of the unplanned downtime. She is on the shelf up
+			there, if you want to say hello.
+		</p>
+	</header>
+
+	<!-- ============ VITALS ============ -->
+	<section class="vitals" id="vitals">
+		<h2 class="sect-label">
+			How it is doing today
+			<span class="vitals-doodle"><Sketch name="snips" /></span>
+		</h2>
+		<p class="vitals-intro">
+			Measured when you loaded this page, not typed in by me. If the panel says it cannot reach the box, that
+			is the honest answer rather than a cached number pretending otherwise.
+		</p>
+
+		<div class="vital-grid" id="vital-grid" data-state="loading">
+			<div class="vital sheet" data-paste="-1.4">
+				<span class="mount mount-pin" aria-hidden="true"></span>
+				<span class="vital-key">Awake for</span>
+				<span class="vital-val" id="v-host">—</span>
+				<span class="vital-note">since the last time it was restarted</span>
+			</div>
+			<div class="vital sheet" data-paste="1.1">
+				<span class="mount mount-tape" aria-hidden="true"></span>
+				<span class="vital-key">This service</span>
+				<span class="vital-val" id="v-proc">—</span>
+				<span class="vital-note">the process handing you this page</span>
+			</div>
+			<div class="vital sheet" data-paste="-0.8">
+				<span class="mount mount-clip" aria-hidden="true"></span>
+				<span class="vital-key">Load</span>
+				<span class="vital-val" id="v-load">—</span>
+				<span class="vital-note">1, 5 and 15 minute averages</span>
+			</div>
+			<div class="vital sheet" data-paste="1.6">
+				<span class="mount mount-pin" aria-hidden="true"></span>
+				<span class="vital-key">Memory</span>
+				<span class="vital-val" id="v-mem">—</span>
+				<span class="vital-bar" aria-hidden="true"><span class="vital-bar-fill" id="v-membar"></span></span>
+				<span class="vital-note" id="v-memnote">of what is fitted</span>
+			</div>
+			<div class="vital sheet" data-paste="-1.2">
+				<span class="mount mount-tape" aria-hidden="true"></span>
+				<span class="vital-key">Cores</span>
+				<span class="vital-val" id="v-cpu">—</span>
+				<span class="vital-note" id="v-plat">platform</span>
+			</div>
+		</div>
+
+		<p class="vital-status" id="vital-status" role="status">Asking the box…</p>
+	</section>
+
+	<!-- ============ CROSS-SECTION ============ -->
+	<section class="stack">
+		<h2 class="sect-label">Jinx, cut in half</h2>
+		<p class="stack-intro">
+			Five layers. Each one exists so the layer above it is allowed to be ignorant of something.
+		</p>
+
+		<div class="cutaway">
+			<span class="cutaway-tag" aria-hidden="true">fig. 1 — not to scale</span>
+			<ol class="stack-list">
+				{
+					layers.map((l, i) => (
+						<li class="layer sheet" data-paste>
+							<span class="layer-no">{String(i + 1).padStart(2, '0')}</span>
+							<span class="layer-art" aria-hidden="true">
+								<Sketch name={l.art} />
+							</span>
+							<div class="layer-copy">
+								<h3 class="layer-name">
+									{l.name}
+									<span class="layer-role">{l.role}</span>
+								</h3>
+								<p class="layer-note">{l.note}</p>
+							</div>
+						</li>
+					))
+				}
+			</ol>
+		</div>
+	</section>
+
+	<!-- ============ WHAT IT HANDS OUT ============ -->
+	<section class="serves">
+		<h2 class="sect-label">What it hands out</h2>
+		<p class="stack-intro">
+			{serves.length} front doors, each one its own container on the same box. Everything on the board is here somewhere.
+		</p>
+
+		<ul class="serve-list">
+			{
+				serves.map((s) => (
+					<li>
+						<a class="serve sheet" href={s.href} target="_blank" rel="noopener" data-paste>
+							<span class="serve-dot" aria-hidden="true" />
+							<span class="serve-host">{s.host}</span>
+							<span class="serve-what">{s.what}</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<!-- ============ WHY ============ -->
+	<section class="why">
+		<h2 class="sect-label">Why bother</h2>
+		<div class="why-grid">
+			<p>
+				Renting a box would be cheaper, quieter and someone else's problem at three in the morning. I keep
+				this one because the problems are the point. Every outage has taught me something a tutorial could
+				not, usually at an hour I did not choose.
+			</p>
+			<p>
+				It also means nothing on this site depends on a free tier staying free. The games still work if a
+				company changes its mind, and the only person who can take them down is me.
+			</p>
+		</div>
+		<p class="margin-note why-wink">The rest of the flat has opinions about the noise.</p>
+	</section>
+
+	<Marquee items={['Hums', 'Answers', 'Backs itself up', 'Occasionally sat on']} speed={32} />
+
+	<footer class="foot">
+		<div class="foot-left">
+			<p class="foot-logo">futile<span class="nav-dot">.</span>studio</p>
+			<p class="foot-copy">© 2026 Mayur Jivani · served off a box in Paderborn</p>
+		</div>
+		<ul class="foot-links">
+			<li><a class="btn" href="/">← Back to the scrapbook</a></li>
+			<li><a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
+		</ul>
+	</footer>
+</Layout>
+
+<script>
+	import { API_BASE } from '../lib/api.js';
+
+	/* ---------- the cat knocks the mug off the shelf ---------- */
+	const cat = document.getElementById('jcat');
+	const mug = document.getElementById('jcat-mug');
+	cat?.addEventListener('click', () => {
+		if (!mug) return;
+		mug.classList.remove('is-knocked');
+		void mug.offsetWidth; /* restart the animation on every click */
+		mug.classList.add('is-knocked');
+		cat.classList.remove('is-smug');
+		requestAnimationFrame(() => cat.classList.add('is-smug'));
+	});
+
+	/* ---------- live vitals ---------- */
+	const grid = document.getElementById('vital-grid');
+	const status = document.getElementById('vital-status');
+
+	const set = (id: string, text: string) => {
+		const el = document.getElementById(id);
+		if (el) el.textContent = text;
+	};
+
+	/** 414731 → "4 days, 19 hours". Two units is enough to be useful. */
+	function duration(totalSeconds: number) {
+		const units: Array<[string, number]> = [
+			['day', 86400],
+			['hour', 3600],
+			['minute', 60],
+			['second', 1],
+		];
+		const parts: string[] = [];
+		let rest = totalSeconds;
+		for (const [name, size] of units) {
+			const n = Math.floor(rest / size);
+			rest -= n * size;
+			if (n > 0) parts.push(`${n} ${name}${n === 1 ? '' : 's'}`);
+			if (parts.length === 2) break;
+		}
+		return parts.length ? parts.join(', ') : 'under a minute';
+	}
+
+	const gib = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)} GiB`;
+
+	async function readVitals() {
+		try {
+			const res = await fetch(`${API_BASE}/api/jinx`, { headers: { Accept: 'application/json' } });
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const d = await res.json();
+
+			set('v-host', duration(d.hostUptime));
+			set('v-proc', duration(d.processUptime));
+			set('v-load', d.loadavg.join('  ·  '));
+			set('v-mem', gib(d.memory.used));
+			set('v-memnote', `of ${gib(d.memory.total)} fitted`);
+			set('v-cpu', String(d.cpus));
+			set('v-plat', `${d.platform} ${d.arch} · node ${d.node}`);
+
+			const pct = Math.round((d.memory.used / d.memory.total) * 100);
+			const bar = document.getElementById('v-membar');
+			if (bar) bar.style.width = `${pct}%`;
+
+			grid?.setAttribute('data-state', 'ok');
+			if (status) status.textContent = `Answered just now. Memory sitting at ${pct}%.`;
+		} catch {
+			/* The static build is served without the backend in front of it, and
+			   that is a normal state for this page rather than an error worth
+			   shouting about. Say so plainly instead of showing invented numbers. */
+			grid?.setAttribute('data-state', 'down');
+			if (status) {
+				status.textContent =
+					'No answer from the box right now, so there are no numbers to show. Nothing here is cached or made up.';
+			}
+		}
+	}
+
+	readVitals();
+	/* Refresh while the page is actually being looked at. */
+	setInterval(() => {
+		if (document.visibilityState === 'visible') readVitals();
+	}, 30_000);
+</script>
+
+<style>
+	.jhero {
+		position: relative;
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 3.2rem 2.2rem 2.4rem;
+	}
+	.jhero-title {
+		font-size: clamp(2.1rem, 6.6vw, 4.1rem);
+		margin-bottom: 1.5rem;
+	}
+	.jhero-sub {
+		max-width: 36rem;
+		font-size: 1.02rem;
+		font-weight: 600;
+		line-height: 1.75;
+		color: var(--ink-soft);
+	}
+	.jhero-note {
+		margin-top: 0.9rem;
+	}
+
+	/* ---- the cat and the mug it is about to deal with ---- */
+	.jcat {
+		position: absolute;
+		top: 2.4rem;
+		right: 8%;
+		z-index: 4;
+		width: 4rem;
+		height: 4rem;
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--ink-soft);
+		opacity: 0.7;
+		cursor: pointer;
+		transform: rotate(-4deg);
+		transition:
+			transform 0.18s ease,
+			opacity 0.18s ease;
+	}
+	.jcat:hover {
+		opacity: 1;
+		transform: rotate(0deg) translateY(-3px);
+	}
+	.jcat.is-smug {
+		animation: cat-smug 0.5s ease;
+	}
+	@keyframes cat-smug {
+		35% {
+			transform: rotate(-10deg) translateX(-5px);
+		}
+		70% {
+			transform: rotate(2deg) translateX(3px);
+		}
+	}
+
+	.jcat-shelf {
+		position: absolute;
+		top: 6.6rem;
+		right: 8%;
+		width: 4rem;
+		height: 0;
+		border-top: 2.5px solid var(--ink-faint);
+		z-index: 3;
+	}
+	.jcat-mug {
+		position: absolute;
+		top: -0.85rem;
+		left: 0.9rem;
+		width: 0.95rem;
+		height: 0.85rem;
+		background: var(--card);
+		border: 2px solid var(--ink-soft);
+		border-radius: 2px 2px 4px 4px;
+	}
+	.jcat-mug.is-knocked {
+		animation: mug-fall 1.1s cubic-bezier(0.4, 0, 0.8, 1) forwards;
+	}
+	@keyframes mug-fall {
+		0% {
+			transform: translate(0, 0) rotate(0deg);
+			opacity: 1;
+		}
+		18% {
+			transform: translate(6px, -3px) rotate(18deg);
+		}
+		100% {
+			transform: translate(26px, 150px) rotate(420deg);
+			opacity: 0;
+		}
+	}
+
+	@media (max-width: 860px) {
+		.jcat,
+		.jcat-shelf {
+			display: none;
+		}
+	}
+
+	/* ============ vitals ============ */
+	.vitals,
+	.stack,
+	.serves,
+	.why {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2.6rem 2.2rem 1rem;
+	}
+	.vitals-doodle {
+		width: 3.2rem;
+		height: 1.3rem;
+		color: var(--ink-faint);
+		opacity: 0.75;
+	}
+	.vitals-intro,
+	.stack-intro {
+		font-size: 0.92rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+		max-width: 38rem;
+		margin-bottom: 1.8rem;
+	}
+
+	.vital-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+		gap: 2.2rem 1.5rem;
+		padding-top: 0.5rem;
+	}
+	.vital {
+		padding: 1.3rem 1.1rem 1.1rem;
+		background: var(--card-2);
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	.vital-key {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: var(--ink-faint);
+	}
+	.vital-val {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.3rem;
+		line-height: 1.2;
+		color: var(--ink);
+		font-variant-numeric: tabular-nums;
+	}
+	.vital-note {
+		font-size: 0.74rem;
+		font-style: italic;
+		color: var(--ink-faint);
+		line-height: 1.45;
+	}
+
+	.vital-bar {
+		display: block;
+		height: 0.4rem;
+		margin: 0.35rem 0 0.2rem;
+		background: var(--ink-ghost);
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	.vital-bar-fill {
+		display: block;
+		height: 100%;
+		width: 0%;
+		background: var(--live);
+		transition: width 0.5s ease;
+	}
+
+	/* No answer: say so on the face of every card rather than leaving dashes. */
+	.vital-grid[data-state='down'] {
+		opacity: 0.55;
+	}
+	.vital-grid[data-state='down'] .vital-val::after {
+		content: 'no answer';
+		font-size: 0.85rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+	.vital-grid[data-state='down'] .vital-val {
+		font-size: 0;
+	}
+
+	.vital-status {
+		margin-top: 1.6rem;
+		font-size: 0.82rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+
+	/* ============ stack ============ */
+	/* A dashed box drawn round the layers so they read as a cutaway of one
+	   machine rather than five unrelated bullet points. */
+	.cutaway {
+		position: relative;
+		padding: 1.9rem 1.1rem 1.1rem;
+		border: 2px dashed var(--ink-ghost);
+		border-radius: 10px;
+	}
+	.cutaway-tag {
+		position: absolute;
+		top: -0.72rem;
+		left: 1.2rem;
+		padding: 0 0.5rem;
+		background: var(--paper);
+		font-family: var(--hand);
+		font-style: italic;
+		font-size: 0.74rem;
+		color: var(--ink-faint);
+	}
+
+	.stack-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 1.3rem;
+		counter-reset: layer;
+	}
+	.layer {
+		display: flex;
+		align-items: flex-start;
+		gap: 1.1rem;
+		padding: 1.2rem 1.3rem;
+		background: var(--card);
+	}
+	.layer-no {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.1rem;
+		color: var(--ink-ghost);
+		flex: 0 0 auto;
+		padding-top: 0.1rem;
+	}
+	.layer-art {
+		flex: 0 0 auto;
+		width: 2rem;
+		height: 2rem;
+		color: var(--ink-soft);
+	}
+	.layer-name {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+		font-size: 1.05rem;
+		margin-bottom: 0.3rem;
+	}
+	.layer-role {
+		font-family: var(--hand);
+		font-weight: 400;
+		font-style: italic;
+		font-size: 0.78rem;
+		color: var(--ink-faint);
+	}
+	.layer-note {
+		font-size: 0.86rem;
+		line-height: 1.65;
+		color: var(--ink-soft);
+		max-width: 46rem;
+	}
+
+	/* ============ serves ============ */
+	.serve-list {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+		gap: 1.6rem 1.2rem;
+		padding-top: 0.3rem;
+	}
+	.serve {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		padding: 0.75rem 0.9rem;
+		text-decoration: none;
+		color: var(--ink);
+		background: var(--card);
+		transition:
+			transform 0.14s ease,
+			box-shadow 0.14s ease;
+	}
+	.serve:hover {
+		transform: rotate(0deg) translateY(-3px);
+		box-shadow: 5px 6px 0 var(--shadow-deep);
+	}
+	.serve-dot {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: var(--live);
+		flex: 0 0 auto;
+	}
+	.serve-host {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.86rem;
+	}
+	.serve-what {
+		width: 100%;
+		padding-left: 0.95rem;
+		font-size: 0.76rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+
+	/* ============ why ============ */
+	.why {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2.6rem 2.2rem 1rem;
+	}
+	.why-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+		gap: 1.4rem 2.2rem;
+	}
+	.why-grid p {
+		font-size: 0.92rem;
+		line-height: 1.75;
+		color: var(--ink-soft);
+	}
+	.why-wink {
+		margin-top: 1.2rem;
+	}
+
+	/* ============ footer ============ */
+	.foot {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2.6rem 2.2rem 4rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 1.6rem;
+	}
+	.foot-logo {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.15rem;
+	}
+	.foot-copy {
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+		margin-top: 0.2rem;
+	}
+	.nav-dot {
+		color: var(--stamp);
+	}
+	.foot-links {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	@media (max-width: 640px) {
+		.jhero,
+		.vitals,
+		.stack,
+		.serves,
+		.why,
+		.foot {
+			padding-left: 1.4rem;
+			padding-right: 1.4rem;
+		}
+	}
+</style>
