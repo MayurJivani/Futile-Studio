@@ -33,6 +33,8 @@ import LampCord from './LampCord.astro';
 
 	function setOpen(open: boolean) {
 		list?.classList.toggle('is-open', open);
+		/* The lamp cord hangs in the same corner the drawer covers. */
+		document.body.classList.toggle('nav-open', open);
 		toggle?.classList.toggle('is-open', open);
 		backdrop?.classList.toggle('is-open', open);
 		toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -52,7 +54,10 @@ import LampCord from './LampCord.astro';
 	   not float over the content: a scrapbook has its tabs on the page. */
 	.nav {
 		position: relative;
-		z-index: 80;
+		/* Must out-rank .nav-backdrop (90). The drawer lives INSIDE this element,
+		   so its own z-index is scoped to this stacking context: at 80 the
+		   backdrop painted over the open drawer and swallowed every tap. */
+		z-index: 100;
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-end;
