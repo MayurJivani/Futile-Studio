@@ -259,6 +259,12 @@
 		box-shadow: 0 0 14px 2px rgba(245, 213, 71, 0.55);
 	}
 
+	/* The mobile drawer opens over this corner, so get out of its way. */
+	:global(body.nav-open) .cord {
+		opacity: 0;
+		pointer-events: none;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.cord-bead {
 			cursor: pointer;
