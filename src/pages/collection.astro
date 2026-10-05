@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Nav from '../components/Nav.astro';
 import Marquee from '../components/Marquee.astro';
 import VinylPlayer from '../components/VinylPlayer.astro';
 import CassettePlayer from '../components/CassettePlayer.astro';
@@ -14,8 +13,12 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	title="Collection — Futile Studio"
 	description="The Futile Recording Co physical media collection — vinyl and cassette, digitized and playable."
 	noindex
+	theme="booth"
 >
-	<Nav />
+	<!-- This page keeps Guideline A (the blueprint): the shelf and both players
+	     are styled against those tokens throughout. It is unlisted and has no
+	     nav link anywhere, so a back link does the job the full nav used to. -->
+	<a href="/" class="booth-back">← futile.studio</a>
 
 	<audio id="media-audio" preload="none"></audio>
 
@@ -130,8 +133,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		<div class="section-label" data-reveal>/ 03 — Hi-Res library</div>
 		<h2 data-split data-split-group>On the stream.</h2>
 		<p class="lib-note" data-reveal style="--d:120ms">
-			Streams straight off <strong>my collection</strong> — lossless playback, at its native
-			sample rate.
+			Streams straight off <strong>my collection</strong> — lossless playback, at its native sample rate.
 		</p>
 		<div class="shelf" id="lib-shelf">
 			<div class="lib-message">Scanning the shelf…</div>
@@ -226,7 +228,9 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 			: track.sampleRate
 				? `${Math.round(track.sampleRate / 1000)}kHz`
 				: '';
-		return [track.codec || String(track.ext || '').toUpperCase(), bits].filter(Boolean).join(' · ') || 'AUDIO';
+		return (
+			[track.codec || String(track.ext || '').toUpperCase(), bits].filter(Boolean).join(' · ') || 'AUDIO'
+		);
 	}
 
 	// The catalog is cached locally so revisits paint instantly. The cached
@@ -263,9 +267,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	function heartHtml(base: string, type: 'album' | 'track', id: string, fav: boolean, label: string) {
 		if (!isAuthed && !fav) return '';
 		const cls = `${base}${isAuthed ? ' is-btn' : ''}${fav ? '' : ' is-off'}`;
-		const attrs = isAuthed
-			? ` role="button" tabindex="0" aria-pressed="${fav ? 'true' : 'false'}"`
-			: '';
+		const attrs = isAuthed ? ` role="button" tabindex="0" aria-pressed="${fav ? 'true' : 'false'}"` : '';
 		return `<span class="${cls}" data-type="${type}" data-id="${esc(id)}"${attrs} aria-label="${label}">♥</span>`;
 	}
 
@@ -439,7 +441,9 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		(document.getElementById('vinyl-title') as HTMLElement).textContent = album.title;
 		(document.getElementById('vinyl-artist') as HTMLElement).textContent = album.artist || '';
 		(document.getElementById('vinyl-meta-title') as HTMLElement).textContent = album.title;
-		(document.getElementById('vinyl-meta-sub') as HTMLElement).textContent = [album.artist, album.year].filter(Boolean).join(' · ');
+		(document.getElementById('vinyl-meta-sub') as HTMLElement).textContent = [album.artist, album.year]
+			.filter(Boolean)
+			.join(' · ');
 		(document.getElementById('vinyl-note') as HTMLElement).textContent = '';
 		setTracklist(album);
 		setCurrentTrackUI();
@@ -476,11 +480,12 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	function startBitrateMeter(t: any) {
 		if (bitrateTimer !== null) clearInterval(bitrateTimer);
 		const to = /[?&]to=([a-z0-9]+)/i.exec(trackSrc(t))?.[1];
-		vinylDeliveryBadge.className = to === 'aac'
-			? 'format-badge delivery-badge is-lossy'
-			: to
-				? 'format-badge delivery-badge is-reencode'
-				: 'format-badge delivery-badge is-raw';
+		vinylDeliveryBadge.className =
+			to === 'aac'
+				? 'format-badge delivery-badge is-lossy'
+				: to
+					? 'format-badge delivery-badge is-reencode'
+					: 'format-badge delivery-badge is-raw';
 		vinylDeliveryBadge.hidden = false;
 		bitrateSamples = [];
 		const update = () => {
@@ -496,8 +501,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 				return;
 			}
 			const kbps = ((last.b - first.b) * 8) / span / 1000;
-			vinylDeliveryBadge.textContent =
-				kbps > 0 && isFinite(kbps) ? `${Math.round(kbps)} kbps` : '— kbps';
+			vinylDeliveryBadge.textContent = kbps > 0 && isFinite(kbps) ? `${Math.round(kbps)} kbps` : '— kbps';
 		};
 		update();
 		bitrateTimer = window.setInterval(update, 1000);
@@ -667,11 +671,35 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 </script>
 
 <style>
+	.booth-back {
+		position: fixed;
+		top: 30px;
+		left: 40px;
+		z-index: 100;
+		font-family: var(--mono);
+		font-size: 11px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+	.booth-back:hover {
+		color: var(--cyan);
+	}
+
 	.intro {
 		max-width: 1140px;
 		margin: 0 auto;
 		padding: 150px 40px 80px;
 		position: relative;
+	}
+
+	@media (max-width: 860px) {
+		.booth-back {
+			top: 22px;
+			left: 24px;
+		}
 	}
 	.sheet-label {
 		position: absolute;

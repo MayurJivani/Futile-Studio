@@ -1,0 +1,276 @@
+---
+/**
+ * A strip of stickers you can peel off and stick anywhere on the page.
+ * Positions are page coordinates, kept in localStorage, so a reader who
+ * rearranges the place finds it the way they left it.
+ *
+ * Pointer events rather than mouse/touch pairs: one code path covers mouse,
+ * pen and finger, and setPointerCapture keeps a fast drag from escaping the
+ * element. Double-click (or double-tap) peels one back off.
+ */
+const stickers = [
+	{ id: 'star', label: 'a gold star', text: '★', tone: 'gold' },
+	{ id: 'wow', label: 'wow', text: 'wow', tone: 'pink' },
+	{ id: 'todo', label: 'to do', text: 'to do', tone: 'blue' },
+	{ id: 'hmm', label: 'hmm', text: 'hmm', tone: 'green' },
+	{ id: 'yes', label: 'yes', text: 'yes!', tone: 'orange' },
+];
+---
+
+<div class="sticker-rail" id="sticker-rail">
+	<span class="sticker-rail-label">peel these off</span>
+	<div class="sticker-rail-strip">
+		{
+			stickers.map((s) => (
+				<button
+					class={`sticker sticker-${s.tone}`}
+					data-sticker={s.id}
+					aria-label={`Sticker: ${s.label}. Drag to move, double click to peel off.`}
+				>
+					{s.text}
+				</button>
+			))
+		}
+	</div>
+</div>
+
+<div class="sticker-layer" id="sticker-layer" aria-hidden="true"></div>
+
+<script>
+	const KEY = 'futile-stickers';
+	const rail = document.getElementById('sticker-rail');
+	const layer = document.getElementById('sticker-layer');
+
+	if (rail && layer) {
+		/* Same reason as the toy marks: placed stickers carry page coordinates,
+		   so their layer must not sit inside a positioned ancestor. */
+		document.body.appendChild(layer);
+
+		type Spot = { x: number; y: number };
+
+		function read(): Record<string, Spot> {
+			try {
+				return JSON.parse(localStorage.getItem(KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function write(spots: Record<string, Spot>) {
+			try {
+				localStorage.setItem(KEY, JSON.stringify(spots));
+			} catch {
+				/* storage blocked: the stickers still move for this visit */
+			}
+		}
+
+		const spots = read();
+
+		/** Move a sticker out of the rail and onto the page at a page coord. */
+		function place(el: HTMLElement, x: number, y: number) {
+			if (el.parentElement !== layer) layer!.appendChild(el);
+			el.classList.add('is-placed');
+			el.style.left = `${x}px`;
+			el.style.top = `${y}px`;
+		}
+
+		/** Send it back to the strip it came from. */
+		function peel(el: HTMLElement) {
+			el.classList.remove('is-placed');
+			el.style.left = '';
+			el.style.top = '';
+			rail!.querySelector('.sticker-rail-strip')!.appendChild(el);
+			delete spots[el.dataset.sticker!];
+			write(spots);
+		}
+
+		/* Restore anything stuck down on a previous visit. */
+		document.querySelectorAll<HTMLElement>('[data-sticker]').forEach((el) => {
+			const spot = spots[el.dataset.sticker!];
+			if (spot) place(el, spot.x, spot.y);
+		});
+
+		let dragging: HTMLElement | null = null;
+		let offX = 0;
+		let offY = 0;
+		let moved = false;
+
+		document.addEventListener('pointerdown', (e) => {
+			const el = (e.target as HTMLElement).closest<HTMLElement>('[data-sticker]');
+			if (!el) return;
+			e.preventDefault();
+
+			const r = el.getBoundingClientRect();
+			offX = e.clientX - r.left;
+			offY = e.clientY - r.top;
+			moved = false;
+			dragging = el;
+
+			/* Lift out of the rail on the first grab so the drag is in page space. */
+			place(el, r.left + scrollX, r.top + scrollY);
+			el.classList.add('is-dragging');
+			el.setPointerCapture(e.pointerId);
+		});
+
+		document.addEventListener('pointermove', (e) => {
+			if (!dragging) return;
+			moved = true;
+			const x = e.clientX + scrollX - offX;
+			const y = e.clientY + scrollY - offY;
+			/* Keep it on the paper rather than off the side of the page. */
+			const maxX = document.documentElement.scrollWidth - dragging.offsetWidth - 4;
+			dragging.style.left = `${Math.max(4, Math.min(x, maxX))}px`;
+			dragging.style.top = `${Math.max(4, y)}px`;
+		});
+
+		document.addEventListener('pointerup', () => {
+			if (!dragging) return;
+			const el = dragging;
+			dragging = null;
+			el.classList.remove('is-dragging');
+
+			if (!moved) {
+				/* A tap that never moved is not a placement; put it back. */
+				peel(el);
+				return;
+			}
+			spots[el.dataset.sticker!] = {
+				x: parseFloat(el.style.left),
+				y: parseFloat(el.style.top),
+			};
+			write(spots);
+		});
+
+		document.addEventListener('dblclick', (e) => {
+			const el = (e.target as HTMLElement).closest<HTMLElement>('[data-sticker]');
+			if (el) peel(el);
+		});
+
+		/* Keyboard: the stickers are decoration, but they should not be a trap. */
+		document.addEventListener('keydown', (e) => {
+			const el = document.activeElement as HTMLElement | null;
+			if (!el?.dataset.sticker) return;
+			const step = e.shiftKey ? 24 : 6;
+			const cur = { x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0 };
+			const moves: Record<string, [number, number]> = {
+				ArrowLeft: [-step, 0],
+				ArrowRight: [step, 0],
+				ArrowUp: [0, -step],
+				ArrowDown: [0, step],
+			};
+			if (e.key === 'Escape' && el.classList.contains('is-placed')) {
+				peel(el);
+				return;
+			}
+			const d = moves[e.key];
+			if (!d) return;
+			e.preventDefault();
+			if (!el.classList.contains('is-placed')) {
+				const r = el.getBoundingClientRect();
+				place(el, r.left + scrollX, r.top + scrollY);
+				cur.x = r.left + scrollX;
+				cur.y = r.top + scrollY;
+			}
+			place(el, cur.x + d[0], cur.y + d[1]);
+			spots[el.dataset.sticker!] = { x: cur.x + d[0], y: cur.y + d[1] };
+			write(spots);
+		});
+	}
+</script>
+
+<style>
+	.sticker-rail {
+		position: relative;
+		z-index: 5;
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		flex-wrap: wrap;
+		margin-top: 1.6rem;
+	}
+	.sticker-rail-label {
+		font-family: var(--hand);
+		font-style: italic;
+		font-size: 0.74rem;
+		color: var(--ink-faint);
+	}
+	.sticker-rail-strip {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		/* The backing sheet the stickers are still attached to. */
+		padding: 0.4rem 0.5rem;
+		background: var(--card-2);
+		border: 1.5px dashed var(--ink-ghost);
+		border-radius: 8px;
+	}
+</style>
+
+<style is:global>
+	.sticker-layer {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 0;
+		z-index: 60;
+		pointer-events: none;
+	}
+
+	.sticker {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.78rem;
+		color: #1b2132;
+		background: var(--sticker, #f5d547);
+		border: 2px solid rgba(27, 33, 50, 0.55);
+		border-radius: 999px;
+		padding: 0.22rem 0.6rem;
+		cursor: grab;
+		touch-action: none;
+		user-select: none;
+		box-shadow: 2px 2px 0 var(--shadow);
+		transform: rotate(var(--sr, -3deg));
+		transition:
+			transform 0.14s ease,
+			box-shadow 0.14s ease;
+	}
+	.sticker:hover {
+		transform: rotate(0deg) translateY(-2px);
+		box-shadow: 3px 3px 0 var(--shadow);
+	}
+
+	.sticker-gold {
+		--sticker: #f5d547;
+		--sr: -4deg;
+	}
+	.sticker-pink {
+		--sticker: #f3b0c8;
+		--sr: 3deg;
+	}
+	.sticker-blue {
+		--sticker: #a8d2ef;
+		--sr: -2deg;
+	}
+	.sticker-green {
+		--sticker: #b4dca8;
+		--sr: 4deg;
+	}
+	.sticker-orange {
+		--sticker: #f2bb84;
+		--sr: -3deg;
+	}
+
+	/* Stuck to the page rather than sitting on its backing sheet. */
+	.sticker.is-placed {
+		position: absolute;
+		pointer-events: auto;
+		z-index: 61;
+		box-shadow: 3px 3px 0 var(--shadow);
+	}
+	.sticker.is-dragging {
+		cursor: grabbing;
+		transform: rotate(0deg) scale(1.08);
+		box-shadow: 6px 7px 0 var(--shadow-deep);
+		z-index: 62;
+	}
+</style>

@@ -1,0 +1,400 @@
+---
+import Sketch from './Sketch.astro';
+
+/**
+ * The desk toys. Guideline B argues for exactly one clickable easter egg, and
+ * for a single page that is right; this site now has four pages' worth of
+ * paper, so the bank is bigger, but the rule it was protecting still holds:
+ * every one of these is pure nonsense with no state worth keeping, nothing is
+ * load-bearing, and none of them move anything the reader needs.
+ *
+ * All four leave marks that persist for the visit and never block the page.
+ * Everything they do is skipped when motion is off, but the marks still land,
+ * because the joke is the mark, not the animation.
+ */
+---
+
+<div class="toys" aria-hidden="false">
+	<button class="toy toy-scissors" data-toy="snip" aria-label="Snip the paper" title="snip">
+		<Sketch name="scissors" />
+	</button>
+	<button
+		class="toy toy-pencil"
+		data-toy="circle"
+		aria-label="Circle something on the page"
+		title="circle something"
+	>
+		<Sketch name="pencil" />
+	</button>
+	<button class="toy toy-stamp" data-toy="stamp" aria-label="Press the stamp" title="press it">
+		<Sketch name="stamp" />
+	</button>
+	<button class="toy toy-mug" data-toy="ring" aria-label="Put the mug down" title="go on then">
+		<Sketch name="mug" />
+	</button>
+</div>
+
+<div class="toy-marks" id="toy-marks" aria-hidden="true"></div>
+
+<script>
+	const marks = document.getElementById('toy-marks');
+	if (marks) {
+		/* The component renders inside the hero, which is position:relative, so an
+		   absolutely-positioned child resolves against the hero rather than the
+		   document and every mark lands offset by the hero's own left/top. The
+		   maths below is all in page coordinates, so the layer has to hang off
+		   <body> for those coordinates to mean what they say. */
+		document.body.appendChild(marks);
+
+		const reduced = () => {
+			const m = document.documentElement.dataset.motion;
+			if (m === 'off') return true;
+			if (m === 'on') return false;
+			return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		};
+
+		const rand = (a: number, b: number) => a + Math.random() * (b - a);
+		const pick = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
+
+		/** Keep the page from filling up with a reader's enthusiasm. */
+		function cap(selector: string, max: number) {
+			const all = marks!.querySelectorAll(selector);
+			for (let i = 0; i <= all.length - max; i++) all[i].remove();
+		}
+
+		/* ---------- the mug: coffee rings ---------- */
+		function ring(btn: HTMLElement) {
+			cap('.mark-ring', 5);
+			const r = btn.getBoundingClientRect();
+			const el = document.createElement('span');
+			el.className = 'mark-ring';
+			/* Centred on the toy (the CSS adds translateX(-50%)), with only
+			   enough jitter that two rings never stack exactly. */
+			el.style.left = `${r.left + r.width / 2 + scrollX + rand(-14, 14)}px`;
+			el.style.top = `${r.bottom + scrollY + rand(-6, 16)}px`;
+			el.style.setProperty('--s', rand(0.8, 1.25).toFixed(2));
+			el.style.setProperty('--r', `${Math.round(rand(-20, 20))}deg`);
+			marks!.appendChild(el);
+		}
+
+		/* ---------- the scissors: paper snippets that fall ---------- */
+		function snip(btn: HTMLElement) {
+			cap('.mark-snip', 26);
+			const r = btn.getBoundingClientRect();
+			const n = reduced() ? 4 : 9;
+			for (let i = 0; i < n; i++) {
+				const el = document.createElement('span');
+				el.className = 'mark-snip';
+				el.style.left = `${r.left + scrollX + r.width / 2 + rand(-8, 8)}px`;
+				el.style.top = `${r.bottom + scrollY - 6}px`;
+				el.style.setProperty('--dx', `${Math.round(rand(-55, 55))}px`);
+				el.style.setProperty('--dy', `${Math.round(rand(70, 190))}px`);
+				el.style.setProperty('--rot', `${Math.round(rand(-220, 220))}deg`);
+				el.style.setProperty('--w', `${Math.round(rand(5, 13))}px`);
+				el.style.setProperty('--h', `${Math.round(rand(7, 18))}px`);
+				el.style.setProperty('--delay', `${(i * 0.045).toFixed(2)}s`);
+				if (reduced()) el.classList.add('is-settled');
+				marks!.appendChild(el);
+			}
+		}
+
+		/* ---------- the pencil: circle something, badly ---------- */
+		function circle() {
+			const targets = [...document.querySelectorAll<HTMLElement>('[data-annotate]')].filter((t) => {
+				const b = t.getBoundingClientRect();
+				return b.width > 0 && b.height > 0 && !t.dataset.circled;
+			});
+			/* Once everything is circled, start again rather than do nothing. */
+			if (!targets.length) {
+				document.querySelectorAll<HTMLElement>('[data-annotate]').forEach((t) => delete t.dataset.circled);
+				marks!.querySelectorAll('.mark-circle').forEach((n) => n.remove());
+				return;
+			}
+
+			const target = pick(targets);
+			target.dataset.circled = '1';
+			const b = target.getBoundingClientRect();
+			const padX = 12;
+			const padY = 8;
+			const w = b.width + padX * 2;
+			const h = b.height + padY * 2;
+
+			const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			svg.setAttribute('class', 'mark-circle');
+			svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+			svg.style.left = `${b.left + scrollX - padX}px`;
+			svg.style.top = `${b.top + scrollY - padY}px`;
+			svg.style.width = `${w}px`;
+			svg.style.height = `${h}px`;
+
+			/* An ellipse drawn by hand overshoots where it closes. */
+			const rx = w / 2 - 2;
+			const ry = h / 2 - 2;
+			const cx = w / 2;
+			const cy = h / 2;
+			const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+			path.setAttribute(
+				'd',
+				`M ${cx + rx * 0.72} ${cy - ry * 0.68}
+				 C ${cx - rx * 0.1} ${cy - ry * 1.12}, ${cx - rx * 1.06} ${cy - ry * 0.6}, ${cx - rx * 0.96} ${cy + ry * 0.12}
+				 C ${cx - rx * 0.88} ${cy + ry * 0.92}, ${cx + rx * 0.3} ${cy + ry * 1.1}, ${cx + rx * 0.88} ${cy + ry * 0.5}
+				 C ${cx + rx * 1.12} ${cy + ry * 0.1}, ${cx + rx * 0.92} ${cy - ry * 0.74}, ${cx + rx * 0.32} ${cy - ry * 0.92}`,
+			);
+			path.setAttribute('pathLength', '1');
+			svg.appendChild(path);
+			if (reduced()) svg.classList.add('is-drawn');
+			marks!.appendChild(svg);
+		}
+
+		/* ---------- the stamp: press it, leave a mark ---------- */
+		const WORDS = ['seen', 'filed', 'approved', 'no notes', 'again?', 'keep', 'it works', 'noted', 'good'];
+		function stamp(btn: HTMLElement) {
+			cap('.mark-stamp', 4);
+			const r = btn.getBoundingClientRect();
+			const el = document.createElement('span');
+			el.className = 'mark-stamp';
+			el.textContent = pick(WORDS);
+			el.style.left = `${r.left + r.width / 2 + scrollX + rand(-12, 12)}px`;
+			el.style.top = `${r.bottom + scrollY + rand(6, 26)}px`;
+			el.style.setProperty('--r', `${Math.round(rand(-14, 10))}deg`);
+			if (reduced()) el.classList.add('is-pressed');
+			marks!.appendChild(el);
+		}
+
+		const toys: Record<string, (btn: HTMLElement) => void> = { ring, snip, circle, stamp };
+
+		document.querySelectorAll<HTMLElement>('[data-toy]').forEach((btn) => {
+			btn.addEventListener('click', () => {
+				toys[btn.dataset.toy!]?.(btn);
+				btn.classList.remove('is-used');
+				/* Re-add next frame so the nudge replays on every press. */
+				requestAnimationFrame(() => btn.classList.add('is-used'));
+			});
+		});
+	}
+</script>
+
+<style>
+	/* The toys sit where doodles would, but they are buttons, so they say so
+	   on hover. Still seasoning: they go away before they can crowd the copy. */
+	.toy {
+		position: absolute;
+		z-index: 4;
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--ink-soft);
+		opacity: 0.6;
+		cursor: pointer;
+		transition:
+			transform 0.18s ease,
+			opacity 0.18s ease;
+	}
+	.toy:hover,
+	.toy:focus-visible {
+		opacity: 1;
+	}
+
+	.toy-scissors {
+		top: 0.5rem;
+		right: 7%;
+		width: 3.1rem;
+		height: 3.1rem;
+		transform: rotate(14deg);
+	}
+	.toy-scissors:hover {
+		transform: rotate(2deg);
+	}
+	.toy-scissors.is-used {
+		animation: toy-snip 0.4s ease;
+	}
+
+	.toy-pencil {
+		top: 6.6rem;
+		right: 1.5%;
+		width: 2.9rem;
+		height: 2.9rem;
+		transform: rotate(-22deg);
+	}
+	.toy-pencil:hover {
+		transform: rotate(-10deg) translateY(-3px);
+	}
+	.toy-pencil.is-used {
+		animation: toy-scribble 0.45s ease;
+	}
+
+	.toy-stamp {
+		top: 1.2rem;
+		right: 17%;
+		width: 2.7rem;
+		height: 2.7rem;
+		transform: rotate(-7deg);
+	}
+	.toy-stamp:hover {
+		transform: rotate(0deg) translateY(-3px);
+	}
+	.toy-stamp.is-used {
+		animation: toy-press 0.34s ease;
+	}
+
+	.toy-mug {
+		top: 11.2rem;
+		right: 9%;
+		width: 3rem;
+		height: 3rem;
+		transform: rotate(-6deg);
+	}
+	.toy-mug:hover {
+		transform: rotate(-6deg) translateY(-3px);
+	}
+	.toy-mug.is-used {
+		animation: toy-set 0.4s ease;
+	}
+
+	@keyframes toy-snip {
+		40% {
+			transform: rotate(-6deg) scale(0.93);
+		}
+	}
+	@keyframes toy-scribble {
+		30% {
+			transform: rotate(-30deg) translate(-4px, 3px);
+		}
+		65% {
+			transform: rotate(-12deg) translate(4px, -2px);
+		}
+	}
+	@keyframes toy-press {
+		45% {
+			transform: rotate(-7deg) translateY(8px) scaleY(0.88);
+		}
+	}
+	@keyframes toy-set {
+		40% {
+			transform: rotate(-6deg) translateY(7px) scale(0.94);
+		}
+	}
+
+	@media (max-width: 860px) {
+		.toy {
+			display: none;
+		}
+	}
+</style>
+
+<style is:global>
+	/* Marks live on the document, not in the hero, so they keep their place on
+	   the paper when the page scrolls. */
+	#toy-marks {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 0;
+		z-index: 3;
+		pointer-events: none;
+	}
+	#toy-marks > * {
+		position: absolute;
+		pointer-events: none;
+	}
+
+	/* coffee ring */
+	.mark-ring {
+		width: 2.3rem;
+		height: 2.3rem;
+		border: 3px solid #8a5a32;
+		border-radius: 50%;
+		opacity: 0;
+		transform: translateX(-50%) scale(var(--s, 1)) rotate(var(--r, 0deg));
+		animation: mark-soak 0.7s ease forwards;
+	}
+	@keyframes mark-soak {
+		from {
+			opacity: 0;
+			border-width: 6px;
+		}
+		to {
+			opacity: 0.26;
+			border-width: 3px;
+		}
+	}
+
+	/* paper snippet */
+	.mark-snip {
+		width: var(--w, 9px);
+		height: var(--h, 12px);
+		background: var(--card);
+		border: 1px solid var(--ink-faint);
+		border-radius: 1px;
+		opacity: 0;
+		animation: mark-flutter 1.15s cubic-bezier(0.3, 0.7, 0.4, 1) var(--delay, 0s) forwards;
+	}
+	.mark-snip.is-settled {
+		opacity: 0.85;
+		animation: none;
+		transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+	}
+	@keyframes mark-flutter {
+		0% {
+			opacity: 1;
+			transform: translate(0, 0) rotate(0deg);
+		}
+		100% {
+			opacity: 0.85;
+			transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+		}
+	}
+
+	/* pencil loop */
+	.mark-circle {
+		overflow: visible;
+		fill: none;
+	}
+	.mark-circle path {
+		stroke: var(--stamp);
+		stroke-width: 2.4;
+		stroke-linecap: round;
+		opacity: 0.85;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		animation: mark-draw 0.65s ease forwards;
+	}
+	.mark-circle.is-drawn path {
+		stroke-dashoffset: 0;
+		animation: none;
+	}
+	@keyframes mark-draw {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	/* pressed stamp */
+	.mark-stamp {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--stamp);
+		border: 2.5px solid var(--stamp);
+		border-radius: 5px;
+		padding: 0.15rem 0.45rem;
+		white-space: nowrap;
+		opacity: 0;
+		transform: translateX(-50%) rotate(var(--r, -8deg)) scale(1.5);
+		animation: mark-press 0.3s ease forwards;
+	}
+	.mark-stamp.is-pressed {
+		opacity: 0.72;
+		transform: translateX(-50%) rotate(var(--r, -8deg)) scale(1);
+		animation: none;
+	}
+	@keyframes mark-press {
+		to {
+			opacity: 0.72;
+			transform: translateX(-50%) rotate(var(--r, -8deg)) scale(1);
+		}
+	}
+</style>

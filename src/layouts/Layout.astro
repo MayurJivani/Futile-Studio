@@ -3,17 +3,32 @@ interface Props {
 	title?: string;
 	description?: string;
 	noindex?: boolean;
+	/**
+	 * 'scrapbook' — Guideline B, the paper studio spread. The main site.
+	 * 'booth'     — Guideline A, the dark blueprint. Kept for /collection,
+	 *               whose shelf and two players are styled against these
+	 *               tokens end to end. See FRC/Lab/THEME-B.md for both.
+	 */
+	theme?: 'scrapbook' | 'booth';
 }
 
 const {
 	title = 'Futile Studio — Mayur Jivani',
-	description = "Everything is futile at scale. We do it anyway, because there's beauty in it.",
+	description = 'The studio scrapbook of Mayur Jivani: small software, built and shipped, pasted in as it lands.',
 	noindex = false,
+	theme = 'scrapbook',
 } = Astro.props;
+
+const isScrapbook = theme === 'scrapbook';
+
+const fonts = isScrapbook
+	? 'family=Sniglet:wght@400;800&family=Shantell+Sans:ital,wght@0,400;0,600;0,700;1,400'
+	: 'family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400';
+const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={theme}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,72 +39,97 @@ const {
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
-			rel="stylesheet"
-			media="print"
-			onload="this.media='all'"
-		/>
-		<noscript>
-			<link
-				href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
-				rel="stylesheet"
-			/>
-		</noscript>
+		<link href={fontHref} rel="stylesheet" media="print" onload="this.media='all'" />
+		<noscript><link href={fontHref} rel="stylesheet" /></noscript>
+		<!-- Desk settings are applied before first paint, so a chosen lamp, text
+		     size or contrast never flashes the default first. Inline on purpose,
+		     and a no-op on the blueprint theme, which has no desk. -->
+		<script is:inline>
+			try {
+				const root = document.documentElement;
+				if (root.dataset.theme === 'scrapbook') {
+					const s = JSON.parse(localStorage.getItem('futile-desk') || '{}');
+					if (s.lamp === 'off') root.dataset.lamp = 'off';
+					if (s.scale) root.style.setProperty('--text-scale', s.scale);
+					if (s.contrast) root.dataset.contrast = 'high';
+					if (s.motion) root.dataset.motion = s.motion;
+				}
+			} catch {
+				/* first visit, or storage blocked: the defaults are already correct */
+			}
+		</script>
 	</head>
 	<body>
-		<!-- PRELOADER -->
-		<div class="preloader" id="preloader" aria-hidden="true">
-			<svg class="preloader-diagram" viewBox="0 0 200 200" fill="none">
-				<circle cx="100" cy="100" r="70" stroke="currentColor" stroke-width="0.6"></circle>
-				<circle cx="100" cy="100" r="46" stroke="currentColor" stroke-width="0.6"></circle>
-				<circle cx="100" cy="100" r="22" stroke="currentColor" stroke-width="0.6"></circle>
-				<line
-					x1="100"
-					y1="10"
-					x2="100"
-					y2="190"
-					stroke="currentColor"
-					stroke-width="0.4"
-					stroke-dasharray="2 6"></line>
-				<line
-					x1="10"
-					y1="100"
-					x2="190"
-					y2="100"
-					stroke="currentColor"
-					stroke-width="0.4"
-					stroke-dasharray="2 6"></line>
-			</svg>
-			<div class="preloader-tag" id="preloader-tag">INITIALIZING STUDIO</div>
-			<div class="preloader-count"><span id="preloader-pct">00</span><span>%</span></div>
-			<div class="preloader-bar"><div class="preloader-bar-fill" id="preloader-bar-fill"></div></div>
-		</div>
+		{
+			!isScrapbook && (
+				<Fragment>
+					{/* ---- Guideline A chrome: blueprint instrumentation ---- */}
+					<div class="preloader" id="preloader" aria-hidden="true">
+						<svg class="preloader-diagram" viewBox="0 0 200 200" fill="none">
+							<circle cx="100" cy="100" r="70" stroke="currentColor" stroke-width="0.6" />
+							<circle cx="100" cy="100" r="46" stroke="currentColor" stroke-width="0.6" />
+							<circle cx="100" cy="100" r="22" stroke="currentColor" stroke-width="0.6" />
+							<line
+								x1="100"
+								y1="10"
+								x2="100"
+								y2="190"
+								stroke="currentColor"
+								stroke-width="0.4"
+								stroke-dasharray="2 6"
+							/>
+							<line
+								x1="10"
+								y1="100"
+								x2="190"
+								y2="100"
+								stroke="currentColor"
+								stroke-width="0.4"
+								stroke-dasharray="2 6"
+							/>
+						</svg>
+						<div class="preloader-tag" id="preloader-tag">
+							INITIALIZING
+						</div>
+						<div class="preloader-count">
+							<>
+								<span id="preloader-pct">00</span>
+								<span>%</span>
+							</>
+						</div>
+						<div class="preloader-bar">
+							<div class="preloader-bar-fill" id="preloader-bar-fill" />
+						</div>
+					</div>
 
-		<!-- CUSTOM CURSOR -->
-		<div class="cursor" id="cursor" aria-hidden="true">
-			<div class="cursor-ring" id="cursor-ring"></div>
-			<div class="cursor-dot" id="cursor-dot"></div>
-			<div class="cursor-coord" id="cursor-coord">X 0000 · Y 0000</div>
-		</div>
+					<div class="cursor" id="cursor" aria-hidden="true">
+						<div class="cursor-ring" id="cursor-ring" />
+						<div class="cursor-dot" id="cursor-dot" />
+						<div class="cursor-coord" id="cursor-coord">
+							X 0000 · Y 0000
+						</div>
+					</div>
 
-		<!-- HOVER GLIMPSE (project preview overlay) -->
-		<div class="glimpse" id="glimpse" aria-hidden="true">
-			<div class="glimpse-panel">
-				<div class="glimpse-label">/ PREVIEW</div>
-				<div class="glimpse-inner" id="glimpse-inner"></div>
-			</div>
-		</div>
-
-		<div class="scroll-progress" id="scroll-progress"></div>
-
-		<div class="rule rule-top" aria-hidden="true">
-			<span>FUTILE.STUDIO</span><span>N 51.7189° / E 8.7575° — PADERBORN, DE</span>
-		</div>
-		<div class="mark mark-tl" aria-hidden="true">+</div>
-		<div class="mark mark-tr" aria-hidden="true">+</div>
-		<div class="mark mark-bl" aria-hidden="true">+</div>
-		<div class="mark mark-br" aria-hidden="true">+</div>
+					<div class="scroll-progress" id="scroll-progress" />
+					<div class="rule rule-top" aria-hidden="true">
+						<span>FUTILE.STUDIO</span>
+						<span>N 51.7189° / E 8.7575° — PADERBORN, DE</span>
+					</div>
+					<div class="mark mark-tl" aria-hidden="true">
+						+
+					</div>
+					<div class="mark mark-tr" aria-hidden="true">
+						+
+					</div>
+					<div class="mark mark-bl" aria-hidden="true">
+						+
+					</div>
+					<div class="mark mark-br" aria-hidden="true">
+						+
+					</div>
+				</Fragment>
+			)
+		}
 
 		<slot />
 
@@ -98,70 +138,79 @@ const {
 			import { ScrollTrigger } from 'gsap/ScrollTrigger';
 			gsap.registerPlugin(ScrollTrigger);
 
-			const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+			const root = document.documentElement;
+			const booth = root.dataset.theme === 'booth';
+
+			/* The scrapbook's motion setting overrides the OS one in both
+			   directions, so 'on' is honoured on a reduce-motion machine too. */
+			const motionPref = root.dataset.motion;
+			const reduceMotion =
+				motionPref === 'off'
+					? true
+					: motionPref === 'on'
+						? false
+						: window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 			const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-			/* ---------- preloader ---------- */
-			(function preloader() {
-				const el = document.getElementById('preloader')!;
-				const pct = document.getElementById('preloader-pct')!;
-				const bar = document.getElementById('preloader-bar-fill')!;
-				const tag = document.getElementById('preloader-tag')!;
-				const fast = sessionStorage.getItem('futile-visited') === '1';
+			/* ---------- Guideline A only: preloader, cursor, progress ---------- */
+			if (booth) {
+				(function preloader() {
+					const el = document.getElementById('preloader');
+					const pct = document.getElementById('preloader-pct');
+					const bar = document.getElementById('preloader-bar-fill');
+					const tag = document.getElementById('preloader-tag');
+					if (!el || !pct || !bar || !tag) return;
+					const fast = sessionStorage.getItem('futile-visited') === '1';
 
-				document.body.classList.add('is-loading');
+					document.body.classList.add('is-loading');
+					const finish = () => {
+						document.body.classList.remove('is-loading');
+						sessionStorage.setItem('futile-visited', '1');
+						gsap.to(el, {
+							yPercent: -100,
+							duration: fast || reduceMotion ? 0.3 : 0.6,
+							ease: 'power4.inOut',
+							onComplete: () => el.remove(),
+						});
+					};
 
-				const finish = () => {
-					document.body.classList.remove('is-loading');
-					sessionStorage.setItem('futile-visited', '1');
-					gsap.to(el, {
-						yPercent: -100,
-						duration: fast || reduceMotion ? 0.3 : 0.6,
-						ease: 'power4.inOut',
-						onComplete: () => el.remove(),
+					if (reduceMotion || fast) {
+						pct.textContent = '100';
+						bar.style.width = '100%';
+						gsap.delayedCall(0.15, finish);
+						return;
+					}
+
+					const tags = ['INITIALIZING', 'LOADING ASSETS', 'SPINNING UP', 'READY'];
+					const proxy = { v: 0 };
+					gsap.to(proxy, {
+						v: 100,
+						duration: 1.0,
+						ease: 'power2.inOut',
+						onUpdate: () => {
+							const v = Math.round(proxy.v);
+							pct.textContent = String(v).padStart(2, '0');
+							bar.style.width = v + '%';
+							const idx = Math.min(tags.length - 1, Math.floor((v / 100) * tags.length));
+							if (tag.textContent !== tags[idx]) tag.textContent = tags[idx];
+						},
+						onComplete: () => gsap.delayedCall(0.15, finish),
 					});
-				};
+				})();
 
-				if (reduceMotion || fast) {
-					pct.textContent = '100';
-					bar.style.width = '100%';
-					gsap.delayedCall(0.15, finish);
-					return;
-				}
+				if (canHover && !reduceMotion) {
+					root.classList.add('has-custom-cursor');
+					const cursor = document.getElementById('cursor')!;
+					const ring = document.getElementById('cursor-ring')!;
+					const dot = document.getElementById('cursor-dot')!;
+					const coord = document.getElementById('cursor-coord')!;
 
-				const tags = ['INITIALIZING STUDIO', 'LOADING ASSETS', 'EVERYTHING IS FUTILE', 'DO IT ANYWAY'];
-				const proxy = { v: 0 };
-				gsap.to(proxy, {
-					v: 100,
-					duration: 1.0,
-					ease: 'power2.inOut',
-					onUpdate: () => {
-						const v = Math.round(proxy.v);
-						pct.textContent = String(v).padStart(2, '0');
-						bar.style.width = v + '%';
-						const idx = Math.min(tags.length - 1, Math.floor((v / 100) * tags.length));
-						if (tag.textContent !== tags[idx]) tag.textContent = tags[idx];
-					},
-					onComplete: () => gsap.delayedCall(0.15, finish),
-				});
-			})();
+					const dotX = gsap.quickTo(dot, 'x', { duration: 0.08, ease: 'power3' });
+					const dotY = gsap.quickTo(dot, 'y', { duration: 0.08, ease: 'power3' });
+					const ringX = gsap.quickTo(ring, 'x', { duration: 0.35, ease: 'power3' });
+					const ringY = gsap.quickTo(ring, 'y', { duration: 0.35, ease: 'power3' });
 
-			/* ---------- custom cursor ---------- */
-			if (canHover && !reduceMotion) {
-				document.documentElement.classList.add('has-custom-cursor');
-				const cursor = document.getElementById('cursor')!;
-				const ring = document.getElementById('cursor-ring')!;
-				const dot = document.getElementById('cursor-dot')!;
-				const coord = document.getElementById('cursor-coord')!;
-
-				const dotX = gsap.quickTo(dot, 'x', { duration: 0.08, ease: 'power3' });
-				const dotY = gsap.quickTo(dot, 'y', { duration: 0.08, ease: 'power3' });
-				const ringX = gsap.quickTo(ring, 'x', { duration: 0.35, ease: 'power3' });
-				const ringY = gsap.quickTo(ring, 'y', { duration: 0.35, ease: 'power3' });
-
-				window.addEventListener(
-					'mousemove',
-					(e) => {
+					window.addEventListener('mousemove', (e) => {
 						cursor.classList.add('has-moved');
 						dotX(e.clientX);
 						dotY(e.clientY);
@@ -169,17 +218,25 @@ const {
 						ringY(e.clientY);
 						coord.style.transform = `translate(${e.clientX + 18}px, ${e.clientY + 14}px)`;
 						coord.textContent = `X ${String(Math.round(e.clientX)).padStart(4, '0')} · Y ${String(Math.round(e.clientY)).padStart(4, '0')}`;
-					},
-					{ once: false },
-				);
+					});
 
-				document.addEventListener('mouseover', (e) => {
-					const target = (e.target as HTMLElement).closest('a, button, [data-magnetic], .shelf-tile');
-					cursor.classList.toggle('is-active', !!target);
-				});
+					document.addEventListener('mouseover', (e) => {
+						const t = (e.target as HTMLElement).closest('a, button, [data-magnetic], .shelf-tile');
+						cursor.classList.toggle('is-active', !!t);
+					});
+				}
+
+				const progress = document.getElementById('scroll-progress');
+				const onScroll = () => {
+					const h = document.documentElement;
+					const p = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+					if (progress) progress.style.width = p + '%';
+				};
+				document.addEventListener('scroll', onScroll, { passive: true });
+				onScroll();
 			}
 
-			/* ---------- magnetic elements ---------- */
+			/* ---------- shared: magnetic hover ---------- */
 			if (canHover && !reduceMotion) {
 				document.querySelectorAll<HTMLElement>('[data-magnetic]').forEach((el) => {
 					const strength = parseFloat(el.dataset.magnetic || '0.35');
@@ -197,45 +254,7 @@ const {
 				});
 			}
 
-			/* ---------- hover glimpse (project preview overlay) ---------- */
-			if (canHover && !reduceMotion) {
-				const glimpse = document.getElementById('glimpse')!;
-				const glimpseInner = document.getElementById('glimpse-inner')!;
-				const gX = gsap.quickTo(glimpse, 'x', { duration: 0.4, ease: 'power3' });
-				const gY = gsap.quickTo(glimpse, 'y', { duration: 0.4, ease: 'power3' });
-				let activeGlimpse: HTMLElement | null = null;
-
-				function positionGlimpse(clientX: number, clientY: number) {
-					const panelW = 300;
-					const panelH = 220;
-					let x = clientX + 30;
-					let y = clientY + 30;
-					if (x + panelW > window.innerWidth - 16) x = clientX - panelW - 30;
-					if (y + panelH > window.innerHeight - 16) y = clientY - panelH - 30;
-					gX(x);
-					gY(y);
-				}
-
-				document.addEventListener('mouseover', (e) => {
-					const card = (e.target as HTMLElement).closest<HTMLElement>('[data-glimpse]');
-					if (card && card !== activeGlimpse) {
-						activeGlimpse = card;
-						const tpl = card.querySelector('template');
-						glimpseInner.innerHTML = '';
-						if (tpl) glimpseInner.appendChild((tpl as HTMLTemplateElement).content.cloneNode(true));
-						glimpse.classList.add('is-visible');
-					} else if (!card && activeGlimpse) {
-						activeGlimpse = null;
-						glimpse.classList.remove('is-visible');
-					}
-				});
-
-				window.addEventListener('mousemove', (e) => {
-					if (activeGlimpse) positionGlimpse(e.clientX, e.clientY);
-				});
-			}
-
-			/* ---------- auto word-split for [data-split] ---------- */
+			/* ---------- shared: auto word-split ---------- */
 			document.querySelectorAll<HTMLElement>('[data-split]').forEach((el) => {
 				const words = el.textContent!.trim().split(/\s+/);
 				el.innerHTML = words
@@ -243,56 +262,79 @@ const {
 					.join('');
 			});
 
-			/* ---------- scroll reveal (fade/rise) ---------- */
-			gsap.utils.toArray<HTMLElement>('[data-reveal]:not([data-reveal="line"])').forEach((el) => {
-				const delay = (parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 0) / 1000;
-				gsap.set(el, { opacity: 0, y: 28 });
-				gsap.to(el, {
-					opacity: 1,
-					y: 0,
-					duration: 0.8,
-					delay,
-					ease: 'power3.out',
-					scrollTrigger: { trigger: el, start: 'top 88%' },
+			/* ---------- shared: scroll reveal ---------- */
+			if (reduceMotion) {
+				/* Nothing animates in, so nothing may start hidden. */
+				document.querySelectorAll<HTMLElement>('[data-reveal], [data-paste]').forEach((el) => {
+					el.style.opacity = '1';
+					el.style.transform = 'none';
 				});
-			});
-
-			/* ---------- scroll reveal (drawn lines) ---------- */
-			gsap.utils
-				.toArray<SVGPathElement | SVGLineElement>('[data-reveal="line"] .draw-path')
-				.forEach((path) => {
-					gsap.set(path, { strokeDashoffset: 1 });
-					gsap.to(path, {
-						strokeDashoffset: 0,
-						duration: 1.1,
+			} else {
+				gsap.utils.toArray<HTMLElement>('[data-reveal]:not([data-reveal="line"])').forEach((el) => {
+					const delay = (parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 0) / 1000;
+					gsap.set(el, { opacity: 0, y: 28 });
+					gsap.to(el, {
+						opacity: 1,
+						y: 0,
+						duration: 0.8,
+						delay,
 						ease: 'power3.out',
-						scrollTrigger: { trigger: path, start: 'top 92%' },
+						scrollTrigger: { trigger: el, start: 'top 88%' },
 					});
 				});
 
-			/* ---------- kinetic word reveal ---------- */
-			document.querySelectorAll<HTMLElement>('[data-split-group]').forEach((group) => {
-				const words = group.querySelectorAll('.split-word');
-				if (!words.length) return;
-				gsap.set(words, { yPercent: 120 });
-				gsap.to(words, {
-					yPercent: 0,
-					duration: 0.9,
-					stagger: 0.045,
-					ease: 'power4.out',
-					scrollTrigger: { trigger: group, start: 'top 85%' },
-				});
-			});
+				gsap.utils
+					.toArray<SVGPathElement | SVGLineElement>('[data-reveal="line"] .draw-path')
+					.forEach((path) => {
+						gsap.set(path, { strokeDashoffset: 1 });
+						gsap.to(path, {
+							strokeDashoffset: 0,
+							duration: 1.1,
+							ease: 'power3.out',
+							scrollTrigger: { trigger: path, start: 'top 92%' },
+						});
+					});
 
-			/* ---------- scroll progress ---------- */
-			const bar = document.getElementById('scroll-progress');
-			const onScroll = () => {
-				const h = document.documentElement;
-				const p = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
-				if (bar) bar.style.width = p + '%';
-			};
-			document.addEventListener('scroll', onScroll, { passive: true });
-			onScroll();
+				document.querySelectorAll<HTMLElement>('[data-split-group]').forEach((group) => {
+					const words = group.querySelectorAll('.split-word');
+					if (!words.length) return;
+					gsap.set(words, { yPercent: 120 });
+					gsap.to(words, {
+						yPercent: 0,
+						duration: 0.9,
+						stagger: 0.045,
+						ease: 'power4.out',
+						scrollTrigger: { trigger: group, start: 'top 85%' },
+					});
+				});
+
+				/* ---------- scrapbook: paste-in, settling to a hand-placed tilt ----------
+				   The resting tilt is randomised per load from one shared range, so a
+				   wall of cards reads as placed by hand rather than patterned. The
+				   range is fixed; only the value inside it varies. (Guideline B) */
+				gsap.utils.toArray<HTMLElement>('[data-paste]').forEach((el) => {
+					const rot = parseFloat(el.dataset.paste || '') || Math.random() * 7 - 3.5;
+					el.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
+					gsap.set(el, { opacity: 0, y: 22, rotate: rot - 4, scale: 0.97 });
+					gsap.to(el, {
+						opacity: 1,
+						y: 0,
+						rotate: rot,
+						scale: 1,
+						duration: 0.55,
+						ease: 'back.out(1.4)',
+						scrollTrigger: { trigger: el, start: 'top 92%' },
+					});
+				});
+			}
+
+			/* Reduced motion still wants the hand-placed tilt, just not the flight in. */
+			if (reduceMotion) {
+				document.querySelectorAll<HTMLElement>('[data-paste]').forEach((el) => {
+					const rot = parseFloat(el.dataset.paste || '') || Math.random() * 7 - 3.5;
+					el.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
+				});
+			}
 
 			window.addEventListener('load', () => ScrollTrigger.refresh());
 		</script>
@@ -308,7 +350,383 @@ const {
 		padding: 0;
 	}
 
-	:root {
+	html {
+		scroll-behavior: smooth;
+		overflow-x: hidden;
+		width: 100%;
+	}
+
+	a {
+		color: inherit;
+	}
+
+	/* ===================================================================
+	   GUIDELINE B — the studio scrapbook
+	   Kraft ground, bright paper pasted onto it, flat hard-offset shadows
+	   so everything reads as cut paper rather than floating UI. Spec and
+	   rationale: FRC/Lab/THEME-B.md
+	   =================================================================== */
+
+	[data-theme='scrapbook'] {
+		/* Shared with lab.futile.studio so the two read as one studio: paper,
+		   cream, ink and both accents are Lab's exact tokens. (FRC/Lab/THEME-B.md) */
+		--paper: #f7f4ec;
+		--paper-2: #efeade;
+		--card: #f8f4e7;
+		--card-2: #f1ecdd;
+
+		--ink: #1b2132;
+		--ink-soft: rgba(27, 33, 50, 0.68);
+		--ink-faint: rgba(27, 33, 50, 0.4);
+		--ink-ghost: rgba(27, 33, 50, 0.16);
+
+		--stamp: #e0574a;
+		--live: #3fa34d;
+		--marker: #f5d547;
+		--thread: #9a6b4f;
+
+		--shadow: rgba(27, 33, 50, 0.26);
+		--shadow-deep: rgba(27, 33, 50, 0.3);
+
+		--bubble: 'Sniglet', 'Comic Sans MS', cursive;
+		--hand: 'Shantell Sans', 'Segoe Print', cursive;
+
+		--text-scale: 1;
+		font-size: calc(16px * var(--text-scale));
+	}
+
+	/* The desk lamp, switched off: same paper, late in the evening. */
+	[data-theme='scrapbook'][data-lamp='off'] {
+		--paper: #2a2620;
+		--paper-2: #221e19;
+		--card: #39332b;
+		--card-2: #322c25;
+
+		--ink: #f2ead8;
+		--ink-soft: rgba(242, 234, 216, 0.7);
+		--ink-faint: rgba(242, 234, 216, 0.42);
+		--ink-ghost: rgba(242, 234, 216, 0.16);
+
+		--stamp: #ef7565;
+		--live: #5fbf6c;
+		--marker: #b2922c;
+		--thread: #b08a68;
+
+		--shadow: rgba(0, 0, 0, 0.5);
+		--shadow-deep: rgba(0, 0, 0, 0.58);
+	}
+
+	/* Real contrast, not a darker grey: borders and secondary ink go solid. */
+	[data-theme='scrapbook'][data-contrast='high'] {
+		--ink-soft: var(--ink);
+		--ink-faint: var(--ink);
+		--ink-ghost: rgba(27, 33, 50, 0.4);
+		--shadow: var(--ink);
+		--shadow-deep: var(--ink);
+	}
+	[data-theme='scrapbook'][data-contrast='high'][data-lamp='off'] {
+		--ink-ghost: rgba(242, 234, 216, 0.4);
+	}
+
+	[data-theme='scrapbook'] body {
+		background-color: var(--paper);
+		/* Faint ledger grid: the page is still a working sheet. */
+		background-image:
+			linear-gradient(var(--ink-ghost) 1px, transparent 1px),
+			linear-gradient(90deg, var(--ink-ghost) 1px, transparent 1px);
+		background-size: 34px 34px;
+		color: var(--ink);
+		font-family: var(--hand);
+		font-size: 0.93rem;
+		line-height: 1.65;
+		min-height: 100vh;
+		overflow-x: hidden;
+		transition:
+			background-color 0.45s ease,
+			color 0.45s ease;
+	}
+
+	/* Paper grain, multiplied into the stock. */
+	[data-theme='scrapbook'] body::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+		opacity: 0.055;
+		mix-blend-mode: multiply;
+		pointer-events: none;
+		z-index: 900;
+	}
+	[data-theme='scrapbook'][data-lamp='off'] body::before {
+		mix-blend-mode: screen;
+		opacity: 0.04;
+	}
+
+	[data-theme='scrapbook'] ::selection {
+		background: var(--marker);
+		color: #1b2132;
+	}
+
+	[data-theme='scrapbook'] h1,
+	[data-theme='scrapbook'] h2,
+	[data-theme='scrapbook'] h3 {
+		font-family: var(--bubble);
+		font-weight: 800;
+		letter-spacing: 0;
+		line-height: 1.14;
+	}
+
+	[data-theme='scrapbook'] :focus-visible {
+		outline: 3px solid var(--stamp);
+		outline-offset: 3px;
+	}
+
+	/* ---------- Guideline B primitives ---------- */
+
+	/* A sheet of bright paper pasted onto the kraft ground. Flat offset
+	   shadow, no blur, thin ink border at partial alpha, softly rounded. */
+	[data-theme='scrapbook'] .sheet {
+		position: relative;
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 7px;
+		box-shadow: 4px 4px 0 var(--shadow);
+		transform: rotate(var(--rot, 0deg));
+	}
+
+	/* Cat-eared corner, cut from a gradient rather than an image asset. */
+	[data-theme='scrapbook'] .sheet-catear::after {
+		content: '';
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		width: 20px;
+		height: 20px;
+		background: linear-gradient(
+			135deg,
+			transparent 50%,
+			rgba(0, 0, 0, 0.14) 50%,
+			rgba(0, 0, 0, 0.07) 55%,
+			var(--paper) 55%
+		);
+	}
+
+	/* Mounts. Assigned in markup, never randomised: a mix of pin, tape and
+	   photo corners reads as a deliberate choice; a random one reads as noise. */
+	[data-theme='scrapbook'] .mount {
+		position: absolute;
+		z-index: 2;
+		pointer-events: none;
+	}
+	[data-theme='scrapbook'] .mount-pin {
+		top: -9px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 15px;
+		height: 15px;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #8f2c1b 100%);
+		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+	}
+	[data-theme='scrapbook'] .mount-tape {
+		top: -11px;
+		left: 50%;
+		width: 68px;
+		height: 22px;
+		transform: translateX(-50%) rotate(-3deg);
+		background: rgba(255, 255, 255, 0.5);
+		border: 1px solid rgba(255, 255, 255, 0.22);
+		box-shadow: inset 0 0 0 1px rgba(27, 33, 50, 0.05);
+	}
+	[data-theme='scrapbook'][data-lamp='off'] .mount-tape {
+		background: rgba(255, 255, 255, 0.14);
+	}
+	/* Photo corner: a paper triangle the sheet tucks into. */
+	[data-theme='scrapbook'] .mount-corner {
+		width: 22px;
+		height: 22px;
+		background: var(--ink-soft);
+		opacity: 0.55;
+	}
+	[data-theme='scrapbook'] .mount-corner-tl {
+		top: -1px;
+		left: -1px;
+		clip-path: polygon(0 0, 100% 0, 0 100%);
+	}
+	[data-theme='scrapbook'] .mount-corner-br {
+		right: -1px;
+		bottom: -1px;
+		clip-path: polygon(100% 100%, 100% 0, 0 100%);
+	}
+	/* Paperclip, bent over the top edge. */
+	[data-theme='scrapbook'] .mount-clip {
+		top: -14px;
+		left: 22px;
+		width: 16px;
+		height: 34px;
+		border: 2px solid var(--ink-faint);
+		border-radius: 8px;
+		background: transparent;
+	}
+	[data-theme='scrapbook'] .mount-clip::after {
+		content: '';
+		position: absolute;
+		inset: 4px 4px 10px;
+		border: 2px solid var(--ink-ghost);
+		border-radius: 5px;
+		border-bottom: none;
+	}
+
+	/* A pressed rubber stamp. Slightly rotated, ink never quite solid. */
+	[data-theme='scrapbook'] .stamp {
+		display: inline-block;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.6rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--stamp);
+		border: 2px solid var(--stamp);
+		border-radius: 4px;
+		padding: 2px 7px;
+		opacity: 0.8;
+		transform: rotate(-4deg);
+	}
+
+	/* Highlighter swipe behind inline text. */
+	[data-theme='scrapbook'] .marker {
+		background: linear-gradient(to top, var(--marker) 0 42%, transparent 42%);
+		padding: 0 2px;
+	}
+
+	/* Hand-drawn underline under a headline fragment. */
+	[data-theme='scrapbook'] .underline-wrap {
+		position: relative;
+		display: inline-block;
+	}
+	[data-theme='scrapbook'] .underline-wrap svg {
+		position: absolute;
+		left: -4px;
+		bottom: -0.16em;
+		width: calc(100% + 8px);
+		height: 0.22em;
+		overflow: visible;
+		color: var(--stamp);
+	}
+
+	/* The shared scrapbook button: a small paper tab you can press. */
+	[data-theme='scrapbook'] .btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		background: var(--card);
+		color: var(--ink);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 8px;
+		padding: 0.5rem 0.9rem;
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.82rem;
+		text-decoration: none;
+		cursor: pointer;
+		box-shadow: 3px 3px 0 var(--shadow);
+		transition:
+			transform 0.12s ease,
+			box-shadow 0.12s ease,
+			background 0.2s ease;
+	}
+	[data-theme='scrapbook'] .btn:hover {
+		transform: translate(-1px, -1px);
+		box-shadow: 5px 5px 0 var(--shadow);
+	}
+	[data-theme='scrapbook'] .btn:active {
+		transform: translate(1px, 1px);
+		box-shadow: 1px 1px 0 var(--shadow);
+	}
+	[data-theme='scrapbook'] .btn svg {
+		width: 0.9em;
+		height: 0.9em;
+	}
+	[data-theme='scrapbook'] .btn-stamp {
+		background: var(--stamp);
+		border-color: var(--stamp);
+		color: #fff;
+	}
+
+	/* Hand-lettered margin note, the kind written sideways up a page edge. */
+	[data-theme='scrapbook'] .margin-note {
+		font-family: var(--hand);
+		font-style: italic;
+		font-size: 0.78rem;
+		color: var(--ink-faint);
+		line-height: 1.5;
+	}
+
+	/* Section heading: bubbly, with room for a doodle beside it. */
+	[data-theme='scrapbook'] .sect-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.8rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.3rem;
+		color: var(--ink);
+		margin-bottom: 1.5rem;
+	}
+
+	/* Doodles are seasoning, not content: they go away on small screens
+	   rather than fight the copy for room. */
+	[data-theme='scrapbook'] .doodle {
+		position: absolute;
+		color: var(--ink-soft);
+		opacity: 0.6;
+		pointer-events: none;
+		z-index: 1;
+	}
+	@media (max-width: 760px) {
+		[data-theme='scrapbook'] .doodle {
+			display: none;
+		}
+	}
+
+	/* ---------- shared split-text primitives ---------- */
+	.split-mask {
+		display: inline-block;
+		overflow: hidden;
+		vertical-align: top;
+		padding-bottom: 0.08em;
+	}
+	.split-word {
+		display: inline-block;
+		will-change: transform;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) [data-reveal],
+		html:not([data-motion='on']) [data-paste] {
+			opacity: 1 !important;
+		}
+		html:not([data-motion='on']) .split-word {
+			transform: none !important;
+		}
+		html:not([data-motion='on']) * {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+		}
+	}
+	html[data-motion='off'] *,
+	html[data-motion='off'] *::before,
+	html[data-motion='off'] *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+
+	/* ===================================================================
+	   GUIDELINE A — the dark blueprint. Only /collection still wears it.
+	   =================================================================== */
+
+	[data-theme='booth'] {
 		--bg: #060c18;
 		--bg-2: #0a1526;
 		--surface: #0d1c33;
@@ -326,19 +744,13 @@ const {
 		--mono: 'JetBrains Mono', 'Space Mono', 'Courier New', monospace;
 	}
 
-	html {
-		scroll-behavior: smooth;
-		overflow-x: hidden;
-		width: 100%;
-	}
-
-	html.has-custom-cursor,
-	html.has-custom-cursor a,
-	html.has-custom-cursor button {
+	[data-theme='booth'].has-custom-cursor,
+	[data-theme='booth'].has-custom-cursor a,
+	[data-theme='booth'].has-custom-cursor button {
 		cursor: none;
 	}
 
-	body {
+	[data-theme='booth'] body {
 		background: var(--bg);
 		background-image:
 			linear-gradient(var(--line) 1px, transparent 1px),
@@ -359,13 +771,12 @@ const {
 		overflow-x: hidden;
 	}
 
-	body.is-loading {
+	[data-theme='booth'] body.is-loading {
 		overflow: hidden;
 		height: 100vh;
 	}
 
-	/* grain */
-	body::before {
+	[data-theme='booth'] body::before {
 		content: '';
 		position: fixed;
 		inset: 0;
@@ -375,17 +786,21 @@ const {
 		z-index: 999;
 	}
 
-	::selection {
+	[data-theme='booth'] ::selection {
 		background: var(--cyan);
 		color: var(--bg);
 	}
 
-	a {
-		color: inherit;
+	[data-theme='booth'] h1,
+	[data-theme='booth'] h2,
+	[data-theme='booth'] h3 {
+		font-family: var(--display);
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: -0.01em;
 	}
 
-	/* shared CTA button, used across pages (hero, forms, editor) */
-	.hero-cta {
+	[data-theme='booth'] .hero-cta {
 		display: inline-flex;
 		align-items: center;
 		gap: 10px;
@@ -404,28 +819,16 @@ const {
 			color 0.2s,
 			background 0.2s;
 	}
-
-	.hero-cta:hover {
+	[data-theme='booth'] .hero-cta:hover {
 		border-color: var(--cyan);
 		color: var(--cyan);
 		background: rgba(94, 184, 255, 0.06);
 	}
-
-	.hero-cta svg {
+	[data-theme='booth'] .hero-cta svg {
 		width: 14px;
 		height: 14px;
 	}
 
-	h1,
-	h2,
-	h3 {
-		font-family: var(--display);
-		font-weight: 800;
-		text-transform: uppercase;
-		letter-spacing: -0.01em;
-	}
-
-	/* ---------- preloader ---------- */
 	.preloader {
 		position: fixed;
 		inset: 0;
@@ -481,7 +884,6 @@ const {
 		}
 	}
 
-	/* ---------- custom cursor ---------- */
 	.cursor {
 		display: none;
 	}
@@ -537,57 +939,6 @@ const {
 		opacity: 0.55;
 	}
 
-	/* ---------- hover glimpse (project preview overlay) ---------- */
-	.glimpse {
-		position: fixed;
-		top: 0;
-		left: 0;
-		z-index: 400;
-		width: 300px;
-		pointer-events: none;
-		opacity: 0;
-		transform: scale(0.96);
-		transition:
-			opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-			transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-	.glimpse.is-visible {
-		opacity: 1;
-		transform: scale(1);
-	}
-	.glimpse-panel {
-		border: 1px solid var(--line-strong);
-		background: var(--surface);
-		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-		padding: 16px;
-	}
-	.glimpse-label {
-		font-size: 9px;
-		letter-spacing: 0.14em;
-		color: var(--cyan);
-		margin-bottom: 10px;
-	}
-	.glimpse-inner svg {
-		width: 100%;
-		height: auto;
-		display: block;
-		color: var(--cyan-soft);
-	}
-	.glimpse-inner .glimpse-tag {
-		margin-top: 10px;
-		font-size: 10px;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	@media (max-width: 900px) {
-		.glimpse {
-			display: none;
-		}
-	}
-
-	/* top identification rule, blueprint titleblock style */
 	.rule-top {
 		position: fixed;
 		top: 0;
@@ -646,28 +997,6 @@ const {
 	@media (max-width: 768px) {
 		.rule-top span:last-child {
 			display: none;
-		}
-	}
-
-	/* ---------- split text (kinetic word reveal) ---------- */
-	.split-mask {
-		display: inline-block;
-		overflow: hidden;
-		vertical-align: top;
-		padding-bottom: 0.08em;
-	}
-	.split-word {
-		display: inline-block;
-		will-change: transform;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		[data-reveal] {
-			opacity: 1 !important;
-			transform: none !important;
-		}
-		.split-word {
-			transform: none !important;
 		}
 	}
 </style>

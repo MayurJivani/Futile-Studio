@@ -1,903 +1,724 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
+import DeskPanel from '../components/DeskPanel.astro';
+import Cursors from '../components/Cursors.astro';
+import DeskToys from '../components/DeskToys.astro';
+import Stickers from '../components/Stickers.astro';
+import DeskClock from '../components/DeskClock.astro';
+import Legend from '../components/Legend.astro';
+import ShippingLog from '../components/ShippingLog.astro';
 import Marquee from '../components/Marquee.astro';
+import Sketch from '../components/Sketch.astro';
+import { open, workbench } from '../data/projects.js';
+
+const spec = [
+	['Makes', 'Web things, mostly games and small tools'],
+	['Studying', 'M.Sc. Computer Science at Paderborn'],
+	['Speaks', 'English, and German if you are patient'],
+	['Plays', 'Vinyl, cassettes, and whatever Chorusify picks'],
+	['Sits in', 'Paderborn, Germany'],
+];
+
+/* What I actually reach for. Grouped the way I think about it rather than the
+   way a keyword filter would like it. */
+const kit = [
+	{ group: 'Front of house', items: ['React', 'Astro', 'TypeScript', 'Next.js', 'Tailwind', 'Vite'] },
+	{ group: 'Back of house', items: ['Node', 'Express', 'Python', 'Flask', 'WebSockets', 'REST'] },
+	{ group: 'Where things are kept', items: ['Postgres', 'SQLite', 'MongoDB', 'MySQL', 'Redis'] },
+	{
+		group: 'Getting it out there',
+		items: ['Docker', 'Proxmox', 'Caddy', 'Nginx', 'Cloudflare', 'CI/CD', 'Git', 'AWS'],
+	},
+];
 ---
 
 <Layout>
 	<Nav />
+	<DeskPanel />
+	<Cursors />
 
-	<!-- HERO -->
-	<div class="hero">
-		<svg
-			class="hero-diagram"
-			id="hero-diagram"
-			viewBox="0 0 400 400"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			aria-hidden="true"
-		>
-			<circle cx="200" cy="200" r="190" stroke="currentColor" stroke-width="1"></circle>
-			<circle cx="200" cy="200" r="140" stroke="currentColor" stroke-width="0.5"></circle>
-			<circle cx="200" cy="200" r="90" stroke="currentColor" stroke-width="0.5"></circle>
-			<circle cx="200" cy="200" r="40" stroke="currentColor" stroke-width="0.5"></circle>
-			<circle cx="200" cy="200" r="4" fill="currentColor"></circle>
-			<line x1="200" y1="10" x2="200" y2="390" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"
-			></line>
-			<line x1="10" y1="200" x2="390" y2="200" stroke="currentColor" stroke-width="0.4" stroke-dasharray="2 6"
-			></line>
-		</svg>
+	<!-- ============ HERO: the inside cover ============ -->
+	<header class="cover">
+		<DeskToys />
 
-		<div class="hero-hud" aria-hidden="true">
-			<span>FIG. 01 — SELF PORTRAIT</span>
-			<span>SCALE 1:1</span>
+		<div class="cover-meta" data-reveal>
+			<p class="cover-tag">studio scrapbook · Paderborn, DE</p>
+			<DeskClock />
 		</div>
 
-		<div class="hero-inner">
-			<span class="label" data-reveal>FUTILE.STUDIO — DWG NO. 001 — EST. 2025</span>
-			<h1 data-split-group>
-				<span class="split-mask"><span class="split-word">Everything</span></span><br />
-				<span class="split-mask"><span class="split-word">is</span></span>
-				<span class="split-mask"><span class="split-word hl">futile.</span></span><br />
-				<span class="split-mask"><span class="split-word">Do</span></span>
-				<span class="split-mask"><span class="split-word">it</span></span>
-				<span class="split-mask"><span class="split-word">anyway.</span></span>
-			</h1>
-			<p class="hero-sub" data-reveal style="--d:160ms">
-				We are here briefly. At scale, nothing persists. Yet there is something worth doing in the making — of
-				software, of recordings, of objects that outlast you.
-			</p>
-			<a href="#about" class="hero-cta" data-reveal data-magnetic style="--d:240ms">
-				Explore the studio
-				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+		<h1 class="cover-title" data-split-group>
+			<span class="split-mask"><span class="split-word">A</span></span>
+			<span class="split-mask"><span class="split-word">paper</span></span>
+			<span class="split-mask"><span class="split-word">trail</span></span><br />
+			<span class="underline-wrap">
+				<span class="split-mask"><span class="split-word">of</span></span>
+				<span class="split-mask"><span class="split-word">small</span></span>
+				<span class="split-mask"><span class="split-word">software.</span></span>
+				<svg viewBox="0 0 300 12" preserveAspectRatio="none" aria-hidden="true">
+					<path
+						d="M2 7c44-7 214-7 296 2"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="4"
+						stroke-linecap="round"></path>
+				</svg>
+			</span>
+		</h1>
+
+		<p class="cover-sub" data-reveal style="--d:140ms">
+			I'm Mayur. I make things for the web, mostly games and small tools, then cut them out and stick them in
+			here. <span class="marker">{open.length} of them are open to anyone</span> right now; the rest of this page
+			is how they got made and what they sit on.
+		</p>
+
+		<div class="cover-actions" data-reveal style="--d:220ms">
+			<a href="#work" class="btn btn-stamp" data-magnetic="0.2">
+				See the board
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+					<path d="M8 3v10M4 9l4 4 4-4"></path>
+				</svg>
+			</a>
+			<a href="/jinx" class="btn" data-magnetic="0.2">
+				Meet the server
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
 					<path d="M3 8h10M9 4l4 4-4 4"></path>
+				</svg>
+			</a>
+			<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="btn" data-magnetic="0.2">
+				Take the CV
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+					<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
 				</svg>
 			</a>
 		</div>
 
-		<div class="scroll-cue" aria-hidden="true">
-			<span>SCROLL</span>
-			<div class="scroll-cue-line"></div>
-		</div>
-	</div>
+		<Stickers />
+	</header>
 
-	<Marquee items={['Building', 'Collecting', 'Making', 'Homelabbing', 'Writing']} speed={26} />
+	<Legend />
 
-	<!-- ABOUT -->
-	<section id="about">
-		<div class="sheet-label" data-reveal>SHEET 01 / 03 — ABOUT</div>
+	<!-- ============ ABOUT ============ -->
+	<section id="about" class="about">
+		<h2 class="sect-label" data-annotate>Who is sticking all this up</h2>
+
 		<div class="about-grid">
-			<div class="about-text">
-				<div class="section-label" data-reveal>/ About</div>
-				<h2 data-split data-split-group>The person behind the work</h2>
-				<p data-reveal style="--d:80ms">
-					I'm Mayur. I build things — software, recordings, collections — with the full awareness that <strong
-						>none of it matters at a cosmic scale.</strong
-					> That's the point.
-				</p>
-				<p data-reveal style="--d:120ms">
-					Futile Studio is my personal corner of the internet — where my projects live and ship, built
-					and served off a homelab I run and maintain myself, end to end.
-				</p>
-				<p data-reveal style="--d:160ms">
-					I collect vinyls and cassettes. Physical media. Things that represent a moment, an emotion, a sound
-					that mattered. They'll outlast me. So will the code, if it's good enough.
-				</p>
-			</div>
+			<article class="card-index sheet sheet-catear" data-paste="-1.2">
+				<span class="mount mount-corner mount-corner-tl" aria-hidden="true"></span>
+				<span class="mount mount-corner mount-corner-br" aria-hidden="true"></span>
 
-			<div data-reveal style="--d:120ms">
-				<div class="section-label">/ Spec</div>
-				<div class="stack-list">
-					<div class="stack-item">
-						<span>01</span><span>Building</span><span>Software &amp; infrastructure</span>
-					</div>
-					<div class="stack-item">
-						<span>02</span><span>Collecting</span><span>Vinyl &amp; cassettes</span>
-					</div>
-					<div class="stack-item"><span>03</span><span>Making</span><span>Music / Futile Rec. Co</span></div>
-					<div class="stack-item"><span>04</span><span>Homelabbing</span><span>Jinx everything</span></div>
-					<div class="stack-item"><span>05</span><span>Based in</span><span>Paderborn, Germany</span></div>
-				</div>
-				<a
-					href="/cv.pdf"
-					download="Mayur_Jivani_CV.pdf"
-					class="hero-cta"
-					data-magnetic
-					style="margin-top:32px;display:inline-flex"
-				>
-					Download CV
-					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+				<p>
+					I build things and then do the unglamorous half, which turns out to be the rare bit. Most of what is
+					on this page could have stayed a sketch in a notebook, and the only interesting decision was
+					carrying on past the point where it stopped being fun.
+				</p>
+				<p>
+					I like owning the whole line. The code is mine, the box under it is mine, the domain routing and the
+					nightly backups are mine. None of this sits in somebody else's cloud, which means at 1am it is
+					unambiguously my problem. That is the trade, and it is the fastest way I know to find out how any of
+					it actually works.
+				</p>
+				<p>
+					Away from a keyboard I collect vinyl and cassettes and record a little under
+					<span class="marker">Futile Rec. Co</span>. Physical media mostly, because a record is a thing you
+					can put in somebody's hands, and because a shelf is a nicer record of a few years than a listening
+					history is.
+				</p>
+			</article>
+
+			<aside class="card-spec sheet" data-paste="1.8">
+				<span class="mount mount-clip" aria-hidden="true"></span>
+				<h3 class="card-spec-head">The short version</h3>
+				<dl class="spec-list">
+					{
+						spec.map(([k, v]) => (
+							<div class="spec-row">
+								<dt>{k}</dt>
+								<dd>{v}</dd>
+							</div>
+						))
+					}
+				</dl>
+				<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="btn spec-cv">
+					Full CV, one page
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
 						<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
 					</svg>
 				</a>
+			</aside>
+		</div>
+	</section>
+
+	<!-- ============ THE KIT ============ -->
+	<section id="kit" class="kit">
+		<h2 class="sect-label" data-annotate>What I reach for</h2>
+		<p class="kit-intro">
+			Not a ranking and not a complete list, just the things I keep picking up. Most of the board above is
+			some arrangement of these.
+		</p>
+		<div class="kit-grid">
+			{
+				kit.map((k) => (
+					<div class="kit-card sheet" data-paste>
+						<span class="mount mount-tape" aria-hidden="true" />
+						<h3 class="kit-group">{k.group}</h3>
+						<ul class="kit-items">
+							{k.items.map((i) => (
+								<li class="kit-item">{i}</li>
+							))}
+						</ul>
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	<!-- ============ THE BOARD ============ -->
+	<section id="work" class="board">
+		<div class="board-head">
+			<h2 class="sect-label" data-annotate>The board</h2>
+			<p class="board-intro">
+				Everything anyone can open, newest nearest the top. No mockups and no case studies: each link below
+				goes straight to the thing itself, so you can judge it the way anybody else would.
+			</p>
+		</div>
+
+		<div class="board-grid">
+			{
+				open.map((p) => (
+					<a
+						class:list={['proj', 'sheet', 'sheet-catear', { 'is-pick': p.pick }]}
+						href={p.href}
+						target="_blank"
+						rel="noopener"
+						data-paste
+					>
+						<span
+							class:list={['mount', `mount-${p.mount === 'corner' ? 'corner mount-corner-tl' : p.mount}`]}
+							aria-hidden="true"
+						/>
+
+						<span class="proj-sketch" aria-hidden="true">
+							<Sketch name={p.art} class="proj-sketch-svg" />
+						</span>
+
+						<span class="proj-meta">
+							<span class="proj-dot" aria-hidden="true" />
+							{p.kind}
+							{p.shipped && <span class="proj-year">{p.shipped.slice(0, 4)}</span>}
+						</span>
+
+						<h3 class="proj-name">{p.name}</h3>
+						{p.pick && <span class="proj-pick stamp">start here</span>}
+
+						<p class="proj-desc">{p.desc}</p>
+						<p class="proj-stack">{p.stack}</p>
+						<span class="proj-cta">{p.cta} →</span>
+					</a>
+				))
+			}
+		</div>
+
+		<!-- the half-built half -->
+		<div class="bench">
+			<p class="bench-head">
+				Still on the workbench
+				<span class="bench-rule"></span>
+			</p>
+			<p class="bench-note margin-note">
+				On the board because a page with only the flattering half of the drawer on it would be a brochure.
+			</p>
+			<div class="bench-grid">
+				{
+					workbench.map((p) => (
+						<article class="proj proj-bench sheet" data-paste>
+							<span class:list={['mount', `mount-${p.mount}`]} aria-hidden="true" />
+							<span class="proj-sketch" aria-hidden="true">
+								<Sketch name={p.art} class="proj-sketch-svg" />
+							</span>
+							<span class="proj-meta">
+								<span class="proj-dot proj-dot-off" aria-hidden="true" />
+								{p.kind}
+							</span>
+							<h3 class="proj-name">{p.name}</h3>
+							<p class="proj-desc">{p.desc}</p>
+							<p class="proj-stack">{p.stack}</p>
+						</article>
+					))
+				}
 			</div>
 		</div>
 	</section>
 
-	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"
-			><line
-				class="draw-path"
-				x1="0"
-				y1="1"
-				x2="100%"
-				y2="1"
-				stroke="var(--line-strong)"
-				stroke-width="1"
-				pathLength="1"></line></svg
-		>
-	</div>
+	<ShippingLog />
 
-	<!-- PROJECTS (horizontal pinned scroll on desktop) -->
-	<section id="projects" class="projects-section">
-		<div class="projects-head">
-			<div class="sheet-label" data-reveal>SHEET 02 / 03 — PROJECTS</div>
-			<div class="section-label" data-reveal>/ Projects</div>
-			<h2 data-split data-split-group>Things I've built &amp; shipped</h2>
-			<div class="projects-hint" data-reveal style="--d:80ms">Scroll →</div>
-		</div>
-
-		<div class="projects-pin" id="projects-pin">
-			<div class="projects-track" id="projects-track">
-				<a
-					href="https://qno.futile.studio/"
-					target="_blank"
-					rel="noopener"
-					class="project-card"
-					data-magnetic="0.15"
-					data-glimpse
-				>
-					<div class="project-tag">Game · Dec 2025</div>
-					<div class="project-name">Qno</div>
-					<div class="project-desc">
-						Built a quantum-themed Uno so superposition and entanglement click through play instead of a
-						lecture slide — quantum gates as actual card mechanics, multiplayer over WebSockets. React.js,
-						Node.js.
-					</div>
-					<div class="project-arrow">Play →</div>
-					<template>
-						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<circle cx="120" cy="52" r="30" stroke-dasharray="3 4"></circle>
-							<circle cx="120" cy="52" r="18"></circle>
-							<circle cx="120" cy="52" r="3" fill="currentColor" stroke="none"></circle>
-							<rect x="70" y="98" width="34" height="46" rx="4" transform="rotate(-8 87 121)"></rect>
-							<rect x="103" y="100" width="34" height="46" rx="4"></rect>
-							<rect x="136" y="98" width="34" height="46" rx="4" transform="rotate(8 153 121)"></rect>
-						</svg>
-						<div class="glimpse-tag">Multiplayer · quantum mechanics as gameplay</div>
-					</template>
-				</a>
-
-				<a
-					href="https://mosaic.futile.studio/"
-					target="_blank"
-					rel="noopener"
-					class="project-card"
-					data-magnetic="0.15"
-					data-glimpse
-				>
-					<div class="project-tag">Streaming · 2025</div>
-					<div class="project-name">Mosaic</div>
-					<div class="project-desc">
-						Built a live overlay so mods can drop emotes, clips and sound straight onto the broadcast
-						while the streamer keeps playing — no OBS scenes, changes hit the stream the moment they're
-						dropped. Astro, React, WebSockets.
-					</div>
-					<div class="project-arrow">Open →</div>
-					<template>
-						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<rect x="20" y="16" width="200" height="118" rx="3"></rect>
-							<path d="M104 62l22 13-22 13z" fill="currentColor" stroke="none"></path>
-							<rect x="36" y="30" width="44" height="26" rx="3" fill="currentColor" fill-opacity="0.14"></rect>
-							<circle cx="178" cy="46" r="13" fill="currentColor" fill-opacity="0.14"></circle>
-							<rect x="150" y="98" width="54" height="18" rx="9" fill="currentColor" fill-opacity="0.14"></rect>
-							<path d="M44 108h30M44 116h48" stroke-linecap="round"></path>
-						</svg>
-						<div class="glimpse-tag">Your mods, dropping chaos on stream in real time</div>
-					</template>
-				</a>
-
-				<a
-					href="https://chorus.futile.studio"
-					target="_blank"
-					rel="noopener"
-					class="project-card"
-					data-magnetic="0.15"
-					data-glimpse
-				>
-					<div class="project-tag">Music · Jan 2024</div>
-					<div class="project-name">Chorus</div>
-					<div class="project-desc">
-						Built a Wordle-style guessing game on the Spotify API that pulls your own listening
-						history, so every round is a track you've actually heard, streamed in-browser via the
-						Spotify SDK. React.js.
-					</div>
-					<div class="project-arrow">Play →</div>
-					<template>
-						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<path
-								d="M10 90V60M28 90V40M46 90V70M64 90V25M82 90V55M100 90V15M118 90V65M136 90V35M154 90V75M172 90V50M190 90V20M208 90V60M226 90V45"
-								stroke-linecap="round"></path>
-							<rect x="8" y="112" width="224" height="26" rx="13"></rect>
-							<circle cx="30" cy="125" r="3" fill="currentColor" stroke="none"></circle>
-						</svg>
-						<div class="glimpse-tag">Guess the track from your own listening history</div>
-					</template>
-				</a>
-
-				<a
-					href="https://noggin.futile.studio"
-					target="_blank"
-					rel="noopener"
-					class="project-card"
-					data-magnetic="0.15"
-					data-glimpse
-				>
-					<div class="project-tag">Game · 2026</div>
-					<div class="project-name">Noggin'</div>
-					<div class="project-desc">
-						Built a TV quiz show for a room full of phones — image, audio and video clues, millisecond
-						buzzer racing over WebSockets, teams and lifelines, zero extra hardware. Astro, React,
-						WebSockets.
-					</div>
-					<div class="project-arrow">Play →</div>
-					<template>
-						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<rect x="8" y="8" width="140" height="24"></rect>
-							<rect x="8" y="38" width="44" height="24" fill="currentColor" fill-opacity="0.12"></rect>
-							<rect x="56" y="38" width="44" height="24"></rect>
-							<rect x="104" y="38" width="44" height="24"></rect>
-							<rect x="8" y="68" width="44" height="24"></rect>
-							<rect x="56" y="68" width="44" height="24"></rect>
-							<rect x="104" y="68" width="44" height="24" fill="currentColor" fill-opacity="0.12"></rect>
-							<rect x="8" y="98" width="44" height="24"></rect>
-							<rect x="56" y="98" width="44" height="24"></rect>
-							<rect x="104" y="98" width="44" height="24"></rect>
-							<rect x="168" y="46" width="64" height="96" rx="8"></rect>
-							<circle cx="200" cy="86" r="20"></circle>
-							<circle cx="200" cy="86" r="9" fill="currentColor" stroke="none"></circle>
-							<path d="M200 30v-12M182 34l-6-10M218 34l6-10" stroke-linecap="round"></path>
-						</svg>
-						<div class="glimpse-tag">One TV, a pile of phones, a real buzzer race</div>
-					</template>
-				</a>
-
-				<a
-					href="https://patina.futile.studio/"
-					target="_blank"
-					rel="noopener"
-					class="project-card project-card-end"
-					data-magnetic="0.15"
-					data-glimpse
-				>
-					<div class="project-tag">Canvas · 2026</div>
-					<div class="project-name">Patina</div>
-					<div class="project-desc">
-						Built a shared 4096×4096 canvas that runs for a year, one pixel at a time, no account.
-						Unlike r/place, nothing gets overwritten on this one — paint just ages and cures in place.
-						Vanilla JS, zero dependencies.
-					</div>
-					<div class="project-arrow">Open →</div>
-					<template>
-						<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1">
-							<rect x="45" y="15" width="150" height="120" rx="2"></rect>
-							<path d="M75 15v120M105 15v120M135 15v120M165 15v120" stroke-opacity="0.5"></path>
-							<path d="M45 45h150M45 75h150M45 105h150" stroke-opacity="0.5"></path>
-							<rect x="75" y="15" width="30" height="30" fill="currentColor" fill-opacity="0.16" stroke="none"></rect>
-							<rect x="135" y="45" width="30" height="30" fill="currentColor" fill-opacity="0.14" stroke="none"></rect>
-							<rect x="45" y="75" width="30" height="30" fill="currentColor" fill-opacity="0.12" stroke="none"></rect>
-							<rect x="165" y="105" width="30" height="30" fill="currentColor" fill-opacity="0.16" stroke="none"></rect>
-						</svg>
-						<div class="glimpse-tag">4096×4096 cells that age instead of resetting</div>
-					</template>
-				</a>
-			</div>
-		</div>
-	</section>
-
-	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"
-			><line
-				class="draw-path"
-				x1="0"
-				y1="1"
-				x2="100%"
-				y2="1"
-				stroke="var(--line-strong)"
-				stroke-width="1"
-				pathLength="1"></line></svg
-		>
-	</div>
-
-	<!-- HOMELAB -->
-	<section id="homelab">
-		<div class="sheet-label" data-reveal>SHEET 03 / 03 — INFRASTRUCTURE</div>
-		<div class="homelab-grid">
-			<div>
-				<div class="section-label" data-reveal>
-					<span class="status-dot"></span> / Homelab — system online
-				</div>
-				<h2 data-reveal style="--d:40ms">The server<br />is called <em>jinx.</em></h2>
-				<p data-reveal style="--d:80ms">
-					A self-hosted stack running bare metal at home, built to actually own the infrastructure end to
-					end instead of deploying to someone else's cloud. Every project on this site runs off it.
+	<!-- ============ JINX TEASER ============ -->
+	<section class="jinx-card-wrap">
+		<a href="/jinx" class="jinx-card sheet sheet-catear" data-paste="-1.4">
+			<span class="mount mount-tape" aria-hidden="true"></span>
+			<span class="jinx-card-art" aria-hidden="true"><Sketch name="cat" /></span>
+			<div class="jinx-card-copy">
+				<h2 class="jinx-card-head">Everything here sits on one box</h2>
+				<p>
+					It is called Jinx, it is bare metal in my flat, and it has its own page: what it is made of, what it
+					hands out, and how awake it has been lately.
 				</p>
+				<span class="proj-cta">Go and look →</span>
 			</div>
-			<div class="rack" data-reveal style="--d:120ms">
-				<div class="section-label">/ Running on jinx</div>
-				<div class="rack-list">
-					<div class="rack-item"><span>Docker</span><span>Container runtime</span></div>
-					<div class="rack-item"><span>Proxmox</span><span>Virtualization</span></div>
-					<div class="rack-item"><span>Reverse proxy</span><span>Routes every project by domain</span></div>
-					<div class="rack-item"><span>CI/CD</span><span>Automated builds &amp; deploys</span></div>
-					<div class="rack-item"><span>Backups</span><span>Nightly, offsite, tested restores</span></div>
-				</div>
-			</div>
-		</div>
+		</a>
 	</section>
 
-	<div class="divider" data-reveal="line" aria-hidden="true">
-		<svg width="100%" height="2" preserveAspectRatio="none"
-			><line
-				class="draw-path"
-				x1="0"
-				y1="1"
-				x2="100%"
-				y2="1"
-				stroke="var(--line-strong)"
-				stroke-width="1"
-				pathLength="1"></line></svg
-		>
-	</div>
+	<Marquee items={['Cut out', 'Stuck down', 'Annotated', 'Cat-eared', 'Filed']} speed={30} />
 
-	<Marquee items={['Everything is futile', 'Do it anyway']} speed={24} />
-
-	<!-- FOOTER -->
-	<footer>
-		<div class="footer-titleblock">
-			<div class="footer-logo">FUTILE.STUDIO</div>
-			<div class="footer-scale">SCALE 1:1 · REV 2026</div>
+	<!-- ============ FOOTER ============ -->
+	<footer class="foot">
+		<div class="foot-left">
+			<p class="foot-logo">futile<span class="nav-dot">.</span>studio</p>
+			<p class="foot-copy">© 2026 Mayur Jivani · cut and pasted by hand</p>
+			<p class="margin-note foot-wink">Named in a mood. Kept out of habit.</p>
 		</div>
-		<ul class="footer-links">
+
+		<ul class="foot-links">
+			<li><a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
 			<li>
-				<a href="https://github.com/mayurjivani" target="_blank" rel="noopener" data-magnetic="0.4">GitHub</a>
+				<a class="btn" href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a>
 			</li>
-			<li>
-				<a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener" data-magnetic="0.4"
-					>LinkedIn</a>
-			</li>
-			<li><a href="mailto:mayur@futile.studio" data-magnetic="0.4">Email</a></li>
-			<li><a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" data-magnetic="0.4">CV</a></li>
+			<li><a class="btn" href="mailto:mayur@futile.studio">Email</a></li>
+			<li><a class="btn" href="/cv.pdf" download="Mayur_Jivani_CV.pdf">CV</a></li>
 		</ul>
-		<div class="footer-copy">© 2026 Mayur · Everything is futile · Do it anyway</div>
 	</footer>
 </Layout>
 
-<script>
-	import { gsap } from 'gsap';
-	import { ScrollTrigger } from 'gsap/ScrollTrigger';
-	gsap.registerPlugin(ScrollTrigger);
-
-	/* hero diagram parallax */
-	const diagram = document.getElementById('hero-diagram');
-	if (diagram && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-		gsap.to(diagram, {
-			rotate: 25,
-			scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 0.6 },
-		});
-	}
-
-	/* horizontal pinned project rail (desktop only) */
-	function setupProjectsRail() {
-		const track = document.getElementById('projects-track') as HTMLElement | null;
-		const pin = document.getElementById('projects-pin');
-		if (!track || !pin) return;
-
-		const mm = gsap.matchMedia();
-		mm.add('(min-width: 900px)', () => {
-			// pin.clientWidth is unreliable here: once ScrollTrigger's pin-spacer
-			// takes over the element it can feed back into later refreshes and
-			// balloon past the viewport, which pushed the last card off-screen.
-			// window.innerWidth is stable regardless of the pin's own state.
-			const amount = () => track.scrollWidth - window.innerWidth;
-			const tween = gsap.to(track, {
-				x: () => -amount(),
-				ease: 'none',
-				scrollTrigger: {
-					trigger: pin,
-					start: 'top top+=70',
-					end: () => '+=' + amount(),
-					pin: true,
-					scrub: 0.7,
-					invalidateOnRefresh: true,
-				},
-			});
-			return () => tween.scrollTrigger?.kill();
-		});
-	}
-	setupProjectsRail();
-
-	window.addEventListener('load', () => ScrollTrigger.refresh());
-</script>
-
 <style>
-	section {
-		padding: 110px 40px;
+	/* ============ hero ============ */
+	.cover {
+		position: relative;
 		max-width: 1140px;
 		margin: 0 auto;
-		position: relative;
+		padding: 3.2rem 2.2rem 3rem;
 	}
 
-	.sheet-label {
-		position: absolute;
-		top: 40px;
-		right: 40px;
-		font-size: 10px;
-		letter-spacing: 0.14em;
-		color: var(--faint);
+	.cover-meta {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+		margin-bottom: 1.5rem;
 	}
-
-	.label {
+	.cover-tag {
 		display: inline-block;
-		font-size: 11px;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--cyan);
-		margin-bottom: 24px;
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.82rem;
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 8px;
+		padding: 0.3rem 0.8rem;
+		transform: rotate(-2deg);
+		box-shadow: 3px 3px 0 var(--shadow);
 	}
 
-	.section-label {
+	.cover-title {
+		font-size: clamp(2.1rem, 6.6vw, 4.1rem);
+		max-width: 30ch;
+		margin-bottom: 1.6rem;
+	}
+
+	.cover-sub {
+		max-width: 36rem;
+		font-size: 1.02rem;
+		font-weight: 600;
+		line-height: 1.75;
+		color: var(--ink-soft);
+	}
+
+	.cover-actions {
 		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 11px;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--cyan);
-		margin-bottom: 16px;
+		flex-wrap: wrap;
+		gap: 0.7rem;
+		margin-top: 1.8rem;
+	}
+	.cover-actions .btn {
+		font-size: 0.9rem;
+		padding: 0.6rem 1.1rem;
 	}
 
-	.status-dot {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: var(--cyan);
-		box-shadow: 0 0 6px var(--cyan);
-		animation: pulse 1.8s ease-in-out infinite;
-		flex-shrink: 0;
-	}
-	.status-dot-red {
-		background: var(--red);
-		box-shadow: 0 0 6px var(--red);
-	}
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 1;
-		}
-		50% {
-			opacity: 0.25;
-		}
-	}
-
-	h1 {
-		font-size: clamp(52px, 9vw, 118px);
-		line-height: 0.96;
-		color: var(--white);
-		margin-bottom: 32px;
-	}
-
-	.split-word.hl {
-		color: var(--cyan);
-	}
-
-	h2 {
-		font-size: clamp(30px, 4.4vw, 54px);
-		line-height: 1.06;
-		margin-bottom: 40px;
-		color: var(--white);
-		max-width: 14ch;
-	}
-
-	h2 em {
-		font-style: normal;
-		color: var(--cyan);
-	}
-
-	/* hero */
-	.hero {
-		min-height: 100vh;
-		display: grid;
-		place-items: center;
-		text-align: center;
-		padding: 140px 40px 100px;
-		position: relative;
-		overflow: hidden;
-	}
-
-	.hero-inner {
-		max-width: 760px;
-	}
-
-	.hero-hud {
-		position: absolute;
-		bottom: 100px;
-		left: 40px;
-		right: 40px;
-		display: flex;
-		justify-content: space-between;
-		font-size: 9px;
-		letter-spacing: 0.14em;
-		color: var(--faint);
-		pointer-events: none;
-	}
-
-	.hero-sub {
-		font-size: 15px;
-		color: var(--muted);
-		max-width: 480px;
-		margin: 0 auto 48px;
-		line-height: 1.9;
-	}
-
-	.hero-diagram {
-		position: absolute;
-		right: -120px;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 460px;
-		height: 460px;
-		color: var(--cyan);
-		opacity: 0.1;
-	}
-
-	.scroll-cue {
-		position: absolute;
-		bottom: 40px;
-		left: 50%;
-		transform: translateX(-50%);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-	}
-	.scroll-cue span {
-		font-size: 10px;
-		letter-spacing: 0.2em;
-		color: var(--faint);
-	}
-	.scroll-cue-line {
-		width: 1px;
-		height: 32px;
-		background: linear-gradient(var(--cyan), transparent);
-		animation: scrollcue 1.8s ease-in-out infinite;
-	}
-	@keyframes scrollcue {
-		0% {
-			transform: scaleY(0.2);
-			transform-origin: top;
-			opacity: 0.4;
-		}
-		50% {
-			transform: scaleY(1);
-			transform-origin: top;
-			opacity: 1;
-		}
-		100% {
-			transform: scaleY(0.2);
-			transform-origin: bottom;
-			opacity: 0.4;
-		}
-	}
-
-	.divider {
-		width: 100%;
+	/* ============ about ============ */
+	.about {
 		max-width: 1140px;
 		margin: 0 auto;
-		padding: 0 40px;
+		padding: 3.5rem 2.2rem 1rem;
+		position: relative;
 	}
 
-	/* about */
 	.about-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 64px;
+		grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+		gap: 2.4rem;
 		align-items: start;
 	}
-
-	.about-text p {
-		color: var(--muted);
-		font-size: 14px;
-		line-height: 1.9;
-		margin-bottom: 20px;
-	}
-
-	.about-text p strong {
-		color: var(--white);
-		font-weight: 500;
-	}
-
-	.stack-list {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.stack-item {
-		display: grid;
-		grid-template-columns: 24px 1fr auto;
-		gap: 12px;
-		align-items: center;
-		padding: 14px 0;
-		border-bottom: 1px solid var(--line);
-		font-size: 12px;
-	}
-
-	.stack-item span:first-child {
-		color: var(--faint);
-		font-size: 10px;
-	}
-	.stack-item span:nth-child(2) {
-		color: var(--muted);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-	.stack-item span:last-child {
-		color: var(--white);
-	}
-
-	/* projects — horizontal rail */
-	.projects-section {
-		max-width: none;
-		padding-left: 0;
-		padding-right: 0;
-	}
-	.projects-head {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 0 40px;
-		position: relative;
-	}
-	.projects-hint {
-		font-size: 10px;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--faint);
-	}
-
-	.projects-pin {
-		width: 100%;
-		margin-top: 56px;
-		overflow: hidden;
-	}
-
-	.projects-track {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 20px;
-		padding: 4px 24px 20px;
-	}
-
-	.project-card {
-		border: 1px solid var(--line);
-		padding: 32px;
-		background: var(--surface);
-		transition: border-color 0.25s;
-		cursor: pointer;
-		text-decoration: none;
-		display: block;
-		color: inherit;
-		position: relative;
-	}
-
-	.project-card::before,
-	.project-card::after {
-		content: '';
-		position: absolute;
-		width: 10px;
-		height: 10px;
-		border-top: 1px solid transparent;
-		border-left: 1px solid transparent;
-		top: 8px;
-		left: 8px;
-		transition: border-color 0.25s;
-	}
-	.project-card::after {
-		top: auto;
-		left: auto;
-		bottom: 8px;
-		right: 8px;
-		border-top: none;
-		border-left: none;
-		border-bottom: 1px solid transparent;
-		border-right: 1px solid transparent;
-	}
-
-	.project-card:hover {
-		border-color: var(--cyan);
-	}
-	.project-card:hover::before,
-	.project-card:hover::after {
-		border-color: var(--cyan);
-	}
-
-	.project-card-end {
-		background: var(--surface-lt);
-		border-color: var(--line-strong);
-	}
-
-	.project-tag {
-		font-size: 10px;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--cyan);
-		margin-bottom: 12px;
-	}
-
-	.project-name {
-		font-family: var(--display);
-		font-weight: 700;
-		text-transform: uppercase;
-		font-size: 22px;
-		color: var(--white);
-		margin-bottom: 10px;
-	}
-
-	.project-desc {
-		font-size: 13px;
-		color: var(--muted);
-		line-height: 1.8;
-	}
-
-	.project-arrow {
-		margin-top: 20px;
-		font-size: 11px;
-		letter-spacing: 0.1em;
-		color: var(--cyan);
-		text-transform: uppercase;
-	}
-
-	@media (min-width: 900px) {
-		.projects-track {
-			display: flex;
-			width: max-content;
-			gap: 24px;
-			padding: 4px 40px 40px;
-		}
-		.project-card {
-			width: min(38vw, 440px);
-			flex-shrink: 0;
-		}
-	}
-
-	/* homelab */
-	.homelab-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 64px;
-		align-items: start;
-	}
-	.homelab-grid p {
-		color: var(--muted);
-		font-size: 14px;
-		line-height: 1.9;
-	}
-	.homelab-grid p strong {
-		color: var(--white);
-		font-weight: 500;
-	}
-	.rack {
-		border: 1px solid var(--line);
-		background: var(--surface);
-		padding: 24px;
-	}
-	.rack-list {
-		display: flex;
-		flex-direction: column;
-	}
-	.rack-item {
-		display: flex;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 10px 0;
-		border-bottom: 1px solid var(--line);
-		font-size: 12px;
-	}
-	.rack-item span:first-child {
-		color: var(--white);
-	}
-	.rack-item span:last-child {
-		color: var(--muted);
-		text-align: right;
-	}
-
-	/* footer */
-	footer {
-		border-top: 1px solid var(--line);
-		padding: 48px 40px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		max-width: 1140px;
-		margin: 0 auto;
-		flex-wrap: wrap;
-		gap: 16px;
-	}
-
-	.footer-titleblock {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.footer-logo {
-		font-family: var(--display);
-		font-weight: 700;
-		text-transform: uppercase;
-		font-size: 15px;
-		color: var(--muted);
-	}
-	.footer-scale {
-		font-size: 9px;
-		letter-spacing: 0.1em;
-		color: var(--faint);
-	}
-
-	.footer-links {
-		display: flex;
-		gap: 24px;
-		list-style: none;
-	}
-
-	.footer-links a {
-		display: inline-block;
-		font-size: 11px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--muted);
-		text-decoration: none;
-		transition: color 0.2s;
-	}
-
-	.footer-links a:hover {
-		color: var(--cyan);
-	}
-
-	.footer-copy {
-		font-size: 11px;
-		color: var(--faint);
-		letter-spacing: 0.04em;
-	}
-
-	@media (max-width: 768px) {
-		section {
-			padding: 80px 24px;
-		}
-		.sheet-label {
-			top: 24px;
-			right: 24px;
-		}
-		.about-grid,
-		.homelab-grid {
+	@media (max-width: 880px) {
+		.about-grid {
 			grid-template-columns: 1fr;
-			gap: 40px;
+			gap: 2.8rem;
 		}
-		footer {
-			padding: 40px 24px;
+	}
+
+	/* An index card: ruled, with a red margin line down the left. */
+	.card-index {
+		padding: 1.6rem 1.8rem 1.6rem 2.6rem;
+		background-image:
+			linear-gradient(var(--ink-ghost) 1px, transparent 1px),
+			linear-gradient(
+				90deg,
+				transparent 1.9rem,
+				rgba(194, 69, 45, 0.3) 1.9rem,
+				transparent calc(1.9rem + 2px)
+			);
+		background-size:
+			100% 1.75rem,
+			100% 100%;
+		background-position:
+			0 1.2rem,
+			0 0;
+	}
+	.card-index p + p {
+		margin-top: 1.1rem;
+	}
+	.card-index p {
+		font-size: 0.93rem;
+		line-height: 1.75;
+		color: var(--ink-soft);
+	}
+
+	.card-spec {
+		padding: 1.5rem 1.4rem 1.4rem;
+		background: var(--card-2);
+	}
+	.card-spec-head {
+		font-size: 1rem;
+		margin-bottom: 0.9rem;
+		padding-bottom: 0.5rem;
+		border-bottom: 2px dashed var(--ink-ghost);
+	}
+
+	.spec-list {
+		display: flex;
+		flex-direction: column;
+	}
+	.spec-row {
+		display: grid;
+		grid-template-columns: 5.4rem 1fr;
+		gap: 0.6rem;
+		padding: 0.5rem 0;
+		border-bottom: 1px solid var(--ink-ghost);
+		font-size: 0.84rem;
+	}
+	.spec-row:last-child {
+		border-bottom: none;
+	}
+	.spec-row dt {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.78rem;
+		color: var(--ink);
+	}
+	.spec-row dd {
+		color: var(--ink-soft);
+	}
+	.spec-cv {
+		margin-top: 1.1rem;
+	}
+
+	/* ============ the kit ============ */
+	.kit {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 3.5rem 2.2rem 1rem;
+	}
+	.kit-intro {
+		font-size: 0.92rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+		max-width: 38rem;
+		margin-bottom: 2rem;
+	}
+	.kit-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: 2.4rem 1.6rem;
+		padding-top: 0.5rem;
+	}
+	.kit-card {
+		padding: 1.4rem 1.2rem 1.2rem;
+		background: var(--card-2);
+	}
+	.kit-group {
+		font-size: 0.95rem;
+		margin-bottom: 0.8rem;
+		padding-bottom: 0.45rem;
+		border-bottom: 2px dashed var(--ink-ghost);
+	}
+	.kit-items {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	/* Each one a little torn-off label rather than a progress bar: I am not
+	   going to pretend a percentage means anything here. */
+	.kit-item {
+		font-family: var(--hand);
+		font-weight: 700;
+		font-size: 0.78rem;
+		color: var(--ink);
+		background: var(--card);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 6px;
+		padding: 0.18rem 0.5rem;
+		box-shadow: 2px 2px 0 var(--shadow);
+	}
+
+	/* ============ the board ============ */
+	.board {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 3.5rem 2.2rem 1rem;
+	}
+	.board-head {
+		max-width: 44rem;
+		margin-bottom: 2.2rem;
+	}
+	.board-intro {
+		font-size: 0.92rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+		max-width: 38rem;
+	}
+
+	.board-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+		gap: 2.8rem 1.7rem;
+		padding-top: 0.5rem;
+	}
+
+	.proj {
+		display: block;
+		padding: 1.5rem 1.2rem 1.3rem;
+		text-decoration: none;
+		color: var(--ink);
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	/* Hover straightens the card and lifts it. Every card behaves the same
+	   on hover; only the resting tilt is random. (Guideline B) */
+	a.proj:hover {
+		transform: rotate(0deg) translateY(-5px);
+		box-shadow: 5px 8px 0 var(--shadow-deep);
+	}
+	.proj.is-pick {
+		background: var(--card);
+		border-color: var(--ink);
+	}
+
+	.proj-sketch {
+		display: block;
+		height: 3.2rem;
+		margin-bottom: 1rem;
+		color: var(--ink-soft);
+	}
+	.proj-sketch :global(.proj-sketch-svg) {
+		height: 100%;
+		width: auto;
+		max-width: 100%;
+	}
+
+	.proj-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.74rem;
+		font-weight: 700;
+		color: var(--ink-faint);
+		margin-bottom: 0.3rem;
+	}
+	.proj-year {
+		margin-left: auto;
+		font-variant-numeric: tabular-nums;
+	}
+	.proj-dot {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: var(--live);
+		flex-shrink: 0;
+	}
+	.proj-dot-off {
+		background: var(--ink-ghost);
+	}
+
+	.proj-name {
+		font-size: 1.25rem;
+		margin-bottom: 0.4rem;
+	}
+	.proj-pick {
+		margin-bottom: 0.6rem;
+	}
+	.proj-desc {
+		font-size: 0.84rem;
+		line-height: 1.65;
+		color: var(--ink-soft);
+	}
+	.proj-stack {
+		margin-top: 0.7rem;
+		font-size: 0.74rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+	.proj-cta {
+		display: block;
+		margin-top: 0.9rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.84rem;
+		color: var(--stamp);
+	}
+
+	/* ---- workbench ---- */
+	.bench {
+		margin-top: 3.4rem;
+	}
+	.bench-head {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.05rem;
+		color: var(--ink-soft);
+	}
+	.bench-rule {
+		flex: 1;
+		height: 0;
+		border-top: 2px dashed var(--ink-ghost);
+	}
+	.bench-note {
+		margin: 0.5rem 0 1.5rem;
+		max-width: 34rem;
+	}
+	.bench-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		gap: 2.4rem 1.7rem;
+	}
+	.proj-bench {
+		background: transparent;
+		border-style: dashed;
+		box-shadow: none;
+	}
+	.proj-bench .proj-sketch,
+	.proj-bench .proj-name {
+		opacity: 0.75;
+	}
+
+	/* ============ jinx teaser ============ */
+	.jinx-card-wrap {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2rem 2.2rem 3.5rem;
+	}
+	.jinx-card {
+		display: flex;
+		align-items: center;
+		gap: 1.6rem;
+		padding: 1.6rem 1.8rem;
+		text-decoration: none;
+		color: var(--ink);
+		background: var(--card);
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	.jinx-card:hover {
+		transform: rotate(0deg) translateY(-4px);
+		box-shadow: 6px 8px 0 var(--shadow-deep);
+	}
+	.jinx-card-art {
+		flex: 0 0 auto;
+		width: 4.2rem;
+		height: 4.2rem;
+		color: var(--ink-soft);
+	}
+	.jinx-card-head {
+		font-size: 1.2rem;
+		margin-bottom: 0.4rem;
+	}
+	.jinx-card-copy p {
+		font-size: 0.88rem;
+		line-height: 1.65;
+		color: var(--ink-soft);
+		max-width: 44rem;
+	}
+	.jinx-card .proj-cta {
+		margin-top: 0.6rem;
+	}
+	@media (max-width: 640px) {
+		.jinx-card {
 			flex-direction: column;
 			align-items: flex-start;
+			gap: 1rem;
 		}
-		.hero-diagram {
-			display: none;
+	}
+
+	/* ============ footer ============ */
+	.foot {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2.6rem 2.2rem 4rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 1.6rem;
+	}
+	.foot-logo {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 1.15rem;
+	}
+	.foot-copy {
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+		margin-top: 0.2rem;
+	}
+	.foot-wink {
+		margin-top: 0.5rem;
+	}
+	.nav-dot {
+		color: var(--stamp);
+	}
+
+	.foot-links {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	@media (max-width: 640px) {
+		.cover,
+		.about,
+		.kit,
+		.board,
+		.jinx-card-wrap,
+		.foot {
+			padding-left: 1.4rem;
+			padding-right: 1.4rem;
 		}
-		.hero-hud {
-			display: none;
-		}
-		.divider {
-			padding: 0 24px;
-		}
-		.projects-head {
-			padding: 0 24px;
+		.cover {
+			padding-top: 2.2rem;
 		}
 	}
 </style>

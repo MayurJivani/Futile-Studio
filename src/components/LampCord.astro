@@ -1,0 +1,267 @@
+---
+/**
+ * The lamp pull: a string with a bead on the end that you actually drag.
+ *
+ * The bead is a real pendulum rather than a CSS stretch, because a cord that
+ * only moves straight down reads as a slider. Position-based dynamics: gravity
+ * integrates into the velocity, then the string constraint pulls the bead back
+ * onto a circle around the pivot and kills the velocity component along the
+ * string. That gives swing for free, which is the bit that sells it.
+ *
+ * The lamp fires on RELEASE, and only if you pulled past the trip point, so a
+ * small nudge is not a switch. A plain click (keyboard, screen reader, tap) is
+ * treated as a full pull, so the control is never drag-only.
+ *
+ * Keeps the id `lamp-toggle`, so DeskPanel's existing wiring is untouched.
+ */
+---
+
+<div class="cord" id="cord">
+	<span class="cord-bulb" aria-hidden="true"></span>
+	<svg class="cord-string" id="cord-string" aria-hidden="true" width="120" height="200" viewBox="0 0 120 200">
+		<line id="cord-line" x1="60" y1="0" x2="60" y2="64"></line>
+	</svg>
+	<button
+		class="cord-bead"
+		id="lamp-toggle"
+		aria-pressed="false"
+		aria-label="Pull the cord to switch the desk lamp"
+		title="pull it"></button>
+</div>
+
+<script>
+	const cord = document.getElementById('cord');
+	const bead = document.getElementById('lamp-toggle');
+	const line = document.getElementById('cord-line');
+
+	if (cord && bead && line) {
+		const PIVOT_X = 60; // the svg viewBox centre
+		const REST = 64; // string length at rest, px
+		const MAX = 150; // it will not stretch past this
+		const TRIP = 30; // how far past rest counts as a pull
+		const LIMIT = 1.25; // ~72deg: a cord swings, it does not go over the top
+
+		const G = 0.45; // gravity, in angle terms
+		const DAMP = 0.978; // air
+		const RELAX = 0.18; // how fast an overstretched string takes its length back
+		const SLEEP_W = 0.0015;
+		const SLEEP_A = 0.008;
+		const SLEEP_L = 0.4;
+
+		const reduced = () => {
+			const m = document.documentElement.dataset.motion;
+			if (m === 'off') return true;
+			if (m === 'on') return false;
+			return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		};
+
+		/* Polar, not cartesian: the angle does the swinging and the length only
+		   relaxes back to rest. A cartesian spring with a partial constraint sits
+		   permanently stretched (gravity adds every frame, the constraint only
+		   takes some of it back) and never reaches its sleep condition, so the
+		   rAF loop would run forever. In polar the two concerns cannot fight. */
+		let angle = 0; // radians from straight down
+		let omega = 0; // angular velocity
+		let len = REST;
+		let dragging = false;
+		let raf = 0;
+
+		const wrap = (a: number) => {
+			while (a > Math.PI) a -= 2 * Math.PI;
+			while (a < -Math.PI) a += 2 * Math.PI;
+			return a;
+		};
+
+		function draw() {
+			const x = Math.sin(angle) * len;
+			const y = Math.cos(angle) * len;
+			line!.setAttribute('x2', String(PIVOT_X + x));
+			line!.setAttribute('y2', String(y));
+			bead.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+		}
+
+		function step() {
+			if (!dragging) {
+				omega += -(G / Math.max(len, 1)) * Math.sin(angle);
+				omega *= DAMP;
+				angle = wrap(angle + omega);
+				/* Bounce off the limit rather than winding round the pivot. */
+				if (angle > LIMIT) {
+					angle = LIMIT;
+					omega *= -0.35;
+				} else if (angle < -LIMIT) {
+					angle = -LIMIT;
+					omega *= -0.35;
+				}
+				len += (REST - len) * RELAX;
+			}
+			draw();
+
+			const asleep =
+				!dragging && Math.abs(omega) < SLEEP_W && Math.abs(angle) < SLEEP_A && Math.abs(len - REST) < SLEEP_L;
+
+			if (asleep) {
+				/* Park it exactly straight down and stop burning frames. */
+				angle = 0;
+				omega = 0;
+				len = REST;
+				draw();
+				raf = 0;
+			} else {
+				raf = requestAnimationFrame(step);
+			}
+		}
+
+		const wake = () => {
+			if (!raf) raf = requestAnimationFrame(step);
+		};
+
+		/** A tug with no drag, so a click or the keyboard still swings it. */
+		function tug() {
+			if (reduced()) return;
+			len = Math.min(MAX, len + 26);
+			omega += 0.05;
+			wake();
+		}
+
+		/* ---------- dragging ---------- */
+		let pivotX = 0;
+		let pivotY = 0;
+		let lastAngle = 0;
+
+		/** Where the pivot currently sits in viewport coordinates. */
+		function readPivot() {
+			const r = cord!.getBoundingClientRect();
+			pivotX = r.left + PIVOT_X;
+			pivotY = r.top;
+		}
+
+		bead.addEventListener('pointerdown', (e) => {
+			if (reduced()) return;
+			e.preventDefault();
+			readPivot();
+			dragging = true;
+			cord!.classList.add('is-pulling');
+			bead.setPointerCapture(e.pointerId);
+			omega = 0;
+			lastAngle = angle;
+			wake();
+		});
+
+		bead.addEventListener('pointermove', (e) => {
+			if (!dragging) return;
+			const dx = e.clientX - pivotX;
+			const dy = Math.max(e.clientY - pivotY, 4); // never above the bulb
+			len = Math.min(Math.hypot(dx, dy), MAX);
+			const next = Math.atan2(dx, dy);
+			angle = Math.max(-LIMIT, Math.min(LIMIT, next));
+			/* Carry the swing into the release. */
+			omega = wrap(angle - lastAngle);
+			lastAngle = angle;
+		});
+
+		function endDrag(e: PointerEvent) {
+			if (!dragging) return;
+			dragging = false;
+			cord!.classList.remove('is-pulling');
+			try {
+				bead.releasePointerCapture(e.pointerId);
+			} catch {
+				/* already gone */
+			}
+			const pulled = len - REST;
+			wake();
+			/* The pull is the switch. DeskPanel owns what the lamp then does. */
+			if (pulled >= TRIP) bead.click();
+		}
+
+		bead.addEventListener('pointerup', endDrag);
+		bead.addEventListener('pointercancel', endDrag);
+
+		/* Click covers keyboard, assistive tech and a plain tap. */
+		bead.addEventListener('click', tug);
+		bead.addEventListener('dragstart', (e) => e.preventDefault());
+
+		/* The pivot moves when the window does. */
+		window.addEventListener('resize', readPivot);
+
+		draw();
+	}
+</script>
+
+<style>
+	/* One lane down the right-hand edge at every width. The nav reserves room
+	   for it on small screens so the two never sit on top of each other. */
+	.cord {
+		position: fixed;
+		top: 0;
+		right: clamp(0.9rem, 2.5vw, 2.6rem);
+		z-index: 120;
+		width: 120px;
+		height: 0;
+		margin-right: -60px; /* centre the 120px lane on the chosen edge offset */
+		pointer-events: none;
+	}
+
+	/* The bulb sits at the pivot, flush to the top edge. */
+	.cord-bulb {
+		position: absolute;
+		top: 0;
+		left: 60px;
+		transform: translateX(-50%);
+		width: 1.15rem;
+		height: 1.3rem;
+		border: 2px solid var(--ink-soft);
+		border-top: none;
+		border-radius: 0 0 55% 55%;
+		background: var(--card-2);
+		transition:
+			background 0.35s ease,
+			box-shadow 0.35s ease;
+	}
+
+	.cord-string {
+		position: absolute;
+		top: 0;
+		left: 0;
+		overflow: visible;
+	}
+	.cord-string line {
+		stroke: var(--ink-faint);
+		stroke-width: 2;
+		stroke-linecap: round;
+	}
+
+	.cord-bead {
+		position: absolute;
+		top: 0;
+		left: 60px;
+		width: 0.85rem;
+		height: 1.5rem;
+		margin: -0.75rem 0 0 -0.425rem; /* so the transform positions its centre */
+		padding: 0;
+		border: 2px solid var(--ink-soft);
+		border-radius: 999px;
+		background: var(--card);
+		box-shadow: 2px 2px 0 var(--shadow);
+		cursor: grab;
+		pointer-events: auto;
+		touch-action: none;
+		will-change: transform;
+	}
+	.cord.is-pulling .cord-bead {
+		cursor: grabbing;
+	}
+
+	/* Lit: the bulb warms and throws a little glow onto the paper. */
+	.cord:has(.cord-bead[aria-pressed='true']) .cord-bulb {
+		background: var(--marker);
+		box-shadow: 0 0 14px 2px rgba(245, 213, 71, 0.55);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cord-bead {
+			cursor: pointer;
+		}
+	}
+</style>
