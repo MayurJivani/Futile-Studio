@@ -1,164 +1,123 @@
 ---
-import { open, dated, undated, unlogged } from '../data/projects.js';
+import { entries, byMonth, firstYear } from '../data/log.js';
 import Sketch from './Sketch.astro';
 
 /**
- * The log book. Guideline B's feature bank flags the reference site's
- * calendar as worth re-skinning "if Futile Studio ever wants a public
- * schedule/changelog page", so this takes the craft from it (a painted blob
- * behind the date, runs merged into one shape, inked up to today and outline
- * after, a dedicated guide to reading it) and drops the grid.
+ * The log book. Guideline B's feature bank flags the reference site's calendar
+ * as worth re-skinning, so this keeps the craft from it (paint behind the date,
+ * inked up to today and outline after, a busy marker when a cell holds more
+ * than one) and lays it out as a year per row.
  *
- * A month grid per year would be mostly empty here, because only two entries
- * have a known month. One continuous tape of months reads as a denser artifact
- * at this data size, and the year-only entries hang off their year band on a
- * thread instead of being assigned a month nobody recorded.
+ * A row per year rather than one long tape: twelve columns fit any width, so
+ * the whole history is on screen at once instead of behind a sideways scroll.
  */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const FULL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const now = new Date();
 const thisYear = now.getFullYear();
 const thisMonth = now.getMonth() + 1;
 
-const firstYear = Math.min(...open.filter((p) => p.shipped).map((p) => Number(p.shipped.slice(0, 4))));
-
-/** One cell per month from the first shipment to the end of the current year. */
-const cells = [];
+const years = [];
 for (let y = firstYear; y <= thisYear; y++) {
-	for (let m = 1; m <= 12; m++) {
-		const key = `${y}-${String(m).padStart(2, '0')}`;
-		cells.push({
-			key,
-			year: y,
-			month: m,
-			label: MONTHS[m - 1],
-			future: y === thisYear && m > thisMonth,
-			today: y === thisYear && m === thisMonth,
-			shipped: dated.filter((p) => p.shipped === key),
-		});
-	}
+	years.push({
+		year: y,
+		cells: Array.from({ length: 12 }, (_, i) => {
+			const m = i + 1;
+			const key = `${y}-${String(m).padStart(2, '0')}`;
+			return {
+				key,
+				label: MONTHS[i],
+				full: FULL[i],
+				started: byMonth[key] || [],
+				future: y === thisYear && m > thisMonth,
+				today: y === thisYear && m === thisMonth,
+			};
+		}),
+	});
 }
 
-/** Year bands, for the labels that run under the tape. */
-const bands = [];
-for (let y = firstYear; y <= thisYear; y++) {
-	bands.push({ year: y, loose: undated.filter((p) => p.shipped === String(y)) });
-}
-
-const onTheBoard = open.length;
-
-/* Built here rather than inline: JSX collapses the newlines around a
-   conditional fragment into stray spaces, which lands as "a year , and". */
-const breakdown = [
-	`${dated.length} with a month against them`,
-	`${undated.length} with only a year`,
-	unlogged.length > 0 ? `${unlogged.length} I never wrote a date on at all` : null,
-]
-	.filter(Boolean)
-	.join(', ');
+const busiest = Math.max(...Object.values(byMonth).map((m) => m.length));
 ---
 
 <section id="log" class="log">
+	<span class="doodle doodle-archive" aria-hidden="true"><Sketch name="archive" /></span>
 	<div class="log-head">
 		<h2 class="sect-label">
 			The log book
 			<span class="sect-doodle"><Sketch name="snips" /></span>
 		</h2>
 		<p class="log-intro">
-			A cell a month, counting from the first one. Painted means something new turned up that month, plain
-			means the month has already been and gone, and dashed means it has not come round yet.
+			A cell a month since the first one, dated from the repository rather than from memory. Painted cells are
+			months a new thing started, and the dashed ones are still ahead.
 		</p>
 	</div>
 
-	<div class="log-tape-wrap">
-		<div class="log-tape" role="list" aria-label="Months since the first release">
+	<div class="log-grid" role="table" aria-label="Projects by month">
+		<div class="log-row log-row-head" role="row">
+			<span class="log-year" role="columnheader"></span>
 			{
-				cells.map((cell) => (
-					<div
-						role="listitem"
-						class:list={[
-							'log-cell',
-							{
-								'is-future': cell.future,
-								'is-today': cell.today,
-								'has-ship': cell.shipped.length > 0,
-								'is-busy': cell.shipped.length > 1,
-							},
-						]}
-						data-month={cell.key}
-						aria-label={`${cell.label} ${cell.year}${
-							cell.shipped.length ? `, shipped ${cell.shipped.map((p) => p.name).join(', ')}` : ''
-						}`}
-					>
-						{cell.shipped.length > 0 && (
-							/* The painted blob. Hand-cut border radii, never a circle. */
-							<span class="log-blob" aria-hidden="true" />
-						)}
-						<span class="log-cell-label">{cell.label}</span>
-						{cell.today && (
-							<span class="log-today-flag" aria-hidden="true">
-								now
-							</span>
-						)}
-						{cell.shipped.length > 0 && (
-							<span class="log-pop">
-								{cell.shipped.map((p) => (
-									<span class="log-pop-name">{p.name}</span>
-								))}
-								<span class="log-pop-date">
-									{cell.label} {cell.year}
-								</span>
-							</span>
-						)}
-					</div>
+				MONTHS.map((m, i) => (
+					<span class="log-month-head" role="columnheader" title={FULL[i]}>
+						{m}
+					</span>
 				))
 			}
 		</div>
 
-		<div class="log-bands" aria-hidden="true">
-			{
-				bands.map((band) => (
-					<div class="log-band">
-						<span class="log-band-year">{band.year}</span>
-					</div>
-				))
-			}
-		</div>
+		{
+			years.map((row) => (
+				<div class="log-row" role="row">
+					<span class="log-year" role="rowheader">
+						{row.year}
+					</span>
+					{row.cells.map((cell) => (
+						<div
+							class:list={[
+								'log-cell',
+								{
+									'is-future': cell.future,
+									'is-today': cell.today,
+									'has-ship': cell.started.length > 0,
+									'is-busy': cell.started.length > 1,
+								},
+							]}
+							role="cell"
+							tabindex={cell.started.length ? 0 : -1}
+							aria-label={`${cell.full} ${row.year}${
+								cell.started.length ? `: ${cell.started.map((e) => e.name).join(', ')}` : ''
+							}`}
+						>
+							{cell.started.length > 0 && <span class="log-blob" aria-hidden="true" />}
+							{cell.started.length > 1 && <span class="log-busy" aria-hidden="true" />}
+							{cell.today && (
+								<span class="log-now" aria-hidden="true">
+									now
+								</span>
+							)}
+
+							{cell.started.length > 0 && (
+								<span class="log-pop">
+									{cell.started.map((e) => (
+										<span class="log-pop-name">{e.name}</span>
+									))}
+									<span class="log-pop-date">
+										{cell.full} {row.year}
+									</span>
+								</span>
+							)}
+						</div>
+					))}
+				</div>
+			))
+		}
 	</div>
 
-	{
-		undated.length > 0 && (
-			<div class="log-loose">
-				<p class="log-loose-head">
-					Tucked in loose: year on the back, month not
-					<span class="log-loose-rule" />
-				</p>
-				<ul class="log-loose-list">
-					{bands
-						.filter((b) => b.loose.length)
-						.map((band) => (
-							<li class="log-loose-year">
-								<span class="log-loose-tag">{band.year}</span>
-								<ul class="log-loose-items">
-									{band.loose.map((p) => (
-										<li>
-											<a class="log-loose-chit" href={p.href} data-paste>
-												<span class="mount mount-pin" aria-hidden="true" />
-												{p.name}
-											</a>
-										</li>
-									))}
-								</ul>
-							</li>
-						))}
-				</ul>
-			</div>
-		)
-	}
-
 	<p class="log-stat">
-		<span class="stamp">{onTheBoard} on the board</span>
-		<span class="log-stat-note">{breakdown}.</span>
+		<span class="stamp">{entries.length} in the book</span>
+		<span class="log-stat-note">
+			across {years.length} years, with {busiest} starting in the busiest month.
+		</span>
 	</p>
 </section>
 
@@ -170,9 +129,22 @@ const breakdown = [
 		position: relative;
 	}
 
+	.doodle-archive {
+		top: 2.6rem;
+		right: 3%;
+		width: 2.7rem;
+		height: 2.7rem;
+		transform: rotate(7deg);
+	}
+	@media (max-width: 1000px) {
+		.doodle-archive {
+			display: none;
+		}
+	}
+
 	.log-head {
 		max-width: 44rem;
-		margin-bottom: 2rem;
+		margin-bottom: 1.8rem;
 	}
 	.sect-doodle {
 		width: 3.2rem;
@@ -187,96 +159,90 @@ const breakdown = [
 		max-width: 38rem;
 	}
 
-	/* ---------- the tape ---------- */
-	.log-tape-wrap {
-		position: relative;
-		/* Wide content scrolls inside its own box; the page never scrolls sideways. */
-		overflow-x: auto;
-		overflow-y: visible;
-		padding: 2.6rem 0 0.4rem;
-		scrollbar-width: thin;
+	/* ---------- the grid ---------- */
+	.log-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 0.7rem 0.8rem 0.8rem;
+		background: var(--card-2);
+		border: 1.5px solid var(--ink-soft);
+		border-radius: 8px;
+		box-shadow: 4px 4px 0 var(--shadow);
 	}
 
-	.log-tape {
-		display: flex;
-		gap: 2px;
-		min-width: max-content;
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 6px;
-		background: var(--card-2);
-		padding: 2px;
-		box-shadow: 4px 4px 0 var(--shadow);
+	/* Twelve fr columns, so a year always spans the width whatever it is. */
+	.log-row {
+		display: grid;
+		grid-template-columns: 2.9rem repeat(12, minmax(0, 1fr));
+		gap: 4px;
+		align-items: center;
+	}
+
+	.log-month-head {
+		text-align: center;
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.62rem;
+		color: var(--ink-faint);
+	}
+	.log-year {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.74rem;
+		color: var(--ink-soft);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.log-cell {
 		position: relative;
-		flex: 0 0 auto;
-		width: 2.5rem;
-		height: 3.1rem;
-		display: flex;
-		align-items: flex-end;
-		justify-content: center;
-		padding-bottom: 0.3rem;
+		height: 1.9rem;
+		border-radius: 4px;
 		background: var(--card);
-		border-radius: 3px;
-		font-size: 0.6rem;
-		font-weight: 700;
-		color: var(--ink-faint);
+		border: 1.5px solid transparent;
 	}
 
-	/* Months that have not happened: outline only, nothing inked in yet. */
+	/* Months still ahead: outline only, waiting to be inked. */
 	.log-cell.is-future {
 		background: transparent;
-		border: 1.5px dashed var(--ink-ghost);
-		color: var(--ink-ghost);
-	}
-
-	.log-cell-label {
-		position: relative;
-		z-index: 2;
+		border-color: var(--ink-ghost);
+		border-style: dashed;
 	}
 
 	.log-cell.is-today {
-		border: 2px solid var(--ink);
-		color: var(--ink);
+		border-color: var(--ink);
+		border-style: solid;
 	}
-	.log-today-flag {
+	.log-now {
 		position: absolute;
-		top: -1.5rem;
-		left: 50%;
-		transform: translateX(-50%) rotate(-5deg);
+		inset: 0;
+		display: grid;
+		place-items: center;
 		font-family: var(--bubble);
 		font-weight: 800;
-		font-size: 0.55rem;
+		font-size: 0.5rem;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
+		color: var(--ink);
+		z-index: 3;
+	}
+	.log-cell.has-ship .log-now {
 		color: #fff;
-		background: var(--ink);
-		border-radius: 4px;
-		padding: 1px 5px;
-		white-space: nowrap;
 	}
 
-	/* The blob: brushed paint behind the month, not a tidy circle. */
+	/* Paint, brushed on rather than a tidy rectangle. */
 	.log-blob {
 		position: absolute;
-		inset: 0.18rem;
+		inset: 2px;
 		z-index: 1;
 		background: var(--stamp);
-		opacity: 0.82;
-		border-radius: 62% 38% 55% 45% / 48% 58% 42% 52%;
-		transform: rotate(-6deg);
-	}
-	.log-cell.has-ship {
-		color: #fff;
-	}
-	.log-cell.has-ship .log-cell-label {
-		font-weight: 700;
+		opacity: 0.85;
+		border-radius: 58% 42% 55% 45% / 50% 56% 44% 50%;
+		transform: rotate(-4deg);
 	}
 
-	/* A busy month gets a corner dot rather than a crowded cell. */
-	.log-cell.is-busy::after {
-		content: '';
+	/* More than one that month: a corner dot rather than a crowded cell. */
+	.log-busy {
 		position: absolute;
 		top: 3px;
 		right: 3px;
@@ -287,10 +253,10 @@ const breakdown = [
 		background: #fff;
 	}
 
-	/* What shipped, on hover or keyboard focus of the cell. */
+	/* ---------- what landed ---------- */
 	.log-pop {
 		position: absolute;
-		bottom: calc(100% + 0.5rem);
+		bottom: calc(100% + 0.45rem);
 		left: 50%;
 		z-index: 20;
 		transform: translateX(-50%) rotate(-1.5deg);
@@ -306,120 +272,39 @@ const breakdown = [
 		box-shadow: 3px 3px 0 var(--shadow-deep);
 		opacity: 0;
 		pointer-events: none;
+		translate: 0 4px;
 		transition:
 			opacity 0.18s ease,
 			translate 0.18s ease;
-		translate: 0 4px;
 	}
 	.log-cell:hover .log-pop,
-	.log-cell:focus-within .log-pop {
+	.log-cell:focus-visible .log-pop {
 		opacity: 1;
 		translate: 0 0;
+	}
+
+	/* A centred popup on January or December hangs off the side of the grid and,
+	   on a narrow screen, off the page. Anchor the outer columns to their own
+	   edge instead. Cells are children 2-13 of the row. */
+	.log-cell:nth-child(-n + 4) .log-pop {
+		left: 0;
+		transform: translateX(0) rotate(-1.5deg);
+	}
+	.log-cell:nth-child(n + 11) .log-pop {
+		left: auto;
+		right: 0;
+		transform: translateX(0) rotate(-1.5deg);
 	}
 	.log-pop-name {
 		font-family: var(--bubble);
 		font-weight: 800;
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 		white-space: nowrap;
 	}
 	.log-pop-date {
-		font-size: 0.65rem;
+		font-size: 0.64rem;
 		opacity: 0.7;
 		white-space: nowrap;
-	}
-
-	/* Year labels running under the tape, one band per 12 cells. */
-	.log-bands {
-		display: flex;
-		min-width: max-content;
-		/* No gap here: the band width below already carries the one that
-		   separates two years, so adding another accumulates drift per year. */
-		padding: 0 2px;
-		margin-top: 0.4rem;
-	}
-	.log-band {
-		/* 12 cells, their 11 inner gaps, and the one that follows the year. */
-		width: calc((2.5rem * 12) + (2px * 12));
-		border-top: 2px solid var(--ink-ghost);
-		padding-top: 0.25rem;
-		text-align: center;
-	}
-	.log-band-year {
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.78rem;
-		color: var(--ink-faint);
-	}
-
-	/* ---------- the loose tray ---------- */
-	.log-loose {
-		margin-top: 2.4rem;
-	}
-	.log-loose-head {
-		display: flex;
-		align-items: center;
-		gap: 0.8rem;
-		font-family: var(--hand);
-		font-style: italic;
-		font-size: 0.8rem;
-		color: var(--ink-faint);
-		margin-bottom: 1.1rem;
-	}
-	.log-loose-rule {
-		flex: 1;
-		height: 0;
-		border-top: 2px dashed var(--ink-ghost);
-	}
-
-	.log-loose-list,
-	.log-loose-items {
-		list-style: none;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1.4rem;
-		align-items: flex-start;
-	}
-	.log-loose-year {
-		display: flex;
-		align-items: center;
-		gap: 0.7rem;
-	}
-	.log-loose-tag {
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.8rem;
-		color: var(--ink-soft);
-		border: 1.5px solid var(--ink-ghost);
-		border-radius: 5px;
-		padding: 0.15rem 0.45rem;
-	}
-	.log-loose-items {
-		gap: 0.7rem;
-	}
-
-	/* A little chit of paper, pinned. */
-	.log-loose-chit {
-		position: relative;
-		display: inline-block;
-		margin-top: 0.4rem;
-		padding: 0.45rem 0.8rem;
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.85rem;
-		text-decoration: none;
-		color: var(--ink);
-		background: var(--card);
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 6px;
-		box-shadow: 3px 3px 0 var(--shadow);
-		transform: rotate(var(--rot, -1.5deg));
-		transition:
-			transform 0.14s ease,
-			box-shadow 0.14s ease;
-	}
-	.log-loose-chit:hover {
-		transform: rotate(0deg) translateY(-3px);
-		box-shadow: 4px 6px 0 var(--shadow);
 	}
 
 	.log-stat {
@@ -427,7 +312,7 @@ const breakdown = [
 		align-items: center;
 		gap: 0.7rem;
 		flex-wrap: wrap;
-		margin-top: 2.4rem;
+		margin-top: 1.6rem;
 	}
 	.log-stat-note {
 		font-size: 0.82rem;
@@ -435,9 +320,25 @@ const breakdown = [
 		color: var(--ink-faint);
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 760px) {
 		.log {
 			padding: 2.8rem 1.4rem 3rem;
+		}
+		.log-grid {
+			padding: 0.5rem 0.5rem 0.6rem;
+		}
+		.log-row {
+			grid-template-columns: 2.2rem repeat(12, minmax(0, 1fr));
+			gap: 3px;
+		}
+		.log-cell {
+			height: 1.5rem;
+		}
+		.log-year {
+			font-size: 0.62rem;
+		}
+		.log-month-head {
+			font-size: 0.5rem;
 		}
 	}
 </style>

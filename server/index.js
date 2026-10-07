@@ -15,7 +15,7 @@ import authRoutes from './routes/auth.js';
 import mediaRoutes from './routes/media.js';
 import musicRoutes from './routes/music.js';
 import favoritesRoutes from './routes/favorites.js';
-import jinxRoutes from './routes/jinx.js';
+import jinxRoutes, { countRequest } from './routes/jinx.js';
 import { attachPresence } from './lib/presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -64,6 +64,13 @@ app.use(morgan(isProd ? 'combined' : 'dev'));
 app.use(cors({ origin: ORIGIN, credentials: true, methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
 app.use(express.json({ limit: '1mb' }));
 app.use(apiLimiter);
+
+// Cheap traffic counter for the /jinx page. Sits after the rate limiter so a
+// flood that gets refused does not inflate the number.
+app.use((req, res, next) => {
+	countRequest();
+	next();
+});
 
 app.use(
 	session({

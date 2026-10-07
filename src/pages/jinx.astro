@@ -5,7 +5,7 @@ import DeskPanel from '../components/DeskPanel.astro';
 import Cursors from '../components/Cursors.astro';
 import Marquee from '../components/Marquee.astro';
 import Sketch from '../components/Sketch.astro';
-import { layers, serves } from '../data/jinx.js';
+import { layers } from '../data/jinx.js';
 ---
 
 <Layout
@@ -44,9 +44,8 @@ import { layers, serves } from '../data/jinx.js';
 		</h1>
 
 		<p class="jhero-sub" data-reveal style="--d:140ms">
-			Bare metal in my flat, not a box I rent by the month. Every page on this domain is handed out by it,
-			which is the point: when something falls over I am the one who has to go and look, and that changes how
-			carefully you build.
+			A computer in my flat that hands out every page on this domain. When something falls over, I am the one
+			who walks across the room and finds out why.
 		</p>
 		<p class="margin-note jhero-note" data-reveal style="--d:220ms">
 			Named after the cat, who remains responsible for most of the unplanned downtime. She is on the shelf up
@@ -60,10 +59,7 @@ import { layers, serves } from '../data/jinx.js';
 			How it is doing today
 			<span class="vitals-doodle"><Sketch name="snips" /></span>
 		</h2>
-		<p class="vitals-intro">
-			Measured when you loaded this page, not typed in by me. If the panel says it cannot reach the box, that
-			is the honest answer rather than a cached number pretending otherwise.
-		</p>
+		<p class="vitals-intro">Read from the box the moment you opened this page.</p>
 
 		<div class="vital-grid" id="vital-grid" data-state="loading">
 			<div class="vital sheet" data-paste="-1.4">
@@ -82,7 +78,7 @@ import { layers, serves } from '../data/jinx.js';
 				<span class="mount mount-clip" aria-hidden="true"></span>
 				<span class="vital-key">Load</span>
 				<span class="vital-val" id="v-load">—</span>
-				<span class="vital-note">1, 5 and 15 minute averages</span>
+				<span class="vital-note" id="v-loadnote">1, 5 and 15 minute averages</span>
 			</div>
 			<div class="vital sheet" data-paste="1.6">
 				<span class="mount mount-pin" aria-hidden="true"></span>
@@ -97,6 +93,25 @@ import { layers, serves } from '../data/jinx.js';
 				<span class="vital-val" id="v-cpu">—</span>
 				<span class="vital-note" id="v-plat">platform</span>
 			</div>
+			<div class="vital sheet" data-paste="0.9">
+				<span class="mount mount-clip" aria-hidden="true"></span>
+				<span class="vital-key">Disk</span>
+				<span class="vital-val" id="v-disk">—</span>
+				<span class="vital-bar" aria-hidden="true"><span class="vital-bar-fill" id="v-diskbar"></span></span>
+				<span class="vital-note" id="v-disknote">of the root volume</span>
+			</div>
+			<div class="vital sheet" data-paste="-1.5">
+				<span class="mount mount-pin" aria-hidden="true"></span>
+				<span class="vital-key">Answered</span>
+				<span class="vital-val" id="v-served">—</span>
+				<span class="vital-note">requests since this process woke up</span>
+			</div>
+			<div class="vital sheet vital-wide" data-paste="1.3">
+				<span class="mount mount-tape" aria-hidden="true"></span>
+				<span class="vital-key">Silicon</span>
+				<span class="vital-val vital-val-sm" id="v-model">—</span>
+				<span class="vital-note">the chip doing the work</span>
+			</div>
 		</div>
 
 		<p class="vital-status" id="vital-status" role="status">Asking the box…</p>
@@ -106,15 +121,15 @@ import { layers, serves } from '../data/jinx.js';
 	<section class="stack">
 		<h2 class="sect-label">Jinx, cut in half</h2>
 		<p class="stack-intro">
-			Five layers. Each one exists so the layer above it is allowed to be ignorant of something.
+			Five layers. Each one lets the layer above it stay happily ignorant of something.
 		</p>
 
 		<div class="cutaway">
-			<span class="cutaway-tag" aria-hidden="true">fig. 1 — not to scale</span>
+			<span class="cutaway-tag" aria-hidden="true">fig. 1 — from memory</span>
 			<ol class="stack-list">
 				{
 					layers.map((l, i) => (
-						<li class="layer sheet" data-paste>
+						<li class="layer sheet" data-reveal>
 							<span class="layer-no">{String(i + 1).padStart(2, '0')}</span>
 							<span class="layer-art" aria-hidden="true">
 								<Sketch name={l.art} />
@@ -133,40 +148,17 @@ import { layers, serves } from '../data/jinx.js';
 		</div>
 	</section>
 
-	<!-- ============ WHAT IT HANDS OUT ============ -->
-	<section class="serves">
-		<h2 class="sect-label">What it hands out</h2>
-		<p class="stack-intro">
-			{serves.length} front doors, each one its own container on the same box. Everything on the board is here somewhere.
-		</p>
-
-		<ul class="serve-list">
-			{
-				serves.map((s) => (
-					<li>
-						<a class="serve sheet" href={s.href} target="_blank" rel="noopener" data-paste>
-							<span class="serve-dot" aria-hidden="true" />
-							<span class="serve-host">{s.host}</span>
-							<span class="serve-what">{s.what}</span>
-						</a>
-					</li>
-				))
-			}
-		</ul>
-	</section>
-
 	<!-- ============ WHY ============ -->
 	<section class="why">
 		<h2 class="sect-label">Why bother</h2>
 		<div class="why-grid">
 			<p>
-				Renting a box would be cheaper, quieter and someone else's problem at three in the morning. I keep
-				this one because the problems are the point. Every outage has taught me something a tutorial could
-				not, usually at an hour I did not choose.
+				I like knowing how things work, and the surest way I have found is to build one and keep it running. A
+				rented box hides all the interesting parts behind a dashboard.
 			</p>
 			<p>
-				It also means nothing on this site depends on a free tier staying free. The games still work if a
-				company changes its mind, and the only person who can take them down is me.
+				So the whole chain is mine to understand: the metal, the containers, the routing, the backups. When it
+				breaks I get to find out exactly where, which is the part I actually enjoy.
 			</p>
 		</div>
 		<p class="margin-note why-wink">The rest of the flat has opinions about the noise.</p>
@@ -240,9 +232,23 @@ import { layers, serves } from '../data/jinx.js';
 			set('v-host', duration(d.hostUptime));
 			set('v-proc', duration(d.processUptime));
 			set('v-load', d.loadavg.join('  ·  '));
+			/* Raw load average only means something against the core count. */
+			const busy = Math.round((d.loadavg[0] / Math.max(d.cpus, 1)) * 100);
+			const loadNote = document.getElementById('v-loadnote');
+			if (loadNote) loadNote.textContent = `about ${busy}% of ${d.cpus} cores, 1 / 5 / 15 min`;
 			set('v-mem', gib(d.memory.used));
 			set('v-memnote', `of ${gib(d.memory.total)} fitted`);
 			set('v-cpu', String(d.cpus));
+			set('v-served', d.served.toLocaleString('en-GB'));
+			set('v-model', d.cpuModel || 'unknown');
+
+			if (d.disk) {
+				set('v-disk', gib(d.disk.used));
+				set('v-disknote', `of ${gib(d.disk.total)} on the root volume`);
+				const dpct = Math.round((d.disk.used / d.disk.total) * 100);
+				const dbar = document.getElementById('v-diskbar');
+				if (dbar) dbar.style.width = `${dpct}%`;
+			}
 			set('v-plat', `${d.platform} ${d.arch} · node ${d.node}`);
 
 			const pct = Math.round((d.memory.used / d.memory.total) * 100);
@@ -258,7 +264,7 @@ import { layers, serves } from '../data/jinx.js';
 			grid?.setAttribute('data-state', 'down');
 			if (status) {
 				status.textContent =
-					'No answer from the box right now, so there are no numbers to show. Nothing here is cached or made up.';
+					'The box is quiet right now, so the panel is waiting. Every figure here is measured live.';
 			}
 		}
 	}
@@ -373,7 +379,6 @@ import { layers, serves } from '../data/jinx.js';
 	/* ============ vitals ============ */
 	.vitals,
 	.stack,
-	.serves,
 	.why {
 		max-width: 1140px;
 		margin: 0 auto;
@@ -423,6 +428,13 @@ import { layers, serves } from '../data/jinx.js';
 		color: var(--ink);
 		font-variant-numeric: tabular-nums;
 	}
+	.vital-wide {
+		grid-column: 1 / -1;
+	}
+	.vital-val-sm {
+		font-size: 1rem;
+		line-height: 1.3;
+	}
 	.vital-note {
 		font-size: 0.74rem;
 		font-style: italic;
@@ -451,7 +463,7 @@ import { layers, serves } from '../data/jinx.js';
 		opacity: 0.55;
 	}
 	.vital-grid[data-state='down'] .vital-val::after {
-		content: 'no answer';
+		content: 'quiet';
 		font-size: 0.85rem;
 		font-style: italic;
 		color: var(--ink-faint);
@@ -538,51 +550,6 @@ import { layers, serves } from '../data/jinx.js';
 		max-width: 46rem;
 	}
 
-	/* ============ serves ============ */
-	.serve-list {
-		list-style: none;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-		gap: 1.6rem 1.2rem;
-		padding-top: 0.3rem;
-	}
-	.serve {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-		padding: 0.75rem 0.9rem;
-		text-decoration: none;
-		color: var(--ink);
-		background: var(--card);
-		transition:
-			transform 0.14s ease,
-			box-shadow 0.14s ease;
-	}
-	.serve:hover {
-		transform: rotate(0deg) translateY(-3px);
-		box-shadow: 5px 6px 0 var(--shadow-deep);
-	}
-	.serve-dot {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 50%;
-		background: var(--live);
-		flex: 0 0 auto;
-	}
-	.serve-host {
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.86rem;
-	}
-	.serve-what {
-		width: 100%;
-		padding-left: 0.95rem;
-		font-size: 0.76rem;
-		font-style: italic;
-		color: var(--ink-faint);
-	}
-
 	/* ============ why ============ */
 	.why {
 		max-width: 1140px;
@@ -638,7 +605,6 @@ import { layers, serves } from '../data/jinx.js';
 		.jhero,
 		.vitals,
 		.stack,
-		.serves,
 		.why,
 		.foot {
 			padding-left: 1.4rem;
