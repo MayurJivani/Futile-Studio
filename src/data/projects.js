@@ -19,15 +19,16 @@ export const open = [
 		kind: 'canvas',
 		href: 'https://patina.futile.studio/',
 		cta: 'Open it',
-		shipped: '2026',
+		shipped: '2026-09',
 		mount: 'corner',
 		art: 'patina',
 		pick: true,
-		desc: 'A shared 4096×4096 canvas that stays open for a full year, one pixel at a time, no account needed. Unlike r/place nothing here gets overwritten: paint ages and cures where you left it.',
+		desc: 'A shared 4096×4096 canvas that stays open for a full year, one pixel at a time, open to anyone. Paint here ages and cures where you left it rather than being painted over.',
 		stack: 'Vanilla JS, zero dependencies',
 	},
 	{
 		id: 'orbitle',
+		shipped: '2026-10',
 		name: 'Orbitle',
 		kind: 'daily game',
 		href: 'https://orbitle.futile.studio',
@@ -35,8 +36,8 @@ export const open = [
 		mount: 'pin',
 		art: 'orbitle',
 		pick: true,
-		desc: 'A daily guessing game about orbits. Five rounds: how far out a thing orbits, how long one lap takes, how fast it is moving. Drag the marker to the ring you think is right, and the angle is pure decoration.',
-		stack: 'Astro, no backend, 23 tests',
+		desc: 'A daily guessing game about orbits. Five rounds: how far out a thing orbits, how long one lap takes, how fast it moves. Drag the marker to the ring you think is right; the angle is pure decoration.',
+		stack: 'Astro, static, 23 tests',
 	},
 	{
 		id: 'noggin',
@@ -44,10 +45,10 @@ export const open = [
 		kind: 'party game',
 		href: 'https://noggin.futile.studio',
 		cta: 'Play it',
-		shipped: '2026',
+		shipped: '2026-09',
 		mount: 'tape',
 		art: 'noggin',
-		desc: 'A TV quiz show for a room full of phones. Picture, audio and video clues, millisecond buzzer racing, teams and lifelines, and no hardware beyond what people walked in with.',
+		desc: 'A TV quiz show for a room full of phones. Picture, audio and video clues, millisecond buzzer racing, teams and lifelines, all on the hardware people walked in with.',
 		stack: 'Astro, React, WebSockets',
 	},
 	{
@@ -58,7 +59,7 @@ export const open = [
 		cta: 'Play it',
 		mount: 'pin',
 		art: 'parish',
-		desc: 'No storyteller sitting the round out, no app to install. Just phones around a table and fifteen minutes of everyone lying to each other, with the rules keeping themselves.',
+		desc: 'Everyone plays, and the rules keep themselves. Phones around a table and fifteen minutes of lying to each other, straight from the browser.',
 		stack: 'Astro, WebSockets',
 	},
 	{
@@ -67,7 +68,7 @@ export const open = [
 		kind: 'card game',
 		href: 'https://qno.futile.studio/',
 		cta: 'Play it',
-		shipped: '2025-12',
+		shipped: '2024-08',
 		mount: 'clip',
 		art: 'qno',
 		pick: true,
@@ -76,6 +77,7 @@ export const open = [
 	},
 	{
 		id: 'knock',
+		shipped: '2026-09',
 		name: 'Knock',
 		kind: 'experiment',
 		href: 'https://knock.futile.studio',
@@ -83,7 +85,7 @@ export const open = [
 		mount: 'tape',
 		art: 'knock',
 		pick: true,
-		desc: 'Join a room by being in it. A sound nobody in the room can hear does the job a QR code usually does, so nobody has to point a camera at anything.',
+		desc: 'Join a room by being in it. A sound pitched past hearing does the job a QR code usually does, so everyone can keep their phone in their pocket.',
 		stack: 'Web Audio, vanilla JS',
 	},
 	{
@@ -92,10 +94,10 @@ export const open = [
 		kind: 'stream tool',
 		href: 'https://mosaic.futile.studio/',
 		cta: 'Open it',
-		shipped: '2025',
+		shipped: '2026-04',
 		mount: 'pin',
 		art: 'mosaic',
-		desc: 'A live overlay that lets mods drop emotes, clips and sound onto a broadcast while the streamer keeps playing. No OBS scene juggling, and changes reach the viewer as they land.',
+		desc: 'A live overlay that lets mods drop emotes, clips and sound onto a broadcast while the streamer keeps playing. Changes reach the viewer the moment they land.',
 		stack: 'Astro, React, WebSockets',
 	},
 	{
@@ -104,7 +106,7 @@ export const open = [
 		kind: 'music game',
 		href: 'https://chorusify.com',
 		cta: 'Play it',
-		shipped: '2024-01',
+		shipped: '2023-12',
 		mount: 'corner',
 		art: 'chorus',
 		desc: 'A Wordle-shaped daily music guessing game: daily, multiplayer and artist modes, a ten-song challenge and a leaderboard, with the clips playing in the browser rather than sending you elsewhere.',
@@ -112,13 +114,14 @@ export const open = [
 	},
 	{
 		id: 'cubby',
+		shipped: '2026-10',
 		name: 'Cubby',
 		kind: 'tool',
 		href: 'https://github.com/MayurJivani/Cubby',
 		cta: 'Read the source',
 		mount: 'clip',
 		art: 'cubby',
-		desc: 'A drop box between your own devices. Encrypted in the browser before it leaves, so the thing in the middle only ever holds something it cannot read.',
+		desc: 'A drop box between your own devices. Encrypted in the browser before it leaves, so the thing in the middle only ever holds ciphertext.',
 		stack: 'Web Crypto, Node',
 	},
 ];
@@ -131,7 +134,7 @@ export const workbench = [
 		kind: 'research',
 		mount: 'corner',
 		art: 'cubby',
-		desc: 'A university project group comparing how people actually cope with four ways of proving who they are: passwords, WebAuthn passkeys, biometric face recognition and the EU Digital Identity Wallet. Run as a full Scrum process, which is its own kind of experiment.',
+		desc: 'A university project group comparing four ways of proving who you are: passwords, WebAuthn passkeys, face recognition and the EU Digital Identity Wallet. Run as a full Scrum process, which is its own kind of experiment.',
 		stack: 'React, TypeScript, Express',
 	},
 	{
@@ -140,7 +143,7 @@ export const workbench = [
 		kind: 'instrument',
 		mount: 'clip',
 		art: 'patina',
-		desc: "r/place with instruments instead of pixels. A 32x16 grid that never stops playing, two bars at 100bpm on a downbeat everyone shares, and the only way to clear somebody's note is to put your own where it was. Finished, but it has nowhere to live yet.",
+		desc: "r/place with instruments instead of pixels. A 32x16 grid that plays forever, two bars at 100bpm on a downbeat everyone shares, where clearing somebody's note means putting your own where it was. Finished, and waiting for somewhere to live.",
 		stack: 'Node, WebSockets, Web Audio',
 	},
 	{
@@ -149,7 +152,7 @@ export const workbench = [
 		kind: 'positioning',
 		mount: 'pin',
 		art: 'sextant',
-		desc: 'Phones working out where they are by listening to each other. The maths is settled; turning it into something that survives a real room is not.',
+		desc: 'Phones working out where they are by listening to each other. The maths is settled; making it survive a real room is the open part.',
 		stack: 'Web Audio, time-of-flight',
 	},
 	{
@@ -165,12 +168,3 @@ export const workbench = [
 
 /** Everything on the board, in one list, for counts and the log. */
 export const projects = open;
-
-/** Month-precise entries, for the log's calendar strip. */
-export const dated = open.filter((p) => p.shipped?.includes('-'));
-
-/** Year-only entries, for the log's loose tray. */
-export const undated = open.filter((p) => p.shipped && !p.shipped.includes('-'));
-
-/** No date written down at all. Counted, never placed. */
-export const unlogged = open.filter((p) => !p.shipped);

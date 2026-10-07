@@ -67,9 +67,9 @@ const kit = [
 		</h1>
 
 		<p class="cover-sub" data-reveal style="--d:140ms">
-			I'm Mayur. I make things for the web, mostly games and small tools, then cut them out and stick them in
-			here. <span class="marker">{open.length} of them are open to anyone</span> right now; the rest of this page
-			is how they got made and what they sit on.
+			I'm Mayur. I make small things for the web, mostly games and tools, and stick them in here as they land. <span
+				class="marker">{open.length} are open to anyone</span
+			> right now.
 		</p>
 
 		<div class="cover-actions" data-reveal style="--d:220ms">
@@ -100,6 +100,7 @@ const kit = [
 
 	<!-- ============ ABOUT ============ -->
 	<section id="about" class="about">
+		<span class="doodle doodle-vinyl" aria-hidden="true"><Sketch name="vinyl" /></span>
 		<h2 class="sect-label" data-annotate>Who is sticking all this up</h2>
 
 		<div class="about-grid">
@@ -108,21 +109,19 @@ const kit = [
 				<span class="mount mount-corner mount-corner-br" aria-hidden="true"></span>
 
 				<p>
-					I build things and then do the unglamorous half, which turns out to be the rare bit. Most of what is
-					on this page could have stayed a sketch in a notebook, and the only interesting decision was
-					carrying on past the point where it stopped being fun.
+					I like knowing how things work, so I tend to build one until it does. Most of this page began as a
+					scribble that could have stayed a scribble, and the interesting part was carrying on past the point
+					where it stopped being fun.
 				</p>
 				<p>
-					I like owning the whole line. The code is mine, the box under it is mine, the domain routing and the
-					nightly backups are mine. None of this sits in somebody else's cloud, which means at 1am it is
-					unambiguously my problem. That is the trade, and it is the fastest way I know to find out how any of
-					it actually works.
+					Everything here runs on a machine I can walk over to, which keeps the whole chain within reach: the
+					metal, the containers, the routing, the backups. At 1am the problem is on this side of the wall,
+					which is the quickest way I know to learn how any of it holds together.
 				</p>
 				<p>
-					Away from a keyboard I collect vinyl and cassettes and record a little under
-					<span class="marker">Futile Rec. Co</span>. Physical media mostly, because a record is a thing you
-					can put in somebody's hands, and because a shelf is a nicer record of a few years than a listening
-					history is.
+					Away from a keyboard I collect vinyl and cassettes, and record a little under
+					<span class="marker">Futile Rec. Co</span>. A record is a thing you can hand to somebody, and a
+					shelf says more about a few years than a listening history does.
 				</p>
 			</article>
 
@@ -151,10 +150,10 @@ const kit = [
 
 	<!-- ============ THE KIT ============ -->
 	<section id="kit" class="kit">
+		<span class="doodle doodle-can" aria-hidden="true"><Sketch name="can" /></span>
 		<h2 class="sect-label" data-annotate>What I reach for</h2>
 		<p class="kit-intro">
-			Not a ranking and not a complete list, just the things I keep picking up. Most of the board above is
-			some arrangement of these.
+			The things I keep picking up. Most of the board above is some arrangement of these.
 		</p>
 		<div class="kit-grid">
 			{
@@ -175,11 +174,12 @@ const kit = [
 
 	<!-- ============ THE BOARD ============ -->
 	<section id="work" class="board">
+		<span class="doodle doodle-postcard" aria-hidden="true"><Sketch name="postcard" /></span>
 		<div class="board-head">
 			<h2 class="sect-label" data-annotate>The board</h2>
 			<p class="board-intro">
-				Everything anyone can open, newest nearest the top. No mockups and no case studies: each link below
-				goes straight to the thing itself, so you can judge it the way anybody else would.
+				Everything anyone can open, newest first. Each link goes straight to the running thing, so you can
+				judge it the way anybody else would.
 			</p>
 		</div>
 
@@ -221,12 +221,14 @@ const kit = [
 
 		<!-- the half-built half -->
 		<div class="bench">
+			<span class="doodle doodle-crate" aria-hidden="true"><Sketch name="crate" /></span>
 			<p class="bench-head">
 				Still on the workbench
 				<span class="bench-rule"></span>
 			</p>
 			<p class="bench-note margin-note">
-				On the board because a page with only the flattering half of the drawer on it would be a brochure.
+				Some half-built, some finished and waiting for somewhere to live. Here because a page showing only the
+				flattering half would be a brochure.
 			</p>
 			<div class="bench-grid">
 				{
@@ -254,14 +256,15 @@ const kit = [
 
 	<!-- ============ JINX TEASER ============ -->
 	<section class="jinx-card-wrap">
+		<span class="doodle doodle-plant" aria-hidden="true"><Sketch name="plant" /></span>
 		<a href="/jinx" class="jinx-card sheet sheet-catear" data-paste="-1.4">
 			<span class="mount mount-tape" aria-hidden="true"></span>
 			<span class="jinx-card-art" aria-hidden="true"><Sketch name="cat" /></span>
 			<div class="jinx-card-copy">
 				<h2 class="jinx-card-head">Everything here sits on one box</h2>
 				<p>
-					It is called Jinx, it is bare metal in my flat, and it has its own page: what it is made of, what it
-					hands out, and how awake it has been lately.
+					Jinx, bare metal in my flat. Its own page has the layers it is built from, and how it is doing
+					today.
 				</p>
 				<span class="proj-cta">Go and look →</span>
 			</div>
@@ -272,6 +275,7 @@ const kit = [
 
 	<!-- ============ FOOTER ============ -->
 	<footer class="foot">
+		<span class="doodle doodle-reel" aria-hidden="true"><Sketch name="tape-reel" /></span>
 		<div class="foot-left">
 			<p class="foot-logo">futile<span class="nav-dot">.</span>studio</p>
 			<p class="foot-copy">© 2026 Mayur Jivani · cut and pasted by hand</p>
@@ -428,6 +432,78 @@ const kit = [
 	}
 	.spec-cv {
 		margin-top: 1.1rem;
+	}
+
+	/* ---- doodles down the page, one per section, kept sparse on purpose ---- */
+	.about,
+	.kit,
+	.board,
+	.jinx-card-wrap,
+	.foot {
+		position: relative;
+	}
+	.doodle-vinyl {
+		top: 1.6rem;
+		right: 2.5%;
+		width: 3.4rem;
+		height: 3.4rem;
+		transform: rotate(9deg);
+	}
+	.doodle-can {
+		top: 2.4rem;
+		right: 6%;
+		width: 2.5rem;
+		height: 2.5rem;
+		transform: rotate(-11deg);
+	}
+	.doodle-postcard {
+		top: 1.1rem;
+		right: 3%;
+		width: 3.8rem;
+		height: 2.8rem;
+		transform: rotate(5deg);
+	}
+	.bench {
+		position: relative;
+	}
+	.doodle-crate {
+		top: -0.4rem;
+		right: 1%;
+		width: 2.5rem;
+		height: 2.5rem;
+		transform: rotate(-8deg);
+	}
+	.doodle-plant {
+		bottom: 1.2rem;
+		left: 3%;
+		width: 2.6rem;
+		height: 2.6rem;
+		transform: rotate(-4deg);
+	}
+	.doodle-reel {
+		top: 0.6rem;
+		right: 8%;
+		width: 3.4rem;
+		height: 2.4rem;
+		transform: rotate(-7deg);
+	}
+	/* Below this the copy needs the room more than the decoration does. */
+	@media (max-width: 1000px) {
+		.doodle-can,
+		.doodle-postcard,
+		.bench {
+			position: relative;
+		}
+		.doodle-crate {
+			top: -0.4rem;
+			right: 1%;
+			width: 2.5rem;
+			height: 2.5rem;
+			transform: rotate(-8deg);
+		}
+		.doodle-plant {
+			display: none;
+		}
 	}
 
 	/* ============ the kit ============ */
