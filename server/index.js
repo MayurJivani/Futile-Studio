@@ -16,7 +16,15 @@ import mediaRoutes from './routes/media.js';
 import musicRoutes from './routes/music.js';
 import favoritesRoutes from './routes/favorites.js';
 import jinxRoutes, { countRequest } from './routes/jinx.js';
+import projectRoutes from './routes/projects.js';
+import mixtapeRoutes from './routes/mixtapes.js';
 import { attachPresence } from './lib/presence.js';
+import { makeVisitors } from './lib/visitors.js';
+import { makeMarks } from './lib/marks.js';
+import { makePostcards } from './lib/postcards.js';
+import postcardRoutes from './routes/postcards.js';
+import studioRoutes from './routes/studio.js';
+import { makeVotes } from './lib/votes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -109,6 +117,15 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/music', musicRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/jinx', jinxRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/mixtapes', mixtapeRoutes);
+
+/* Visitor names, the studio's marks board and the postcard box share one
+   instance each between the HTTP routes and the presence relay. */
+const visitors = makeVisitors(db);
+const marks = makeMarks();
+app.use('/api/postcards', postcardRoutes({ postcards: makePostcards(db), visitors }));
+app.use('/api/studio', studioRoutes({ marks }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
@@ -153,7 +170,13 @@ function shutdown(signal) {
 }
 
 // Anonymous cursor presence rides the same HTTP server on /ws/presence.
-attachPresence(server, { allowedOrigin: isProd ? ORIGIN : null });
+attachPresence(server, {
+	allowedOrigin: isProd ? ORIGIN : null,
+	trustProxy: isProd,
+	votes: makeVotes(db, process.env.SESSION_SECRET || 'change-me'),
+	visitors,
+	marks,
+});
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));

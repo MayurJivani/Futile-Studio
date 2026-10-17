@@ -1,0 +1,1018 @@
+---
+/**
+ * The postcard desk. The footer's Post it button comes here.
+ *
+ * A postcard is written on the page and leaves through the visitor's own mail
+ * app: SEND opens a mailto: addressed to the studio with the card filled in.
+ * There is no mail server behind this site, so the page never claims to have
+ * sent anything; the receipt says the card was handed over, and offers the
+ * text to copy if no mail app answered.
+ */
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import DeskPanel from '../components/DeskPanel.astro';
+import Cursors from '../components/Cursors.astro';
+import PixelArt from '../components/PixelArt.astro';
+import StampArt from '../components/StampArt.astro';
+import { url } from '../lib/url.js';
+import { postcardSprites, postcardPalette } from '../data/pixelArt.js';
+import { kinds, papers, inks, postmarks, STUDIO_EMAIL, MAX_CHARS } from '../data/postcards.js';
+
+const first = kinds[0];
+---
+
+<Layout title="Postcard desk · Futile Studio" description="Write a postcard to Futile Studio. It leaves through your own mail app.">
+	<Nav />
+	<DeskPanel />
+	<Cursors />
+
+	<main id="main" class="desk wrap">
+		<header class="desk-head">
+			<p class="label"><a href={url('#contact')}>← Back to the studio</a></p>
+			<h1 class="desk-title">The postcard desk</h1>
+			<p class="desk-lede">
+				Pick a kind of mail, write on the back, send it into the world. Cards land in the studio's postbox and get
+				read.
+			</p>
+		</header>
+
+		<div class="desk-grid" id="desk">
+			<!-- ================= the card ================= -->
+			<div class="stage">
+				<div class="paper-stack">
+				<div class="envelope" aria-hidden="true"><span class="env-flap"></span></div>
+				<div class="card-wrap" id="card-wrap" data-paper="cream" data-kind={first.id} style={`--ink:${inks[0].color}`}>
+					<div class="card" id="card">
+						<!-- front: the picture side -->
+						<section class="face front" id="face-front" aria-label="Postcard, picture side">
+							<p class="front-greeting" data-greeting>{first.greeting}</p>
+							<div class="front-art">
+								{
+									kinds.map((k) => (
+										<div class="sprite" data-for={k.id} hidden={k.id !== first.id}>
+											<PixelArt rows={postcardSprites[k.id as keyof typeof postcardSprites]} palette={postcardPalette} />
+										</div>
+									))
+								}
+							</div>
+							<p class="front-mark brandmark">futile<b>.</b>studio</p>
+						</section>
+
+						<!-- back: the writing side -->
+						<section class="face back" id="face-back" aria-label="Postcard, writing side" inert>
+							<div class="back-msg">
+								<p class="back-prompt label" data-prompt>{first.prompts[0]}</p>
+								<p class="back-text" id="preview-text" data-empty="true">Your message appears here as you write.</p>
+								<p class="back-from" id="preview-from"></p>
+							</div>
+							<div class="back-side">
+								<div class="back-top">
+									<button class="pm" type="button" id="postmark" aria-label="Press the postmark again">
+										<span class="pm-1">{postmarks[0][0]}</span>
+										<span class="pm-2" data-pm-date>{postmarks[0][1]}</span>
+									</button>
+									<button class="stamp-box" type="button" id="stamp-btn" aria-expanded="false" aria-controls="stamp-notes">
+										{
+											kinds.map((k) => (
+												<span class="stamp-for" data-for={k.id} hidden={k.id !== first.id}>
+													<StampArt stamp={k.stamp} />
+												</span>
+											))
+										}
+										<span class="visually-hidden">Read about this stamp</span>
+									</button>
+								</div>
+								<p class="back-to script">
+									Mayur Jivani<br />futile.studio<br />Paderborn, DE
+								</p>
+							</div>
+						</section>
+					</div>
+				</div>
+
+				</div>
+
+				<div class="stage-actions">
+					<button class="btn" type="button" id="flip" aria-pressed="false" aria-controls="card">Turn it over</button>
+				</div>
+
+				<aside class="stamp-notes" id="stamp-notes" hidden>
+					<p class="label">Stamp notes · a work of fiction</p>
+					{
+						kinds.map((k) => (
+							<div data-for={k.id} hidden={k.id !== first.id}>
+								<p class="sn-title">{k.stamp.title}, {k.stamp.serial}</p>
+								<p class="sn-meta">Issued {k.lore.issued} · {k.lore.edition}</p>
+								<p>{k.lore.story}</p>
+							</div>
+						))
+					}
+				</aside>
+			</div>
+
+			<!-- ================= the controls ================= -->
+			<form class="controls" id="postcard-form" novalidate>
+				<p class="office" id="office" data-state="checking" role="status">Checking whether the post office is open…</p>
+				<p class="sender" id="sender" hidden>Sending as <b data-sender></b>, the name the studio gave you.</p>
+				<!-- a field people never see: anything typed here is a bot's -->
+				<div class="hp" aria-hidden="true">
+					<label for="website">Leave this empty</label>
+					<input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+				</div>
+				<fieldset class="pick">
+					<legend class="label">Kind of mail</legend>
+					<div class="pick-row">
+						{
+							kinds.map((k, i) => (
+								<label class="chip">
+									<input type="radio" name="kind" value={k.id} checked={i === 0} />
+									<span>{k.label}</span>
+								</label>
+							))
+						}
+					</div>
+				</fieldset>
+
+				<div class="msg-field">
+					<label class="label" for="msg">Message</label>
+					<textarea id="msg" name="msg" rows="6" maxlength={MAX_CHARS} placeholder={first.prompts[0]} aria-describedby="msg-count msg-err"></textarea>
+					<div class="msg-meta">
+						<span id="msg-count" aria-live="polite">0 / {MAX_CHARS}</span>
+						<button class="link" type="button" id="prompt-btn">Random prompt</button>
+					</div>
+					<p class="msg-err" id="msg-err" role="alert"></p>
+				</div>
+
+				<div class="two">
+					<div>
+						<label class="label" for="from">Signed (optional)</label>
+						<input id="from" name="from" type="text" maxlength="60" autocomplete="name" />
+					</div>
+					<div>
+						<label class="label" for="reply">Reply to (optional)</label>
+						<input id="reply" name="reply" type="email" maxlength="120" autocomplete="email" />
+					</div>
+				</div>
+
+				<div class="two">
+					<fieldset class="pick">
+						<legend class="label">Paper</legend>
+						<div class="pick-row">
+							{
+								papers.map((p, i) => (
+									<label class="chip">
+										<input type="radio" name="paper" value={p.id} checked={i === 0} />
+										<span>{p.label}</span>
+									</label>
+								))
+							}
+						</div>
+					</fieldset>
+					<fieldset class="pick">
+						<legend class="label">Ink</legend>
+						<div class="pick-row">
+							{
+								inks.map((k, i) => (
+									<label class="chip">
+										<input type="radio" name="ink" value={k.id} checked={i === 0} data-color={k.color} />
+										<span><i class="swatch" style={`background:${k.color}`} aria-hidden="true"></i>{k.label}</span>
+									</label>
+								))
+							}
+						</div>
+					</fieldset>
+				</div>
+
+				<div class="form-actions">
+					<button class="btn btn-stamp send" type="submit" data-clue="post">Send this into the world</button>
+					<button class="btn" type="button" id="surprise">Surprise me</button>
+					<button class="link" type="button" id="rts">Return to sender</button>
+				</div>
+				<p class="how" id="how">
+					The card is stored in the studio's postbox and read by a person. Your reply address, if you give one, is
+					used to reply and for nothing else.
+				</p>
+				<p class="preview-out" id="preview-out" hidden>
+					Not sent: the post office is closed on this copy of the site. You can
+					<a id="mail-link" href="#">open it in your email app</a> instead, or
+					<button class="link" type="button" id="copy-pre">copy the card</button>.
+				</p>
+			</form>
+
+			<!-- ================= the receipt ================= -->
+			<section class="receipt" id="receipt" hidden aria-labelledby="receipt-title">
+				<div class="rc-mark" aria-hidden="true"><span>Futile Post</span><span data-rc-date></span></div>
+				<h2 class="rc-title" id="receipt-title" tabindex="-1">Postal receipt</h2>
+				<dl class="rc-lines">
+					<div><dt>No.</dt><dd data-rc-no></dd></div>
+					<div><dt>Received</dt><dd data-rc-time></dd></div>
+					<div><dt>Kind</dt><dd data-rc-kind></dd></div>
+					<div><dt>Class</dt><dd data-rc-class></dd></div>
+					<div><dt>To</dt><dd>{STUDIO_EMAIL}</dd></div>
+				</dl>
+				<p class="rc-note">
+					In the postbox. The studio's server accepted it and filed it under the number above; it gets read in
+					/admin.
+				</p>
+				<p class="rc-msg" role="status"></p>
+				<div class="form-actions">
+					<button class="btn" type="button" id="copy">Copy the postcard</button>
+					<button class="btn btn-stamp" type="button" id="again">Write another</button>
+					<a class="link" href={url('#contact')}>Back to the studio</a>
+				</div>
+			</section>
+		</div>
+	</main>
+</Layout>
+
+<script define:vars={{ kinds, postmarks, email: STUDIO_EMAIL, max: MAX_CHARS }} is:inline>
+	window.__postcard = { kinds, postmarks, email, max };
+</script>
+
+<script>
+	import { animate } from 'motion';
+	import { collect } from '../lib/guide.js';
+	import { API_BASE } from '../lib/api.js';
+	import { visitor } from '../lib/visitor.js';
+
+	type Kind = { id: string; label: string; greeting: string; klass: string; prompts: string[] };
+	const { kinds, postmarks, email, max } = (window as any).__postcard as { kinds: Kind[]; postmarks: string[][]; email: string; max: number };
+	const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+	const root = document.documentElement;
+	const still = () => root.dataset.motion === 'off' || (root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	const form = $<HTMLFormElement>('postcard-form');
+	const wrap = $('card-wrap');
+	const card = $('card');
+	const msg = $<HTMLTextAreaElement>('msg');
+	const from = $<HTMLInputElement>('from');
+	const reply = $<HTMLInputElement>('reply');
+	const preview = $('preview-text');
+	const previewFrom = $('preview-from');
+	const count = $('msg-count');
+	const err = $('msg-err');
+	const flip = $<HTMLButtonElement>('flip');
+	const front = $('face-front');
+	const back = $('face-back');
+	const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+	document.querySelector('[data-pm-date]')!.textContent = today;
+
+	const kind = () => kinds.find((k) => k.id === (form.elements.namedItem('kind') as RadioNodeList).value) ?? kinds[0];
+	let promptAt = 0;
+
+	/* ---------- the card follows the form ---------- */
+	function showKind() {
+		const k = kind();
+		wrap.dataset.kind = k.id;
+		document.querySelectorAll<HTMLElement>('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== k.id));
+		document.querySelector('[data-greeting]')!.textContent = k.greeting;
+		promptAt = 0;
+		setPrompt(k.prompts[0]);
+	}
+	function setPrompt(p: string) {
+		document.querySelector('[data-prompt]')!.textContent = p;
+		msg.placeholder = p;
+	}
+	function showText() {
+		const t = msg.value.trim();
+		preview.textContent = t || 'Your message appears here as you write.';
+		preview.dataset.empty = String(!t);
+		previewFrom.textContent = from.value.trim() ? `from ${from.value.trim()}` : '';
+		count.textContent = `${msg.value.length} / ${max}`;
+		if (t) err.textContent = '';
+	}
+	function showStyle() {
+		wrap.dataset.paper = (form.elements.namedItem('paper') as RadioNodeList).value;
+		const ink = form.querySelector<HTMLInputElement>('input[name="ink"]:checked');
+		wrap.style.setProperty('--ink', ink?.dataset.color ?? '#1b2a4a');
+	}
+	form.addEventListener('change', (e) => {
+		const n = (e.target as HTMLInputElement).name;
+		if (n === 'kind') showKind();
+		if (n === 'paper' || n === 'ink') showStyle();
+	});
+	msg.addEventListener('input', showText);
+	from.addEventListener('input', showText);
+
+	/* ---------- turning it over ---------- */
+	function turn(toBack: boolean) {
+		card.classList.toggle('is-back', toBack);
+		flip.setAttribute('aria-pressed', String(toBack));
+		flip.textContent = toBack ? 'Turn to the picture' : 'Turn it over';
+		front.inert = toBack;
+		back.inert = !toBack;
+	}
+	flip.addEventListener('click', () => turn(!card.classList.contains('is-back')));
+	/* writing turns the card to the side you are writing on */
+	msg.addEventListener('focus', () => turn(true));
+
+	/* ---------- prompts, surprises, the postmark, the stamp ---------- */
+	$('prompt-btn').addEventListener('click', () => {
+		const k = kind();
+		promptAt = (promptAt + 1) % k.prompts.length;
+		setPrompt(k.prompts[promptAt]);
+	});
+	const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+	$('surprise').addEventListener('click', () => {
+		for (const name of ['kind', 'paper', 'ink']) {
+			const radios = [...form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)];
+			pick(radios).checked = true;
+		}
+		showKind();
+		showStyle();
+		setPrompt(pick(kind().prompts));
+		turn(false);
+		if (!still()) animate(card, { rotate: [-3, 0], scale: [0.97, 1] }, { type: 'spring', stiffness: 300, damping: 14 });
+	});
+
+	let pmAt = 0;
+	const pm = $<HTMLButtonElement>('postmark');
+	pm.addEventListener('click', () => {
+		pmAt = (pmAt + 1) % postmarks.length;
+		const [a, b] = postmarks[pmAt];
+		pm.querySelector('.pm-1')!.textContent = a;
+		pm.querySelector('.pm-2')!.textContent = b === 'today' ? today : b;
+		pm.style.setProperty('--pm-rot', `${Math.round(Math.random() * 30 - 15)}deg`);
+		if (!still()) animate(pm, { scale: [1.35, 1], opacity: [0.3, 1] }, { type: 'spring', stiffness: 520, damping: 16 });
+	});
+
+	const stampBtn = $<HTMLButtonElement>('stamp-btn');
+	const notes = $('stamp-notes');
+	stampBtn.addEventListener('click', () => {
+		notes.hidden = !notes.hidden;
+		stampBtn.setAttribute('aria-expanded', String(!notes.hidden));
+	});
+
+	/* ---------- return to sender ---------- */
+	function reset() {
+		form.reset();
+		showKind();
+		showStyle();
+		showText();
+		turn(false);
+		err.textContent = '';
+	}
+	$('rts').addEventListener('click', () => {
+		reset();
+		if (!still()) animate(card, { x: [0, -24, 0], rotate: [0, -4, 0] }, { duration: 0.45 });
+	});
+
+	/* ---------- sending: into the studio's postbox ----------
+	   A receipt is only ever shown for a card the server answered 201 for.
+	   With no server behind the page (a static preview), the desk says so
+	   before anything is written, and sending offers the visitor's own email
+	   app instead of pretending. */
+	const receipt = $('receipt');
+	const office = $('office');
+	const previewOut = $('preview-out');
+	const sendBtn = form.querySelector<HTMLButtonElement>('.send')!;
+	const opened = Date.now();
+	let lastText = '';
+	let open = false;
+	(async () => {
+		try {
+			const r = await fetch(`${API_BASE}/api/health`, { headers: { Accept: 'application/json' } });
+			open = r.ok;
+		} catch {
+			open = false;
+		}
+		office.dataset.state = open ? 'open' : 'preview';
+		office.textContent = open
+			? 'The post office is open. Cards go straight into the studio’s postbox.'
+			: 'Preview mode: the post office is closed on this copy of the site, so nothing written here will be sent.';
+	})();
+	const showSender = () => {
+		const name = visitor().name;
+		$('sender').hidden = !name;
+		if (name) $('sender').querySelector('[data-sender]')!.textContent = name;
+	};
+	showSender();
+	window.addEventListener('futile-name', showSender);
+
+	form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const text = msg.value.trim();
+		previewOut.hidden = true;
+		if (!text) {
+			err.textContent = 'The back is still blank. Write something first, even one line.';
+			turn(true);
+			msg.focus();
+			return;
+		}
+		if (reply.value && !reply.checkValidity()) {
+			err.textContent = 'That reply address does not look like an email address. Fix it or leave it empty.';
+			reply.focus();
+			return;
+		}
+		const k = kind();
+		const signed = from.value.trim();
+		const lines = [text, '', signed ? `from ${signed}` : '', reply.value ? `reply to ${reply.value}` : '', '', `(a ${k.label.toLowerCase()} postcard from futile.studio/post)`];
+		lastText = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+		if (!open) {
+			const subject = `Postcard: ${k.label}${signed ? `, from ${signed}` : ''}`;
+			($('mail-link') as HTMLAnchorElement).href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lastText)}`;
+			previewOut.hidden = false;
+			return;
+		}
+
+		sendBtn.disabled = true;
+		sendBtn.textContent = 'Posting…';
+		try {
+			const res = await fetch(`${API_BASE}/api/postcards`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					kind: k.id,
+					message: msg.value,
+					signed,
+					reply: reply.value,
+					token: visitor().token,
+					website: ($('website') as HTMLInputElement).value,
+					elapsed: Date.now() - opened,
+				}),
+			});
+			const body = await res.json().catch(() => ({}));
+			if (res.status !== 201) {
+				err.textContent = body.error || 'The post office refused that one. Try again in a moment.';
+				return;
+			}
+			collect('post');
+			receipt.querySelector('[data-rc-no]')!.textContent = `FP-${String(body.id).padStart(6, '0')}`;
+			receipt.querySelector('[data-rc-time]')!.textContent = new Date(body.receivedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+			receipt.querySelector('[data-rc-kind]')!.textContent = k.label;
+			receipt.querySelector('[data-rc-class]')!.textContent = k.klass;
+			receipt.querySelector('[data-rc-date]')!.textContent = today;
+			form.hidden = true;
+			receipt.hidden = false;
+			$('receipt-title').focus();
+			if (!still()) animate(receipt, { y: [30, 0], opacity: [0, 1], rotate: [-4, -1] }, { type: 'spring', stiffness: 260, damping: 20 });
+		} catch {
+			err.textContent = 'Could not reach the post office. Nothing was sent; your card is still here.';
+		} finally {
+			sendBtn.disabled = false;
+			sendBtn.textContent = 'Send this into the world';
+		}
+	});
+	$('copy-pre').addEventListener('click', async () => {
+		try {
+			await navigator.clipboard.writeText(`To: ${email}\n\n${lastText}`);
+			$('copy-pre').textContent = 'copied';
+		} catch {
+			$('copy-pre').textContent = `copy failed; it goes to ${email}`;
+		}
+	});
+
+	$('copy').addEventListener('click', async () => {
+		const out = receipt.querySelector('.rc-msg')!;
+		try {
+			await navigator.clipboard.writeText(`To: ${email}\n\n${lastText}`);
+			out.textContent = 'Copied, address and all.';
+		} catch {
+			out.textContent = `Could not copy. Send it to ${email} by hand.`;
+		}
+	});
+	$('again').addEventListener('click', () => {
+		receipt.hidden = true;
+		form.hidden = false;
+		reset();
+		msg.focus();
+	});
+
+	showKind();
+	showStyle();
+	showText();
+</script>
+
+<style>
+	.desk {
+		padding-block: clamp(2rem, 5vw, 3.5rem) clamp(4rem, 8vw, 6rem);
+	}
+	.desk-head {
+		max-width: 40rem;
+		margin-bottom: 2rem;
+	}
+	.desk-head .label a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		color: var(--ink);
+	}
+	.desk-title {
+		font-family: var(--wordmark);
+		font-weight: 400;
+		font-size: clamp(2.6rem, 7vw, 4.6rem);
+		letter-spacing: 0.03em;
+		line-height: 1;
+		margin-bottom: 0.8rem;
+	}
+	.desk-lede {
+		color: var(--ink-soft);
+	}
+	.desk-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+		gap: clamp(1.6rem, 4vw, 3.5rem);
+		align-items: start;
+	}
+
+	/* ================= the card ================= */
+	.stage {
+		position: relative;
+		padding-top: 2.4rem;
+	}
+	.paper-stack {
+		position: relative;
+		padding-bottom: 1.6rem;
+	}
+	/* the envelope it came out of, behind and below */
+	.envelope {
+		position: absolute;
+		left: 6%;
+		right: 6%;
+		top: 34%;
+		bottom: 0;
+		background: #e4d5b4;
+		box-shadow: var(--lift);
+		rotate: 2deg;
+	}
+	.env-flap {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 55%;
+		background: #d8c7a2;
+		clip-path: polygon(0 0, 100% 0, 50% 100%);
+	}
+	.card-wrap {
+		position: relative;
+		perspective: 1400px;
+		animation: slide-out 0.9s var(--ease-out) 0.15s both;
+		--paper: #fbf7ec;
+		--paper-edge: #fbf7ec;
+	}
+	@keyframes slide-out {
+		from {
+			translate: 0 38%;
+			rotate: 3deg;
+		}
+	}
+	.card-wrap[data-paper='kraft'] {
+		--paper: #d9c19a;
+		--paper-edge: #d9c19a;
+	}
+	.card-wrap[data-paper='airmail'] {
+		--paper: #f6efdd;
+		--paper-edge: repeating-linear-gradient(45deg, #c4402a 0 12px, #f6efdd 12px 20px, #2f5d8a 20px 32px, #f6efdd 32px 40px);
+	}
+	.card {
+		position: relative;
+		display: grid;
+		aspect-ratio: 3 / 2;
+		transform-style: preserve-3d;
+		transition: transform 0.7s var(--ease-out);
+		rotate: -1.5deg;
+	}
+	.card.is-back {
+		transform: rotateY(180deg);
+	}
+	.face {
+		grid-area: 1 / 1;
+		backface-visibility: hidden;
+		color: #1b2132;
+		background: var(--paper);
+		border: 9px solid transparent;
+		border-image: var(--paper-edge) 9;
+		box-shadow: var(--lift-high);
+		overflow: hidden;
+	}
+	.card-wrap:not([data-paper='airmail']) .face {
+		border: none;
+		border-radius: 3px;
+	}
+
+	/* the picture side */
+	.front {
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		justify-items: center;
+		padding: clamp(0.8rem, 3vw, 1.6rem);
+		background:
+			radial-gradient(circle at 50% 60%, rgba(240, 211, 107, 0.35), transparent 60%),
+			var(--paper);
+	}
+	.front-greeting {
+		font-family: var(--wordmark);
+		font-size: clamp(1.3rem, 4vw, 2.3rem);
+		letter-spacing: 0.04em;
+		line-height: 1.1;
+		text-align: center;
+		color: var(--ink);
+	}
+	.front-art {
+		display: grid;
+		place-items: center;
+		width: 100%;
+		min-height: 0;
+	}
+	.sprite {
+		width: min(42%, 11rem);
+	}
+	.sprite[hidden] {
+		display: none;
+	}
+	.front-mark {
+		font-size: clamp(0.9rem, 2.4vw, 1.2rem);
+	}
+
+	/* the writing side: message left, address right, a line between */
+	.back {
+		display: grid;
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+		gap: clamp(0.6rem, 2vw, 1.2rem);
+		padding: clamp(0.8rem, 2.4vw, 1.3rem);
+		transform: rotateY(180deg);
+	}
+	.back-msg {
+		position: relative;
+		min-width: 0;
+		padding-right: clamp(0.6rem, 2vw, 1.2rem);
+		border-right: 1px solid rgba(27, 33, 50, 0.3);
+		overflow: hidden;
+	}
+	.back-prompt {
+		margin-bottom: 0.3rem;
+		color: rgba(27, 33, 50, 0.6);
+		text-transform: none;
+	}
+	.back-text {
+		font-family: var(--script);
+		font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+		line-height: 1.25;
+		color: var(--ink);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.back-text[data-empty='true'] {
+		opacity: 0.45;
+	}
+	.back-from {
+		margin-top: 0.4rem;
+		font-family: var(--script);
+		font-size: 1.1rem;
+		color: var(--ink);
+	}
+	.back-side {
+		display: grid;
+		grid-template-rows: auto 1fr;
+		min-width: 0;
+	}
+	.back-top {
+		display: flex;
+		justify-content: flex-end;
+		align-items: flex-start;
+		gap: 0.4rem;
+	}
+	.stamp-box {
+		width: clamp(3.4rem, 9vw, 4.6rem);
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		rotate: 3deg;
+		transition: rotate 0.3s var(--ease-out);
+	}
+	.stamp-box:hover {
+		rotate: -2deg;
+	}
+	.stamp-for[hidden] {
+		display: none;
+	}
+	/* the cancellation: press it for another */
+	.pm {
+		display: grid;
+		place-items: center;
+		align-content: center;
+		width: clamp(3.6rem, 9vw, 4.8rem);
+		aspect-ratio: 1;
+		margin-right: -1.6rem;
+		margin-top: 0.8rem;
+		z-index: 1;
+		background: none;
+		border: 2px solid rgba(177, 58, 37, 0.75);
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px rgba(177, 58, 37, 0.75);
+		color: rgba(177, 58, 37, 0.9);
+		font: 500 clamp(0.42rem, 1.1vw, 0.55rem) / 1.25 var(--mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		text-align: center;
+		rotate: var(--pm-rot, -12deg);
+		cursor: pointer;
+	}
+	.back-to {
+		align-self: end;
+		font-size: clamp(1rem, 2.4vw, 1.3rem);
+		line-height: 1.6;
+		color: var(--ink);
+		background: repeating-linear-gradient(to bottom, transparent 0 1.55em, rgba(27, 33, 50, 0.3) 1.55em calc(1.55em + 1px));
+	}
+
+	.stage-actions {
+		display: flex;
+		justify-content: center;
+		margin-top: 1.4rem;
+	}
+	.stamp-notes {
+		max-width: 26rem;
+		margin: 1rem auto 0;
+		padding: 0.9rem 1.1rem;
+		background: var(--card);
+		border: 1px dashed var(--ink-faint);
+		font-size: 0.88rem;
+		color: var(--ink-soft);
+	}
+	.stamp-notes [hidden] {
+		display: none;
+	}
+	.sn-title {
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.sn-meta {
+		margin-bottom: 0.4rem;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+	}
+
+	/* ================= the controls ================= */
+	.controls {
+		display: grid;
+		gap: 1.3rem;
+		padding: clamp(1rem, 3vw, 1.6rem);
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+		box-shadow: var(--lift);
+	}
+	.controls[hidden] {
+		display: none;
+	}
+	.pick {
+		border: none;
+		min-width: 0;
+	}
+	.pick legend {
+		margin-bottom: 0.4rem;
+	}
+	.pick-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.chip {
+		position: relative;
+	}
+	.chip input {
+		position: absolute;
+		opacity: 0;
+		inset: 0;
+		margin: 0;
+		cursor: pointer;
+	}
+	.chip span {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 40px;
+		padding: 0 0.85rem;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 999px;
+		font-size: 0.86rem;
+		background: var(--paper);
+	}
+	.chip input:checked + span {
+		background: var(--ink);
+		border-color: var(--ink);
+		color: var(--paper);
+	}
+	.chip input:focus-visible + span {
+		outline: 2px solid var(--stamp);
+		outline-offset: 2px;
+	}
+	.swatch {
+		width: 0.7rem;
+		height: 0.7rem;
+		border-radius: 50%;
+		border: 1px solid rgba(255, 255, 255, 0.4);
+	}
+	.msg-field textarea,
+	.controls input[type='text'],
+	.controls input[type='email'] {
+		display: block;
+		width: 100%;
+		margin-top: 0.35rem;
+		padding: 0.6rem 0.75rem;
+		font: inherit;
+		color: var(--ink);
+		background: var(--paper);
+		border: 1px solid var(--ink-faint);
+		border-radius: 3px;
+	}
+	.msg-field textarea {
+		resize: vertical;
+		min-height: 8rem;
+	}
+	.msg-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		color: var(--ink-soft);
+	}
+	.msg-err {
+		min-height: 1.2em;
+		font-size: 0.85rem;
+		color: var(--stamp);
+	}
+	.two {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 1rem;
+	}
+	.link {
+		min-height: 44px;
+		padding: 0;
+		background: none;
+		border: none;
+		font: 500 0.78rem var(--mono);
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+	}
+	.form-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.6rem 1rem;
+	}
+	.send {
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	.how {
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+	}
+
+	.office {
+		padding: 0.55rem 0.8rem;
+		border: 1px dashed var(--ink-faint);
+		border-radius: 3px;
+		font-size: 0.85rem;
+	}
+	.office[data-state='open'] {
+		border-style: solid;
+		border-color: var(--live);
+	}
+	.office[data-state='preview'] {
+		border-style: solid;
+		border-color: var(--stamp);
+		background: color-mix(in srgb, var(--stamp) 8%, var(--card));
+	}
+	.sender {
+		font-size: 0.88rem;
+		color: var(--ink-soft);
+	}
+	.sender[hidden],
+	.preview-out[hidden] {
+		display: none;
+	}
+	.preview-out {
+		padding: 0.7rem 0.9rem;
+		border: 1px solid var(--stamp);
+		border-radius: 3px;
+		background: color-mix(in srgb, var(--stamp) 6%, var(--card));
+		font-size: 0.9rem;
+	}
+	.preview-out .link {
+		display: inline;
+		min-height: 0;
+		font: inherit;
+		text-transform: none;
+		letter-spacing: 0;
+		color: inherit;
+	}
+	/* the honeypot: off screen, out of the tab order, out of the accessibility tree */
+	.hp {
+		position: absolute;
+		left: -10000px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	/* ================= the receipt ================= */
+	.receipt {
+		position: relative;
+		padding: 1.6rem 1.4rem 1.4rem;
+		background: #fbf7ec;
+		color: #1b2132;
+		box-shadow: var(--lift-high);
+		rotate: -1deg;
+		/* a till receipt: torn at the bottom */
+		clip-path: polygon(0 0, 100% 0, 100% 97%, 95% 100%, 90% 97%, 85% 100%, 80% 97%, 75% 100%, 70% 97%, 65% 100%, 60% 97%, 55% 100%, 50% 97%, 45% 100%, 40% 97%, 35% 100%, 30% 97%, 25% 100%, 20% 97%, 15% 100%, 10% 97%, 5% 100%, 0 97%);
+		padding-bottom: 2.4rem;
+	}
+	.receipt[hidden] {
+		display: none;
+	}
+	.rc-title {
+		font-family: var(--mono);
+		font-size: 1rem;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		margin-bottom: 0.8rem;
+	}
+	.rc-mark {
+		position: absolute;
+		top: 0.8rem;
+		right: 0.8rem;
+		display: grid;
+		place-items: center;
+		align-content: center;
+		width: 5.2rem;
+		aspect-ratio: 1;
+		border: 2px solid rgba(196, 64, 42, 0.8);
+		border-radius: 50%;
+		color: rgba(196, 64, 42, 0.9);
+		font: 500 0.55rem / 1.3 var(--mono);
+		text-transform: uppercase;
+		text-align: center;
+		rotate: 14deg;
+	}
+	.rc-lines {
+		display: grid;
+		gap: 0.3rem;
+		margin-bottom: 1rem;
+		font-family: var(--mono);
+		font-size: 0.82rem;
+	}
+	.rc-lines div {
+		display: grid;
+		grid-template-columns: 7rem minmax(0, 1fr);
+		border-bottom: 1px dotted rgba(27, 33, 50, 0.3);
+	}
+	.rc-lines dt {
+		color: rgba(27, 33, 50, 0.6);
+	}
+	.rc-lines dd {
+		overflow-wrap: anywhere;
+	}
+	.rc-note {
+		margin-bottom: 0.6rem;
+		font-size: 0.9rem;
+	}
+	.rc-msg {
+		min-height: 1.3em;
+		font-size: 0.85rem;
+		color: #8a2f1e;
+	}
+	.receipt .link {
+		color: rgba(27, 33, 50, 0.7);
+	}
+
+	html[data-motion='off'] .card,
+	html[data-motion='off'] .card-wrap {
+		transition: none;
+		animation: none;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .card {
+			transition: none;
+		}
+	}
+
+	@media (max-width: 900px) {
+		.desk-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	@media (max-width: 520px) {
+		.two {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.card {
+			aspect-ratio: 4 / 3.2;
+		}
+		.back {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+		}
+	}
+</style>

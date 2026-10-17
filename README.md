@@ -70,7 +70,16 @@ points at `http://localhost:4000` automatically when the frontend is on localhos
 no interfaces and only the Node major version, so the page can show it is awake
 without handing over a fingerprint. `/ws/presence` is an anonymous cursor relay
 for the opt-in "show other people's cursors" setting: throwaway ids, positions
-only, nothing logged, capped per IP, per room and overall.
+only, nothing logged, capped per IP, per room and overall. The same relay runs
+the homepage's shared studio as the `/studio` room: one explorer per connected
+visitor, plus a tally of votes on what to build next. Votes are toggles on a
+fixed list (`src/data/studio.js`), stored in SQLite against an HMAC of the
+client address, never as free text (`node server/lib/votes.selfcheck.js`).
+Behind the proxy the relay reads the client address from `X-Forwarded-For`.
+
+**Field Guide:** stamps for opening projects and finding clues, kept in
+`localStorage` under `futile-guide` and never sent anywhere. Any element with
+`data-clue="id"` earns that stamp when clicked (`src/components/StampCollector.astro`).
 
 **Endpoints:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`,
 `POST /api/media` (protected, multipart `file` field, returns `{ url }`), static

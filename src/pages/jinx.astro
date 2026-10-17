@@ -1,15 +1,17 @@
 ---
+import { url } from '../lib/url.js';
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import DeskPanel from '../components/DeskPanel.astro';
 import Cursors from '../components/Cursors.astro';
-import Marquee from '../components/Marquee.astro';
 import Sketch from '../components/Sketch.astro';
-import { layers } from '../data/jinx.js';
+import StackPlate from '../components/StackPlate.astro';
+
+
 ---
 
 <Layout
-	title="Jinx — Futile Studio"
+	title="Jinx · Futile Studio"
 	description="The homelab behind futile.studio: what the box is made of, what it hands out, and how awake it has been."
 >
 	<Nav />
@@ -28,10 +30,10 @@ import { layers } from '../data/jinx.js';
 		<p class="cover-tag" data-reveal>the box under all of it</p>
 
 		<h1 class="jhero-title" data-split-group>
-			<span class="split-mask"><span class="split-word">This</span></span>
-			<span class="split-mask"><span class="split-word">is</span></span>
+			<span class="split-mask"><span class="split-word">This</span></span>{' '}
+			<span class="split-mask"><span class="split-word">is</span></span>{' '}
 			<span class="underline-wrap">
-				<span class="split-mask"><span class="split-word">Jinx.</span></span>
+				<span class="split-mask"><span class="split-word">Jinx.</span></span>{' '}
 				<svg viewBox="0 0 160 12" preserveAspectRatio="none" aria-hidden="true">
 					<path
 						d="M2 7c24-7 114-7 156 2"
@@ -55,10 +57,7 @@ import { layers } from '../data/jinx.js';
 
 	<!-- ============ VITALS ============ -->
 	<section class="vitals" id="vitals">
-		<h2 class="sect-label">
-			How it is doing today
-			<span class="vitals-doodle"><Sketch name="snips" /></span>
-		</h2>
+		<h2 class="sect-label">How it is doing today</h2>
 		<p class="vitals-intro">Read from the box the moment you opened this page.</p>
 
 		<div class="vital-grid" id="vital-grid" data-state="loading">
@@ -118,53 +117,11 @@ import { layers } from '../data/jinx.js';
 	</section>
 
 	<!-- ============ CROSS-SECTION ============ -->
-	<section class="stack">
-		<h2 class="sect-label">Jinx, cut in half</h2>
-		<p class="stack-intro">
-			Five layers. Each one lets the layer above it stay happily ignorant of something.
-		</p>
-
-		<div class="cutaway">
-			<span class="cutaway-tag" aria-hidden="true">fig. 1 — from memory</span>
-			<ol class="stack-list">
-				{
-					layers.map((l, i) => (
-						<li class="layer sheet" data-reveal>
-							<span class="layer-no">{String(i + 1).padStart(2, '0')}</span>
-							<span class="layer-art" aria-hidden="true">
-								<Sketch name={l.art} />
-							</span>
-							<div class="layer-copy">
-								<h3 class="layer-name">
-									{l.name}
-									<span class="layer-role">{l.role}</span>
-								</h3>
-								<p class="layer-note">{l.note}</p>
-							</div>
-						</li>
-					))
-				}
-			</ol>
-		</div>
+	<section class="stack" aria-labelledby="stack-title">
+		<h2 class="sect-label" id="stack-title">Jinx, cut in half</h2>
+		<p class="vitals-intro">How a request gets from your browser to a project, and what each layer it passes through is for.</p>
+		<StackPlate />
 	</section>
-
-	<!-- ============ WHY ============ -->
-	<section class="why">
-		<h2 class="sect-label">Why bother</h2>
-		<div class="why-grid">
-			<p>
-				I like knowing how things work, and the surest way I have found is to build one and keep it running. A
-				rented box hides all the interesting parts behind a dashboard.
-			</p>
-			<p>
-				So the whole chain is mine to understand: the metal, the containers, the routing, the backups. When it
-				breaks I get to find out exactly where, which is the part I actually enjoy.
-			</p>
-		</div>
-		<p class="margin-note why-wink">The rest of the flat has opinions about the noise.</p>
-	</section>
-
-	<Marquee items={['Hums', 'Answers', 'Backs itself up', 'Occasionally sat on']} speed={32} />
 
 	<footer class="foot">
 		<div class="foot-left">
@@ -172,7 +129,7 @@ import { layers } from '../data/jinx.js';
 			<p class="foot-copy">© 2026 Mayur Jivani · served off a box in Paderborn</p>
 		</div>
 		<ul class="foot-links">
-			<li><a class="btn" href="/">← Back to the scrapbook</a></li>
+			<li><a class="btn" href={url()}>← Back to the scrapbook</a></li>
 			<li><a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
 		</ul>
 	</footer>
@@ -228,6 +185,11 @@ import { layers } from '../data/jinx.js';
 			const res = await fetch(`${API_BASE}/api/jinx`, { headers: { Accept: 'application/json' } });
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const d = await res.json();
+
+			/* One request, two readers. The plate listens for this rather than
+			   fetching again: the endpoint is cached for 15s but a second call
+			   would still be a second call. */
+			window.dispatchEvent(new CustomEvent('jinx:vitals', { detail: d }));
 
 			set('v-host', duration(d.hostUptime));
 			set('v-proc', duration(d.processUptime));
@@ -304,13 +266,13 @@ import { layers } from '../data/jinx.js';
 		top: 2.4rem;
 		right: 8%;
 		z-index: 4;
-		width: 4rem;
-		height: 4rem;
+		width: 7.5rem;
+		height: auto;
 		padding: 0;
 		background: none;
 		border: none;
 		color: var(--ink-soft);
-		opacity: 0.7;
+		opacity: 1;
 		cursor: pointer;
 		transform: rotate(-4deg);
 		transition:
@@ -335,9 +297,9 @@ import { layers } from '../data/jinx.js';
 
 	.jcat-shelf {
 		position: absolute;
-		top: 6.6rem;
+		top: 9.2rem;
 		right: 8%;
-		width: 4rem;
+		width: 7.5rem;
 		height: 0;
 		border-top: 2.5px solid var(--ink-faint);
 		z-index: 3;
@@ -369,8 +331,14 @@ import { layers } from '../data/jinx.js';
 		}
 	}
 
+	/* on a phone the portrait leads the page instead of sitting on a shelf */
 	@media (max-width: 860px) {
-		.jcat,
+		.jcat {
+			position: static;
+			display: block;
+			width: 6rem;
+			margin: 0 0 1.2rem;
+		}
 		.jcat-shelf {
 			display: none;
 		}
@@ -378,20 +346,12 @@ import { layers } from '../data/jinx.js';
 
 	/* ============ vitals ============ */
 	.vitals,
-	.stack,
-	.why {
+	.stack {
 		max-width: 1140px;
 		margin: 0 auto;
 		padding: 2.6rem 2.2rem 1rem;
 	}
-	.vitals-doodle {
-		width: 3.2rem;
-		height: 1.3rem;
-		color: var(--ink-faint);
-		opacity: 0.75;
-	}
-	.vitals-intro,
-	.stack-intro {
+	.vitals-intro {
 		font-size: 0.92rem;
 		line-height: 1.7;
 		color: var(--ink-soft);
@@ -418,7 +378,7 @@ import { layers } from '../data/jinx.js';
 		font-size: 0.72rem;
 		text-transform: uppercase;
 		letter-spacing: 0.07em;
-		color: var(--ink-faint);
+		color: var(--ink-soft);
 	}
 	.vital-val {
 		font-family: var(--bubble);
@@ -438,7 +398,7 @@ import { layers } from '../data/jinx.js';
 	.vital-note {
 		font-size: 0.74rem;
 		font-style: italic;
-		color: var(--ink-faint);
+		color: var(--ink-soft);
 		line-height: 1.45;
 	}
 
@@ -476,7 +436,7 @@ import { layers } from '../data/jinx.js';
 		margin-top: 1.6rem;
 		font-size: 0.82rem;
 		font-style: italic;
-		color: var(--ink-faint);
+		color: var(--ink-soft);
 	}
 
 	/* ============ stack ============ */
@@ -550,26 +510,6 @@ import { layers } from '../data/jinx.js';
 		max-width: 46rem;
 	}
 
-	/* ============ why ============ */
-	.why {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 2.6rem 2.2rem 1rem;
-	}
-	.why-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
-		gap: 1.4rem 2.2rem;
-	}
-	.why-grid p {
-		font-size: 0.92rem;
-		line-height: 1.75;
-		color: var(--ink-soft);
-	}
-	.why-wink {
-		margin-top: 1.2rem;
-	}
-
 	/* ============ footer ============ */
 	.foot {
 		max-width: 1140px;
@@ -605,10 +545,10 @@ import { layers } from '../data/jinx.js';
 		.jhero,
 		.vitals,
 		.stack,
-		.why,
 		.foot {
 			padding-left: 1.4rem;
 			padding-right: 1.4rem;
 		}
 	}
+
 </style>

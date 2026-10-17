@@ -1,0 +1,448 @@
+---
+/**
+ * The archive: every project, running or still on the bench, as an index you
+ * can search and filter. Server rendered in full, so with no script every row
+ * is shown and every link works; the search and the filter only hide rows.
+ *
+ * Rows are not links themselves. A row holds up to two links (the running
+ * thing and its source) and a disclosure, and nesting those in one anchor
+ * would be invalid and unreachable by keyboard.
+ */
+import Sketch from './Sketch.astro';
+import Stamp from './Stamp.astro';
+import { url } from '../lib/url.js';
+import { open, workbench } from '../data/board.js';
+import { SHELVES, shelfOf, sourceOf, statusOf, thumbOf } from '../data/studio.js';
+
+const cards = [
+	...open.map((p) => ({ ...p, shelf: 'open' })),
+	...workbench.map((p) => ({ ...p, shelf: 'workbench' })),
+].map((p) => ({
+	...p,
+	drawer: shelfOf[p.id] ?? 'Experiments',
+	source: sourceOf[p.id] && sourceOf[p.id] !== p.href ? sourceOf[p.id] : undefined,
+	state: statusOf(p),
+	thumb: thumbOf[p.id],
+}));
+
+const counts = Object.fromEntries(SHELVES.map((s) => [s, cards.filter((c) => c.drawer === s).length]));
+/* The note goes in after the running things and before the bench. */
+const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
+---
+
+<section id="archive" class="archive wrap" aria-labelledby="archive-title">
+	<div class="archive-head">
+		<h2 id="archive-title" class="sect-label">The archive</h2>
+		<p class="sect-lede">Everything, newest first, running or not. Search it, or pull out one drawer.</p>
+	</div>
+
+	<form class="archive-tools" role="search" aria-label="Search the archive" onsubmit="return false">
+		<div class="search">
+			<label for="archive-q" class="label">Search</label>
+			<input id="archive-q" type="search" placeholder="Try: WebSockets, game, 2024" autocomplete="off" />
+		</div>
+		<div class="filters" role="group" aria-label="Filter by drawer">
+			<button class="filter" type="button" data-filter="all" aria-pressed="true">
+				All <span class="filter-n">{cards.length}</span>
+			</button>
+			{
+				SHELVES.map((s) => (
+					<button class="filter" type="button" data-filter={s} aria-pressed="false" disabled={!counts[s]}>
+						{s} <span class="filter-n">{counts[s]}</span>
+					</button>
+				))
+			}
+		</div>
+	</form>
+	<p class="archive-count label" id="filter-status" aria-live="polite">{cards.length} projects</p>
+
+	<ol class="index" role="list">
+		{
+			cards.map((p, i) => (
+				<Fragment>
+					{i === breakAt && (
+						<li class="index-break" aria-hidden="true" data-keep>
+							<p class="script">
+								And the half-built half. Here because a page of only the flattering things would be a brochure.
+							</p>
+						</li>
+					)}
+					<li
+						id={`row-${p.id}`}
+						class:list={['row', { 'is-bench': p.shelf === 'workbench' }]}
+						data-drawer={p.drawer}
+						data-text={`${p.name} ${p.kind} ${p.drawer} ${p.stack} ${p.desc} ${p.shipped ?? ''} ${p.state}`.toLowerCase()}
+					>
+						<div class="row-thumb" aria-hidden="true">
+							{p.thumb ? (
+								<img src={url(p.thumb)} alt="" width="1280" height="800" loading="lazy" decoding="async" />
+							) : (
+								<Sketch name={p.art} class="row-sketch" />
+							)}
+						</div>
+						<div class="row-main">
+							<p class="row-meta label">
+								<span class:list={['row-state', `state-${p.state.split(' ')[0].toLowerCase()}`]}>{p.state}</span>
+								<span>
+									{p.drawer}, {p.kind}
+								</span>
+								{p.shipped && <span>{p.shipped.slice(0, 7)}</span>}
+							</p>
+							<h3 class="row-name">{p.name}</h3>
+							<p class="row-desc">{p.desc}</p>
+							<details class="row-more">
+								<summary>How it is built</summary>
+								<p class="row-stack">{p.stack}</p>
+								{p.origin && <p class="row-origin script">{p.origin}</p>}
+							</details>
+						</div>
+						<div class="row-actions">
+							{p.href && (
+								<a class="row-cta" href={p.href} target="_blank" rel="noopener" data-clue={`p-${p.id}`}>
+									{p.cta}
+									<span class="visually-hidden">: {p.name}, opens in a new tab</span>
+									<svg viewBox="0 0 16 16" aria-hidden="true">
+										<path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+									</svg>
+								</a>
+							)}
+							{p.source && (
+								<a class="row-src" href={p.source} target="_blank" rel="noopener">
+									Source<span class="visually-hidden"> for {p.name}, opens in a new tab</span>
+								</a>
+							)}
+							{p.shelf === 'workbench' && <Stamp kind={p.status ?? 'bench'} class="row-stamp" />}
+						</div>
+					</li>
+				</Fragment>
+			))
+		}
+	</ol>
+
+	<div class="archive-empty" id="archive-empty" hidden>
+		<p class="script">Nothing in this drawer matches that.</p>
+		<button class="btn" type="button" id="archive-reset">Clear the search and filters</button>
+	</div>
+</section>
+
+<script>
+	const buttons = document.querySelectorAll<HTMLButtonElement>('.filter[data-filter]');
+	const rows = document.querySelectorAll<HTMLElement>('.index .row');
+	const brk = document.querySelector<HTMLElement>('.index-break');
+	const q = document.getElementById('archive-q') as HTMLInputElement;
+	const status = document.getElementById('filter-status')!;
+	const empty = document.getElementById('archive-empty')!;
+	let drawer = 'all';
+
+	function apply() {
+		const words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+		let shown = 0;
+		rows.forEach((li) => {
+			const on =
+				(drawer === 'all' || li.dataset.drawer === drawer) && words.every((w) => li.dataset.text!.includes(w));
+			li.hidden = !on;
+			if (on) shown++;
+		});
+		if (brk) brk.hidden = drawer !== 'all' || words.length > 0;
+		empty.hidden = shown > 0;
+		status.textContent = shown === rows.length ? `${rows.length} projects` : `Showing ${shown} of ${rows.length} projects`;
+	}
+
+	buttons.forEach((btn) =>
+		btn.addEventListener('click', () => {
+			drawer = btn.dataset.filter!;
+			buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+			apply();
+		}),
+	);
+	q.addEventListener('input', apply);
+	document.getElementById('archive-reset')!.addEventListener('click', () => {
+		q.value = '';
+		drawer = 'all';
+		buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === 'all')));
+		apply();
+		q.focus();
+	});
+</script>
+
+<style>
+	.archive {
+		padding-block: clamp(5rem, 11vw, 8rem) 2rem;
+	}
+	.archive-head {
+		margin-bottom: 2rem;
+	}
+
+	.archive-tools {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 1rem 2rem;
+		padding-bottom: 1.2rem;
+		border-bottom: 2px solid var(--ink);
+	}
+	.search {
+		display: grid;
+		gap: 0.35rem;
+		flex: 1 1 16rem;
+		max-width: 24rem;
+	}
+	.search input {
+		min-height: 44px;
+		padding: 0 0.9rem;
+		font: inherit;
+		font-size: 0.95rem;
+		color: var(--ink);
+		background: var(--card);
+		border: 1px solid var(--ink-faint);
+		border-radius: 4px;
+	}
+	.search input::placeholder {
+		color: var(--ink-soft);
+		opacity: 0.8;
+	}
+	.search input:focus-visible {
+		outline: 2px solid var(--stamp);
+		outline-offset: 1px;
+	}
+
+	.filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.filter {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-height: 44px;
+		padding: 0 0.95rem;
+		font: 500 0.78rem/1 var(--mono);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		background: transparent;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.2s ease,
+			color 0.2s ease,
+			border-color 0.2s ease;
+	}
+	.filter:hover {
+		color: var(--ink);
+		border-color: var(--ink-faint);
+	}
+	.filter[aria-pressed='true'] {
+		background: var(--ink);
+		border-color: var(--ink);
+		color: var(--paper);
+	}
+	.filter:active {
+		scale: 0.97;
+	}
+	.filter:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+	.filter-n {
+		opacity: 0.7;
+	}
+	.archive-count {
+		margin: 0.8rem 0 0.4rem;
+	}
+
+	.index {
+		list-style: none;
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 11rem minmax(0, 1fr) 10rem;
+		gap: 1.6rem;
+		align-items: start;
+		padding: 1.6rem 0;
+		border-bottom: 1px solid var(--ink-ghost);
+	}
+	.row[hidden],
+	.index-break[hidden] {
+		display: none;
+	}
+	.row-thumb {
+		aspect-ratio: 16 / 10;
+		overflow: hidden;
+		border-radius: 3px;
+		background: var(--paper-2);
+		box-shadow: inset 0 0 0 1px var(--ink-ghost);
+		display: grid;
+		place-items: center;
+		color: var(--ink-soft);
+		rotate: var(--tilt, 0deg);
+		transition:
+			rotate 0.4s var(--ease-out),
+			scale 0.4s var(--ease-out);
+	}
+	.row:nth-child(3n + 1) .row-thumb {
+		--tilt: -1.2deg;
+	}
+	.row:nth-child(3n + 2) .row-thumb {
+		--tilt: 0.8deg;
+	}
+	.row:hover .row-thumb {
+		rotate: 0deg;
+		scale: 1.04;
+	}
+	.row-thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: top;
+	}
+	.row-thumb :global(.row-sketch) {
+		width: 46%;
+		height: auto;
+	}
+
+	.row-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.2rem 0.9rem;
+		margin-bottom: 0.25rem;
+	}
+	.row-state {
+		color: var(--ink);
+	}
+	/* Green is reserved for one meaning: this answers right now. */
+	.state-live {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: var(--live);
+	}
+	.state-live::before {
+		content: '';
+		width: 0.42rem;
+		height: 0.42rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.row-name {
+		font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+		font-variation-settings: 'wdth' 82;
+		margin-bottom: 0.35rem;
+	}
+	.row-desc {
+		max-width: 46rem;
+		font-size: 0.93rem;
+		color: var(--ink-soft);
+	}
+	.row-more {
+		margin-top: 0.5rem;
+		font-size: 0.85rem;
+	}
+	.row-more summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 36px;
+		cursor: pointer;
+		list-style: none;
+		color: var(--ink-soft);
+		font-weight: 600;
+	}
+	.row-more summary::-webkit-details-marker {
+		display: none;
+	}
+	.row-more summary::before {
+		content: '+';
+		font-family: var(--mono);
+		transition: rotate 0.25s var(--ease-out);
+	}
+	.row-more[open] summary::before {
+		rotate: 45deg;
+	}
+	.row-stack {
+		font-family: var(--mono);
+		font-size: 0.78rem;
+		color: var(--ink-soft);
+	}
+	.row-origin {
+		margin-top: 0.4rem;
+		font-size: 1.15rem;
+	}
+
+	.row-actions {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.2rem;
+		text-align: right;
+	}
+	.row-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-height: 44px;
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 1.05rem;
+		color: var(--stamp);
+		text-decoration: none;
+	}
+	.row-cta:hover {
+		text-decoration: underline;
+	}
+	.row-cta svg {
+		width: 1rem;
+		height: 1rem;
+	}
+	.row-src {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-size: 0.88rem;
+		color: var(--ink-soft);
+	}
+	.row-actions :global(.row-stamp) {
+		margin-top: 0.6rem;
+	}
+	.is-bench .row-thumb {
+		background: transparent;
+		box-shadow: none;
+		outline: 1.5px dashed var(--ink-faint);
+	}
+
+	.index-break {
+		padding: 2.4rem 0 1.4rem;
+		border-bottom: 1px solid var(--ink-ghost);
+	}
+	.index-break .script {
+		max-width: 34rem;
+		font-size: 1.6rem;
+		color: var(--stamp);
+		rotate: -1deg;
+	}
+
+	.archive-empty {
+		padding: 3rem 0;
+		text-align: center;
+	}
+	.archive-empty .script {
+		font-size: 1.6rem;
+		margin-bottom: 1rem;
+	}
+
+	@media (max-width: 760px) {
+		.row {
+			grid-template-columns: 6.5rem minmax(0, 1fr);
+			gap: 1rem;
+		}
+		.row-actions {
+			grid-column: 2;
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0 1.2rem;
+		}
+	}
+</style>

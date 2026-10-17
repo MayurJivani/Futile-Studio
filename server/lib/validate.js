@@ -37,6 +37,19 @@ export function requirePassword(value) {
 	return value;
 }
 
+/* A display name a stranger types and every other player then sees. Nothing
+   downstream escapes it, so the allowed set is the guarantee: letters, digits,
+   space, underscore, hyphen. Everything else, markup and control characters
+   included, is dropped rather than rejected, because a half-typed name should
+   still render instead of disconnecting the player. */
+export function cleanDisplayName(raw, maxLen = 14) {
+	if (typeof raw !== 'string') return '';
+	/* \p{M} matters: combining marks are not letters, so without it a name
+	   like मयूर or ก้อง loses its vowel signs and comes back mangled. The
+	   length cap is what bounds any stacking a mark run could cause. */
+	return raw.replace(/[^\p{L}\p{M}\p{N} _-]/gu, '').trim().slice(0, maxLen);
+}
+
 export function requireId(value, field = 'id') {
 	const n = Number(value);
 	if (!Number.isInteger(n) || n <= 0) throw new ValidationError(`${field} must be a positive integer`);

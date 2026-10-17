@@ -1,0 +1,667 @@
+---
+/**
+ * The Futile Field Guide: a stamp album, a map of the studio, and a postcard
+ * for whichever stamp you are looking at.
+ *
+ * Everything comes from the registry in `src/data/stamps.js`. A slot is
+ * either hinted (dashed outline, the hint printed under it) or collected (the
+ * stamp, cancelled with a postmark, pressable to read its postcard). The
+ * collection itself lives in this browser only (`src/lib/guide.js`).
+ *
+ * Server rendered with every stamp in place, so with no script the album still
+ * lists what there is to find; the script only marks what you have.
+ */
+import StampArt from './StampArt.astro';
+import { url } from '../lib/url.js';
+import { stamps, places } from '../data/stamps.js';
+import { open } from '../data/board.js';
+
+const hrefOf = Object.fromEntries(open.map((p) => [p.id, p.href]));
+const total = stamps.length;
+
+/* Where each place sits on the hand-drawn map (viewBox 600 x 400). */
+const spots: Record<string, [number, number, number, number]> = {
+	door: [24, 300, 120, 76],
+	work: [168, 230, 196, 146],
+	archive: [384, 282, 108, 94],
+	about: [24, 150, 120, 120],
+	backroom: [508, 230, 70, 146],
+	studio: [168, 40, 230, 160],
+	contact: [420, 40, 158, 120],
+};
+const inPlace = (id: string) => stamps.filter((s) => s.where === id).length;
+---
+
+<section id="guide" class="guide wrap" aria-labelledby="guide-title">
+	<div class="album">
+		<div class="album-page album-left">
+			<h2 id="guide-title" class="guide-title">The Futile Field&nbsp;Guide</h2>
+			<p class="guide-copy">
+				Stamps from every corner of the studio. Some are for opening things, some are hidden, all of them are
+				optional. The album lives in this browser and nowhere else.
+			</p>
+
+			<div class="guide-progress">
+				<p class="guide-count" aria-live="polite">
+					<span class="guide-have" id="guide-have">0</span>
+					<span class="label">of {total} collected</span>
+				</p>
+				<ol class="guide-strip" aria-hidden="true">
+					{stamps.map((s) => <li data-strip={s.id} />)}
+				</ol>
+			</div>
+
+			<figure class="map">
+				<svg viewBox="0 0 600 400" role="group" aria-label="A map of the studio. Each room links to its section.">
+					<path
+						class="map-route"
+						d="M84 340 C140 330 180 320 240 300 S360 330 420 320 S520 300 540 260 S500 120 470 100 S330 140 280 120 S120 140 84 200"
+					></path>
+					{
+						places.map((pl) => {
+							const [x, y, w, h] = spots[pl.id];
+							return (
+								<a href={url(pl.href)} class:list={['map-room', `room-${pl.id}`]} data-place={pl.id}>
+									<rect x={x} y={y} width={w} height={h} rx="3" />
+									{/* a narrow room gets its name on two lines rather than past its wall */}
+									<text x={x + 10} y={y + 22} class="map-name">
+										{w < 100
+											? pl.name.split(' ').map((word, i) => (
+													<tspan x={x + 10} dy={i ? 20 : 0}>
+														{word}
+													</tspan>
+												))
+											: pl.name}
+									</text>
+									<text x={x + 10} y={y + h - 12} class="map-n">
+										<tspan data-place-have={pl.id}>0</tspan>/{inPlace(pl.id)}
+									</text>
+								</a>
+							);
+						})
+					}
+					<text x="556" y="392" class="map-compass" text-anchor="end">N ↑ roughly</text>
+				</svg>
+			</figure>
+
+			<div class="guide-reward" id="guide-reward" hidden>
+				<p class="script">All of them. That was a lot of clicking for nothing, which is rather the point.</p>
+				<a class="btn btn-stamp" href={url('ascii')}>Open the door to the field</a>
+			</div>
+
+			<div class="guide-actions">
+				<button class="btn" type="button" id="guide-share">Share my album</button>
+				<button class="guide-reset" type="button" id="guide-reset">Start a clean album</button>
+			</div>
+			<p class="guide-msg" id="guide-msg" role="status"></p>
+		</div>
+
+		<div class="album-page album-right">
+			<ul class="slots" role="list">
+				{
+					stamps.map((s) => (
+						<li class:list={['slot', `slot-${s.format}`]} data-stamp={s.id}>
+							<button
+								type="button"
+								class="slot-btn"
+								data-inspect={s.id}
+								aria-describedby={`slot-state-${s.id}`}
+							>
+								<span class="slot-art">
+									<StampArt stamp={s} cancelled />
+								</span>
+								<span class="slot-empty" aria-hidden="true">
+									<span>?</span>
+								</span>
+								<span class="slot-name">{s.title}</span>
+							</button>
+							<span class="slot-hint" id={`slot-state-${s.id}`}>
+								<span class="visually-hidden" data-state>
+									Not found yet.{' '}
+								</span>
+								{s.hint}
+							</span>
+						</li>
+					))
+				}
+			</ul>
+
+			<article class="postcard" id="postcard" aria-live="polite" hidden>
+				<div class="postcard-msg">
+					<p class="label" id="pc-serial"></p>
+					<h3 class="postcard-title" id="pc-title"></h3>
+					<p class="postcard-note script" id="pc-note"></p>
+					<p class="postcard-how" id="pc-how"></p>
+					<a class="postcard-link" id="pc-link" href="#" target="_blank" rel="noopener" hidden>Open the project</a>
+				</div>
+				<div class="postcard-side">
+					<div class="postcard-stamp" id="pc-stamp"></div>
+					<p class="postcard-to script" aria-hidden="true">To whoever<br />found this</p>
+				</div>
+				<button class="postcard-close" type="button" id="pc-close" aria-label="Put the postcard away">✕</button>
+			</article>
+		</div>
+	</div>
+</section>
+
+<script define:vars={{ total, registry: stamps.map((s) => ({ id: s.id, title: s.title, note: s.note, unlock: s.unlock, serial: s.serial, edition: s.edition ?? '', denom: s.denom, project: s.project ?? '', where: s.where })), hrefOf }} is:inline>
+	window.__futileGuide = { total, registry, hrefOf };
+</script>
+
+<script>
+	import { animate } from 'motion';
+	import { collected, resetGuide } from '../lib/guide.js';
+
+	type Entry = { id: string; title: string; note: string; unlock: string; serial: string; edition: string; denom: string; project: string; where: string };
+	const { total, registry, hrefOf } = (window as any).__futileGuide as { total: number; registry: Entry[]; hrefOf: Record<string, string> };
+	const byId = Object.fromEntries(registry.map((e) => [e.id, e]));
+
+	const slots = document.querySelectorAll<HTMLElement>('.slot');
+	const have = document.getElementById('guide-have')!;
+	const reward = document.getElementById('guide-reward')!;
+	const msg = document.getElementById('guide-msg')!;
+	const card = document.getElementById('postcard')!;
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	function render(fresh?: string) {
+		const got = collected();
+		let n = 0;
+		slots.forEach((slot) => {
+			const id = slot.dataset.stamp!;
+			const on = got.has(id);
+			if (on) n++;
+			slot.classList.toggle('is-got', on);
+			slot.querySelector('[data-state]')!.textContent = on ? 'Collected. ' : 'Not found yet. ';
+			document.querySelector(`[data-strip="${id}"]`)?.classList.toggle('is-got', on);
+			if (on && id === fresh && !still()) {
+				/* The press: the stamp comes down hard and settles, postmark and all. */
+				animate(
+					slot.querySelector('.slot-art')!,
+					{ scale: [1.7, 1], rotate: [-18, 0], opacity: [0, 1] },
+					{ type: 'spring', stiffness: 480, damping: 18 },
+				);
+			}
+		});
+		document.querySelectorAll<SVGTSpanElement>('[data-place-have]').forEach((t) => {
+			t.textContent = String(registry.filter((e) => e.where === t.dataset.placeHave && got.has(e.id)).length);
+		});
+		have.textContent = String(n);
+		reward.hidden = n < total;
+	}
+
+	function inspect(id: string) {
+		const e = byId[id];
+		if (!e) return;
+		const on = collected().has(id);
+		slots.forEach((sl) => sl.classList.toggle('is-open', sl.dataset.stamp === id));
+		card.hidden = false;
+		card.classList.toggle('is-locked', !on);
+		document.getElementById('pc-serial')!.textContent = `${e.serial} · ${e.denom}${e.edition ? ` · ${e.edition}` : ''}`;
+		document.getElementById('pc-title')!.textContent = on ? e.title : 'Not found yet';
+		document.getElementById('pc-note')!.textContent = on ? e.note : 'This card is still in the post.';
+		document.getElementById('pc-how')!.textContent = `How to find it: ${e.unlock}`;
+		const link = document.getElementById('pc-link') as HTMLAnchorElement;
+		const href = e.project && hrefOf[e.project];
+		link.hidden = !href;
+		if (href) {
+			link.href = href;
+			link.textContent = `Open ${e.title}`;
+		}
+		const art = document.querySelector(`.slot[data-stamp="${id}"] .slot-art`)!;
+		document.getElementById('pc-stamp')!.replaceChildren(art.cloneNode(true));
+		if (!still()) animate(card, { y: [20, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 320, damping: 26 });
+	}
+
+	document.querySelectorAll<HTMLButtonElement>('[data-inspect]').forEach((b) =>
+		b.addEventListener('click', () => inspect(b.dataset.inspect!)),
+	);
+	document.getElementById('pc-close')!.addEventListener('click', () => {
+		card.hidden = true;
+		slots.forEach((sl) => sl.classList.remove('is-open'));
+	});
+
+	render();
+	window.addEventListener('futile-stamp', (e) => render((e as CustomEvent).detail?.id));
+	/* A stamp earned in another tab (a project opened, then back here). */
+	window.addEventListener('storage', (e) => e.key === 'futile-guide' && render());
+
+	document.getElementById('guide-share')!.addEventListener('click', async () => {
+		const n = collected().size;
+		const text = `My Futile Field Guide: ${n} of ${total} stamps. Nothing matters, build cool shit anyway.`;
+		const link = 'https://futile.studio/#guide';
+		try {
+			if (navigator.share) {
+				await navigator.share({ text, url: link });
+				return;
+			}
+			await navigator.clipboard.writeText(`${text} ${link}`);
+			msg.textContent = 'Copied. It only says how many stamps, nothing else.';
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return;
+			msg.textContent = `Could not copy. Here it is to copy by hand: ${text} ${link}`;
+		}
+	});
+
+	const resetBtn = document.getElementById('guide-reset')!;
+	let armed = false;
+	resetBtn.addEventListener('click', () => {
+		if (!armed) {
+			armed = true;
+			resetBtn.textContent = 'Press again to empty it';
+			setTimeout(() => {
+				armed = false;
+				resetBtn.textContent = 'Start a clean album';
+			}, 3000);
+			return;
+		}
+		resetGuide();
+		armed = false;
+		card.hidden = true;
+		resetBtn.textContent = 'Start a clean album';
+		msg.textContent = 'Clean album. Every stamp is back in the post.';
+	});
+</script>
+
+<style>
+	.guide {
+		padding-block: clamp(5rem, 11vw, 8rem);
+	}
+	.album {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 6px;
+		box-shadow: var(--lift-high);
+	}
+	/* The gutter of the album, shaded where the pages bend into the binding. */
+	.album::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(45% - 22px);
+		width: 44px;
+		background: linear-gradient(90deg, transparent, var(--shadow) 50%, transparent);
+		opacity: 0.35;
+		pointer-events: none;
+	}
+	.album-page {
+		padding: clamp(1.6rem, 4vw, 3rem);
+	}
+	.album-right {
+		/* album leaves are a heavier, greyer card than the journal */
+		background: color-mix(in srgb, var(--paper-2) 55%, var(--card));
+		border-radius: 0 6px 6px 0;
+	}
+
+	.guide-title {
+		font-size: clamp(2.6rem, 5vw, 4.4rem);
+		font-weight: 800;
+		font-variation-settings: 'wdth' 76;
+		letter-spacing: -0.035em;
+		line-height: 0.9;
+		margin-bottom: 1rem;
+	}
+	.guide-copy {
+		max-width: 28rem;
+		color: var(--ink-soft);
+	}
+
+	.guide-progress {
+		margin: 1.8rem 0 1.4rem;
+	}
+	.guide-count {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+	}
+	.guide-have {
+		font-family: var(--display);
+		font-weight: 800;
+		font-size: clamp(3.6rem, 7vw, 5rem);
+		line-height: 0.9;
+		color: var(--stamp);
+		font-variant-numeric: tabular-nums;
+	}
+	/* One perforated square per stamp: the progress you can count. */
+	.guide-strip {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		margin-top: 0.8rem;
+	}
+	.guide-strip li {
+		width: 14px;
+		height: 17px;
+		border: 1px dashed var(--ink-faint);
+		border-radius: 1px;
+		transition: background 0.3s ease;
+	}
+	.guide-strip li.is-got {
+		background: var(--stamp);
+		border: 1px solid var(--stamp);
+	}
+
+	.map {
+		margin: 0 0 1.4rem;
+	}
+	.map svg {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+	.map-route {
+		fill: none;
+		stroke: var(--stamp);
+		stroke-width: 2;
+		stroke-dasharray: 2 7;
+		stroke-linecap: round;
+		opacity: 0.7;
+	}
+	.map-room rect {
+		fill: color-mix(in srgb, var(--paper-2) 60%, transparent);
+		stroke: var(--ink);
+		stroke-width: 1.5;
+		transition: fill 0.2s ease;
+	}
+	.room-backroom rect {
+		fill: var(--night);
+	}
+	.room-backroom text {
+		fill: var(--forest-ink);
+	}
+	.map-room:hover rect,
+	.map-room:focus-visible rect {
+		fill: color-mix(in srgb, var(--marker) 45%, transparent);
+	}
+	.room-backroom:hover rect {
+		fill: #2a3142;
+	}
+	.map-room:focus-visible {
+		outline: none;
+	}
+	.map-room:focus-visible rect {
+		stroke: var(--stamp);
+		stroke-width: 3;
+	}
+	.map-name {
+		font-family: var(--script);
+		font-size: 21px;
+		fill: var(--ink);
+	}
+	.map-n {
+		font-family: var(--mono);
+		font-size: 12px;
+		fill: var(--ink-soft);
+	}
+	.map-compass {
+		font-family: var(--script);
+		font-size: 15px;
+		fill: var(--ink-soft);
+	}
+
+	.guide-reward {
+		margin-bottom: 1.4rem;
+	}
+	.guide-reward .script {
+		margin-bottom: 0.8rem;
+	}
+	.guide-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.8rem 1.2rem;
+	}
+	.guide-reset {
+		min-height: 44px;
+		background: none;
+		border: none;
+		font: inherit;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+	}
+	.guide-msg {
+		margin-top: 0.8rem;
+		min-height: 1.4em;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+	}
+
+	/* ---------- the album page ---------- */
+	.slots {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr));
+		gap: 1.6rem 1rem;
+		align-items: end;
+	}
+	.slot {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.35rem;
+		text-align: center;
+	}
+	.slot-btn {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.4rem;
+		width: 100%;
+		padding: 0.3rem;
+		background: none;
+		border: none;
+		font: inherit;
+		color: inherit;
+		cursor: pointer;
+	}
+	.slot-art,
+	.slot-empty {
+		width: 78%;
+	}
+	.slot-landscape .slot-art,
+	.slot-landscape .slot-empty {
+		width: 100%;
+	}
+	.slot-tall .slot-art,
+	.slot-tall .slot-empty {
+		width: 64%;
+	}
+	/* Not found: a hinge-mount outline where the stamp will go. */
+	.slot-art {
+		display: none;
+	}
+	.slot-empty {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 4 / 5;
+		border: 1.5px dashed var(--ink-faint);
+		color: var(--ink-faint);
+		font-family: var(--script);
+		font-size: 1.8rem;
+		background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--ink-ghost) 6px 7px);
+	}
+	.slot-landscape .slot-empty {
+		aspect-ratio: 5 / 4;
+	}
+	.slot-square .slot-empty {
+		aspect-ratio: 1;
+	}
+	.slot-tall .slot-empty {
+		aspect-ratio: 2 / 3;
+	}
+	.slot-name {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--ink-soft);
+		line-height: 1.2;
+	}
+	.slot-hint {
+		font-size: 0.74rem;
+		line-height: 1.3;
+		color: var(--ink-soft);
+	}
+	.is-got .slot-art {
+		display: block;
+		transition:
+			rotate 0.35s var(--ease-out),
+			translate 0.35s var(--ease-out);
+	}
+	.is-got .slot-empty,
+	.is-got .slot-hint {
+		display: none;
+	}
+	.is-got .slot-name {
+		color: var(--ink);
+	}
+	.is-got .slot-btn:hover .slot-art,
+	.is-got .slot-btn:focus-visible .slot-art {
+		rotate: -3deg;
+		translate: 0 -3px;
+	}
+	/* the one whose postcard is out */
+	.slot.is-open .slot-name {
+		color: var(--ink);
+		text-decoration: underline wavy var(--stamp);
+		text-decoration-thickness: 1.5px;
+		text-underline-offset: 0.3em;
+	}
+	.slot.is-open .slot-empty {
+		border-color: var(--stamp);
+		color: var(--stamp);
+	}
+	/* Lamp on: the empty mounts and their hints print a step darker, so an
+	   unfound stamp still reads as a place on the page rather than a smudge. */
+	html:not([data-lamp='off']) .slot-empty {
+		border-color: rgba(27, 33, 50, 0.55);
+		color: rgba(27, 33, 50, 0.6);
+		background: repeating-linear-gradient(-45deg, transparent 0 6px, rgba(27, 33, 50, 0.1) 6px 7px);
+	}
+	.slot:nth-child(4n + 1).is-got .slot-art {
+		rotate: -2deg;
+	}
+	.slot:nth-child(4n + 3).is-got .slot-art {
+		rotate: 1.5deg;
+	}
+
+	/* ---------- the postcard ---------- */
+	.postcard {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+		gap: 1.2rem;
+		margin-top: 2rem;
+		padding: 1.4rem 1.4rem 1.2rem;
+		background: #fbf7ec;
+		color: #1b2132;
+		border-radius: 3px;
+		box-shadow: var(--lift-high);
+		rotate: -0.6deg;
+	}
+	.postcard[hidden] {
+		display: none;
+	}
+	/* the dividing line down a postcard's back */
+	.postcard::after {
+		content: '';
+		position: absolute;
+		top: 1.2rem;
+		bottom: 1.2rem;
+		left: 58%;
+		border-left: 1px solid rgba(27, 33, 50, 0.25);
+	}
+	.postcard .label {
+		color: rgba(27, 33, 50, 0.7);
+	}
+	.postcard-title {
+		font-size: 1.8rem;
+		font-variation-settings: 'wdth' 82;
+		margin: 0.2rem 0 0.5rem;
+	}
+	.postcard-note {
+		font-size: 1.35rem;
+		color: #1b2132;
+	}
+	.postcard-how {
+		margin-top: 0.8rem;
+		font-size: 0.8rem;
+		color: rgba(27, 33, 50, 0.72);
+	}
+	.postcard-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		color: #c4402a;
+		font-weight: 600;
+	}
+	.postcard-side {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 1rem;
+	}
+	.postcard-stamp {
+		width: 6.4rem;
+		rotate: 4deg;
+	}
+	.postcard-stamp :global(.slot-art) {
+		display: block;
+		width: 100%;
+	}
+	.postcard.is-locked .postcard-stamp :global(.slot-art) {
+		display: none;
+	}
+	.postcard-to {
+		align-self: stretch;
+		font-size: 1.25rem;
+		line-height: 1.7;
+		color: rgba(27, 33, 50, 0.7);
+		background: repeating-linear-gradient(to bottom, transparent 0 1.9rem, rgba(27, 33, 50, 0.25) 1.9rem calc(1.9rem + 1px));
+	}
+	.postcard-close {
+		position: absolute;
+		top: 0.2rem;
+		right: 0.2rem;
+		width: 44px;
+		height: 44px;
+		background: none;
+		border: none;
+		color: rgba(27, 33, 50, 0.7);
+		font-size: 1rem;
+		cursor: pointer;
+	}
+
+	@media (max-width: 900px) {
+		.album {
+			grid-template-columns: 1fr;
+		}
+		.album::before {
+			display: none;
+		}
+		.album-right {
+			border-radius: 0 0 6px 6px;
+		}
+	}
+	@media (max-width: 520px) {
+		.postcard {
+			grid-template-columns: 1fr;
+		}
+		.postcard::after {
+			display: none;
+		}
+		.postcard-side {
+			flex-direction: row;
+			align-items: center;
+		}
+	}
+</style>

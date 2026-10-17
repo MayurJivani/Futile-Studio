@@ -14,7 +14,8 @@ import Sketch from './Sketch.astro';
  */
 ---
 
-<div class="toys" aria-hidden="false">
+<div class="toys" data-clue="toys" role="group" aria-label="Things on the desk">
+	<p class="toys-label script" aria-hidden="true">on the desk</p>
 	<button class="toy toy-scissors" data-toy="snip" aria-label="Snip the paper" title="snip">
 		<Sketch name="scissors" />
 	</button>
@@ -177,29 +178,46 @@ import Sketch from './Sketch.astro';
 <style>
 	/* The toys sit where doodles would, but they are buttons, so they say so
 	   on hover. Still seasoning: they go away before they can crowd the copy. */
+	/* One tray of desk things under the envelope, not four loose doodles over
+	   the copy. Buttons, so they say so on hover, and on every width: the
+	   Fidget stamp lives here. */
+	.toys {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.9rem 0.35rem 0.7rem;
+		background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+		border: 1px dashed var(--ink-ghost);
+		border-radius: 999px;
+	}
+	.toys-label {
+		margin-right: 0.3rem;
+		font-size: 1.15rem;
+		color: var(--ink-soft);
+	}
 	.toy {
-		position: absolute;
-		z-index: 4;
-		padding: 0;
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		padding: 0.25rem;
 		background: none;
 		border: none;
 		color: var(--ink-soft);
-		opacity: 0.6;
 		cursor: pointer;
 		transition:
 			transform 0.18s ease,
-			opacity 0.18s ease;
+			color 0.18s ease;
 	}
 	.toy:hover,
 	.toy:focus-visible {
-		opacity: 1;
+		color: var(--ink);
 	}
-
+	.toy :global(svg) {
+		width: 100%;
+		height: 100%;
+	}
 	.toy-scissors {
-		top: 0.5rem;
-		right: 7%;
-		width: 3.1rem;
-		height: 3.1rem;
 		transform: rotate(14deg);
 	}
 	.toy-scissors:hover {
@@ -208,12 +226,7 @@ import Sketch from './Sketch.astro';
 	.toy-scissors.is-used {
 		animation: toy-snip 0.4s ease;
 	}
-
 	.toy-pencil {
-		top: 6.6rem;
-		right: 1.5%;
-		width: 2.9rem;
-		height: 2.9rem;
 		transform: rotate(-22deg);
 	}
 	.toy-pencil:hover {
@@ -222,12 +235,7 @@ import Sketch from './Sketch.astro';
 	.toy-pencil.is-used {
 		animation: toy-scribble 0.45s ease;
 	}
-
 	.toy-stamp {
-		top: 1.2rem;
-		right: 17%;
-		width: 2.7rem;
-		height: 2.7rem;
 		transform: rotate(-7deg);
 	}
 	.toy-stamp:hover {
@@ -236,12 +244,7 @@ import Sketch from './Sketch.astro';
 	.toy-stamp.is-used {
 		animation: toy-press 0.34s ease;
 	}
-
 	.toy-mug {
-		top: 11.2rem;
-		right: 9%;
-		width: 3rem;
-		height: 3rem;
 		transform: rotate(-6deg);
 	}
 	.toy-mug:hover {
@@ -250,7 +253,6 @@ import Sketch from './Sketch.astro';
 	.toy-mug.is-used {
 		animation: toy-set 0.4s ease;
 	}
-
 	@keyframes toy-snip {
 		40% {
 			transform: rotate(-6deg) scale(0.93);
@@ -275,11 +277,6 @@ import Sketch from './Sketch.astro';
 		}
 	}
 
-	@media (max-width: 860px) {
-		.toy {
-			display: none;
-		}
-	}
 </style>
 
 <style is:global>

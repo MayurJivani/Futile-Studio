@@ -1,19 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Jinx. The cat is the site's running motif (the /jinx toy, the cat-eared
-       corners), and a silhouette this blunt is the only thing here that still
-       reads at 16px: the paper-and-pin alternatives collapse into a grey blob
-       with a red dot at tab size. Palette is shared with lab.futile.studio. -->
-  <rect width="128" height="128" rx="26" fill="#f7f4ec"/>
-
-  <g fill="none" stroke="#1b2132" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M30 50 24 20l27 15a44 44 0 0 1 26 0l27-15-6 30"/>
-    <path d="M22 72a42 34 0 0 0 84 0 42 40 0 0 0-84 0z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The mark at tab size: the "f" of futile, heavy enough to survive 16px,
+       and the red dot that sits after it in the wordmark. Tilted like the
+       wordmark, on an ink tile so it holds against light and dark tab bars. -->
+  <rect x="1" y="1" width="30" height="30" rx="7" fill="#1b2132"/>
+  <g transform="rotate(-8 16 16)" fill="none" stroke="#f2eee5" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.5 25V12.5a5 5 0 0 1 5-5h2.5"/>
+    <path d="M8 15h10"/>
   </g>
-
-  <circle cx="48" cy="68" r="6" fill="#1b2132"/>
-  <circle cx="80" cy="68" r="6" fill="#1b2132"/>
-  <path d="M64 82v5M57 93a10 10 0 0 0 14 0" fill="none" stroke="#1b2132" stroke-width="7" stroke-linecap="round"/>
-
-  <!-- the collar tag carries the accent -->
-  <circle cx="64" cy="112" r="8" fill="#e0574a"/>
+  <circle cx="23" cy="23.5" r="3.6" fill="#e2553c"/>
 </svg>

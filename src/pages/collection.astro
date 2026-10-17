@@ -1,4 +1,5 @@
 ---
+import { url } from '../lib/url.js';
 import Layout from '../layouts/Layout.astro';
 import Marquee from '../components/Marquee.astro';
 import VinylPlayer from '../components/VinylPlayer.astro';
@@ -10,7 +11,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 ---
 
 <Layout
-	title="Collection — Futile Studio"
+	title="Collection · Futile Studio"
 	description="The Futile Recording Co physical media collection — vinyl and cassette, digitized and playable."
 	noindex
 	theme="booth"
@@ -18,7 +19,7 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 	<!-- This page keeps Guideline A (the blueprint): the shelf and both players
 	     are styled against those tokens throughout. It is unlisted and has no
 	     nav link anywhere, so a back link does the job the full nav used to. -->
-	<a href="/" class="booth-back">← futile.studio</a>
+	<a href={url()} class="booth-back">← futile.studio</a>
 
 	<audio id="media-audio" preload="none"></audio>
 
@@ -26,10 +27,10 @@ const cassettes = collection.filter((i) => i.format === 'cassette');
 		<div class="sheet-label" data-reveal>SHEET 00 / 03 — FUTILE RECORDING CO</div>
 		<span class="label" data-reveal>/ The Collection</span>
 		<h1 data-split-group>
-			<span class="split-mask"><span class="split-word">The</span></span>
+			<span class="split-mask"><span class="split-word">The</span></span>{' '}
 			<span class="split-mask"><span class="split-word">library.</span></span><br />
-			<span class="split-mask"><span class="split-word hl">Physical</span></span>
-			<span class="split-mask"><span class="split-word hl">media.</span></span>
+			<span class="split-mask"><span class="split-word hl">Physical</span></span>{' '}
+			<span class="split-mask"><span class="split-word hl">media.</span></span>{' '}
 		</h1>
 		<p data-reveal style="--d:120ms">
 			Every vinyl and cassette I own, shelved here and playable through the turntable or tape deck below.

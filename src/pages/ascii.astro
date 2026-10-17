@@ -1,0 +1,231 @@
+---
+import { url } from '../lib/url.js';
+/* The ASCII world, full screen.
+ *
+ * A real route, so it can be linked and shared directly. Nothing on the site
+ * points at it since the door came off the homepage: you get here by knowing
+ * the address. noindex because it is a toy, not a page anyone should land on
+ * from a search result.
+ */
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+	title="Futile Studio · the field"
+	description="A small ASCII world you can walk around in, with whoever else is in it."
+	noindex={true}
+	theme="booth"
+>
+	<main class="field">
+		<canvas id="field-canvas"></canvas>
+
+		<div class="field-gate" id="field-gate">
+			<h1>the field</h1>
+			<p>
+				Somewhere green, rendered entirely in characters. Walk with WASD or the arrow keys, or drag anywhere on a touch screen.
+				Anyone else here right now shows up as a figure with a name over it.
+			</p>
+			<label for="field-name">What should the others call you</label>
+			<input
+				id="field-name"
+				type="text"
+				maxlength="14"
+				autocomplete="off"
+				spellcheck="false"
+				placeholder="wanderer"
+			/>
+			<button id="field-go" type="button">Walk in</button>
+			<p class="field-note">
+				No account, nothing stored. Your name lives in this tab and is forgotten when you close it.
+			</p>
+		</div>
+
+		<noscript>
+			{/* The gate is visible by default (a script that never runs must not
+			    be able to hide the page). With no JavaScript its name field and
+			    button do nothing, and it would sit on top of the message below,
+			    so take it out of the layer here instead. */}
+			<style is:inline>#field-gate { display: none; }</style>
+			<div class="field-gate">
+				<h1>the field</h1>
+				<p>This one needs JavaScript. It is a game rendered a character at a time.</p>
+			</div>
+		</noscript>
+
+		<p class="field-fallback" id="field-fallback" hidden>
+			This browser has no WebGL2, so the field cannot draw itself.
+			<a href={url()}>Back to the studio</a>.
+		</p>
+	</main>
+</Layout>
+
+<style>
+	.field {
+		position: fixed;
+		inset: 0;
+		background: #070b09;
+		overflow: hidden;
+	}
+
+	#field-canvas {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+		/* The drag-to-walk stick owns the gesture; without this the browser
+		   pans the page instead and the player never moves. */
+		touch-action: none;
+	}
+
+	.field-gate {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		align-content: center;
+		justify-items: start;
+		gap: 0.75rem;
+		padding: clamp(1.5rem, 6vw, 6rem);
+		max-width: 44rem;
+		background: linear-gradient(90deg, rgba(7, 11, 9, 0.96) 55%, rgba(7, 11, 9, 0));
+		color: #cfe8d6;
+		font-family: ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+		z-index: 2;
+	}
+
+	.field-gate[hidden] {
+		display: none;
+	}
+
+	.field-gate h1 {
+		font-size: clamp(2rem, 7vw, 3.5rem);
+		font-weight: 500;
+		letter-spacing: -0.03em;
+		color: #e8f5ec;
+		margin: 0;
+	}
+
+	.field-gate p {
+		margin: 0;
+		max-width: 46ch;
+		line-height: 1.65;
+		color: #8fae99;
+		font-size: 0.95rem;
+	}
+
+	.field-gate label {
+		margin-top: 0.75rem;
+		font-size: 0.8rem;
+		letter-spacing: 0.08em;
+		text-transform: lowercase;
+		color: #6f8f7a;
+	}
+
+	.field-gate input {
+		font: inherit;
+		font-size: 1.1rem;
+		color: #e8f5ec;
+		background: #0d1512;
+		border: 1px solid #273a30;
+		border-radius: 2px;
+		padding: 0.6rem 0.8rem;
+		width: min(20rem, 100%);
+	}
+
+	.field-gate input:focus-visible {
+		outline: 2px solid #4ee07a;
+		outline-offset: 2px;
+		border-color: #4ee07a;
+	}
+
+	.field-gate button {
+		font: inherit;
+		font-size: 1rem;
+		margin-top: 0.5rem;
+		color: #070b09;
+		background: #4ee07a;
+		border: 0;
+		border-radius: 2px;
+		padding: 0.7rem 1.6rem;
+		cursor: pointer;
+		transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.12s;
+	}
+
+	.field-gate button:hover {
+		background: #6ef094;
+		transform: translateY(-1px);
+	}
+
+	.field-gate button:focus-visible {
+		outline: 2px solid #e8f5ec;
+		outline-offset: 3px;
+	}
+
+	.field-note {
+		font-size: 0.78rem !important;
+		color: #52705c !important;
+		margin-top: 0.5rem !important;
+	}
+
+	.field-fallback {
+		position: absolute;
+		inset: auto 0 2rem;
+		text-align: center;
+		color: #8fae99;
+		font-family: ui-monospace, monospace;
+		z-index: 3;
+	}
+
+	.field-fallback a {
+		color: #4ee07a;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.field-gate button {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	import { AsciiWorld } from '../game/game.js';
+
+	const canvas = document.getElementById('field-canvas') as HTMLCanvasElement;
+	const gate = document.getElementById('field-gate') as HTMLElement;
+	const input = document.getElementById('field-name') as HTMLInputElement;
+	const go = document.getElementById('field-go') as HTMLButtonElement;
+	const fallback = document.getElementById('field-fallback') as HTMLElement;
+
+	let world: AsciiWorld | null = null;
+
+	function enter() {
+		const name = input.value.trim() || 'wanderer';
+		try {
+			world = new AsciiWorld(canvas, { name });
+		} catch (err) {
+			/* No WebGL2. Say so plainly rather than leaving a black rectangle. */
+			gate.hidden = true;
+			fallback.hidden = false;
+			console.warn('the field could not start:', err);
+			return;
+		}
+		gate.hidden = true;
+		world.start();
+		/* Movement keys are captured by the game, so focus has to leave the
+		   input or the first W types a letter instead of walking. */
+		canvas.focus();
+	}
+
+	go.addEventListener('click', enter);
+	input.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') enter();
+	});
+
+	/* Stop the loop when the tab is hidden: a backgrounded canvas still burns
+	   a core, and the relay does not need the traffic. */
+	document.addEventListener('visibilitychange', () => {
+		if (!world) return;
+		if (document.hidden) world.stop();
+		else world.start();
+	});
+</script>

@@ -1,0 +1,20 @@
+# staging.futile.studio: preview builds of every site, one folder each, at
+# /opt/apps/staging/<site>/. Shared by every repo's deploy/stage.sh, so each
+# copy of this file must stay identical; the script only reloads when it differs.
+http://staging.futile.studio {
+	root * /opt/apps/staging
+	encode zstd gzip
+
+	# Previews are for looking at, not for finding.
+	header X-Robots-Tag "noindex, nofollow"
+
+	# Hashed bundles never change under the same name; everything else must
+	# revalidate, or a fresh preview shows yesterday's page.
+	@fingerprinted path */_astro/* */assets/*
+	header @fingerprinted Cache-Control "public, max-age=31536000, immutable"
+	@rest not path */_astro/* */assets/*
+	header @rest Cache-Control "no-cache"
+
+	# The root lists the sites that have a preview up.
+	file_server browse
+}

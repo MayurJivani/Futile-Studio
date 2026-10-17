@@ -1,0 +1,381 @@
+---
+/**
+ * One postage stamp, drawn from its registry entry in `src/data/stamps.js`.
+ *
+ * Built like the real thing: a perforated sheet (circles punched out of the
+ * edge with a mask), an engraved double frame, a denomination and the
+ * issuing office along the top, the title along the bottom, and the artwork
+ * printed in two inks with the second one a hair out of register. A halftone
+ * screen sits over the picture the way cheap colour printing does.
+ *
+ * Purely visual: it never decides whether a stamp is collected. `cancelled`
+ * adds the postmark a collected stamp gets in the album.
+ */
+interface Props {
+	stamp: {
+		id: string;
+		title: string;
+		motif: string;
+		palette: string[];
+		format: string;
+		denom: string;
+		serial: string;
+		edition?: string;
+	};
+	cancelled?: boolean;
+	class?: string;
+}
+
+const { stamp: s, cancelled = false, class: cls = '' } = Astro.props;
+const [paper, ink, acc] = s.palette;
+
+const SIZES: Record<string, [number, number]> = {
+	portrait: [100, 124],
+	landscape: [128, 100],
+	square: [108, 108],
+	tall: [88, 132],
+};
+const [W, H] = SIZES[s.format] ?? SIZES.portrait;
+
+/* Perforation holes along every edge, spaced evenly so the corners land on a
+   hole the way a torn sheet does. */
+const R = 3.1;
+const holes: Array<[number, number]> = [];
+const along = (len: number) => {
+	const n = Math.round(len / 8.4);
+	return Array.from({ length: n + 1 }, (_, i) => (i * len) / n);
+};
+for (const x of along(W)) holes.push([x, 0], [x, H]);
+for (const y of along(H)) holes.push([0, y], [W, y]);
+
+const uid = `${s.id}-${Math.random().toString(36).slice(2, 7)}`;
+const pad = 9;
+const top = 22;
+const bottom = 24;
+const art = { x: pad + 5, y: top, w: W - 2 * (pad + 5), h: H - top - bottom };
+---
+
+<svg
+	class:list={['stamp-art', `stamp-${s.format}`, cls]}
+	viewBox={`0 0 ${W} ${H}`}
+	data-stamp-art={s.id}
+	aria-hidden="true"
+	style={`--stamp-ratio:${W / H}`}
+>
+	<defs>
+		<mask id={`perf-${uid}`}>
+			<rect width={W} height={H} fill="#fff"></rect>
+			{holes.map(([x, y]) => <circle cx={x} cy={y} r={R} fill="#000" />)}
+		</mask>
+		<pattern id={`dots-${uid}`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+			<circle cx="1.5" cy="1.5" r="0.7" fill={acc}></circle>
+		</pattern>
+		<filter id={`ink-${uid}`} x="-5%" y="-5%" width="110%" height="110%">
+			<feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="4" result="n"></feTurbulence>
+			<feDisplacementMap in="SourceGraphic" in2="n" scale="0.7"></feDisplacementMap>
+		</filter>
+	</defs>
+
+	<g mask={`url(#perf-${uid})`}>
+		<rect class="stamp-sheet" width={W} height={H} fill={paper}></rect>
+		<!-- engraved double frame -->
+		<rect class="stamp-frame" x={pad} y={pad} width={W - 2 * pad} height={H - 2 * pad} fill="none" stroke={ink} stroke-width="1.6"></rect>
+		<rect class="stamp-frame-in" x={pad + 2.6} y={pad + 2.6} width={W - 2 * pad - 5.2} height={H - 2 * pad - 5.2} fill="none" stroke={ink} stroke-width="0.5"></rect>
+
+		<!-- the picture: accent ink first, slightly out of register, then the key ink -->
+		<rect x={art.x} y={art.y} width={art.w} height={art.h} fill={acc} opacity="0.16"></rect>
+		<rect x={art.x} y={art.y} width={art.w} height={art.h} fill={`url(#dots-${uid})`} opacity="0.55" class="stamp-halftone"></rect>
+		<svg x={art.x} y={art.y} width={art.w} height={art.h} viewBox="0 0 60 60" preserveAspectRatio="xMidYMid meet" overflow="visible">
+			<g filter={`url(#ink-${uid})`} fill="none" stroke-linecap="round" stroke-linejoin="round">
+				<g transform="translate(0.7 0.5)" stroke={acc} fill="none">
+					{s.motif === 'patina' && <path d="M14 14h32v32H14z" stroke-width="2" />}
+					{s.motif === 'orbitle' && <circle cx="30" cy="30" r="20" stroke-width="2.4" />}
+					{s.motif === 'noggin' && <ellipse cx="30" cy="40" rx="17" ry="5" stroke-width="2.5" />}
+					{s.motif === 'chorusify' && <path d="M38 14v22" stroke-width="3" />}
+					{s.motif === 'qno' && <path d="M20 16h14v22H20z" stroke-width="2" transform="rotate(-12 27 27)" />}
+					{s.motif === 'knock' && <path d="M40 22q6 8 0 16M45 17q10 13 0 26" stroke-width="2.2" />}
+					{s.motif === 'mosaic' && <path d="M12 12h12v12H12zM36 36h12v12H36z" stroke-width="2" fill={acc} />}
+					{s.motif === 'borderline' && <path d="M10 36c8-10 18 6 26-4s12-10 16-6" stroke-width="2.4" />}
+					{s.motif === 'cubby' && <path d="M22 26v-6a8 8 0 0 1 16 0v6" stroke-width="2.6" />}
+					{s.motif === 'explorer' && <path d="M14 22l-4-8" stroke-width="3" />}
+					{s.motif === 'lamp' && <circle cx="30" cy="38" r="12" fill={acc} stroke="none" opacity="0.6" />}
+					{s.motif === 'log' && <path d="M12 44h36" stroke-width="2.4" />}
+					{s.motif === 'jinx' && <path d="M16 46h28" stroke-width="2.4" />}
+					{s.motif === 'vote' && <path d="M14 40l32-10" stroke-width="3" />}
+					{s.motif === 'toys' && <circle cx="40" cy="40" r="9" stroke-width="2.4" />}
+					{s.motif === 'wink' && <path d="M14 44h32" stroke-width="2.4" />}
+					{s.motif === 'post' && <path d="M14 20l16 12 16-12" stroke-width="2.4" />}
+					{s.motif === 'desk' && <path d="M8 46c6-2 10-6 14-12" stroke-width="2.4" stroke-dasharray="2 4" />}
+				</g>
+				<g stroke={ink} stroke-width="1.8">
+					{
+						s.motif === 'patina' && (
+							<g>
+								{[0, 1, 2, 3].flatMap((r) =>
+									[0, 1, 2, 3].map((c) => (
+										<rect
+											x={14 + c * 8}
+											y={14 + r * 8}
+											width="7"
+											height="7"
+											fill={(r * 3 + c * 5) % 4 === 0 ? ink : (r + c) % 3 === 0 ? acc : 'none'}
+											stroke-width="0.8"
+										/>
+									)),
+								)}
+								<path d="M10 50h40" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'orbitle' && (
+							<g>
+								<circle cx="30" cy="30" r="5" fill={ink} />
+								<circle cx="30" cy="30" r="12" stroke-dasharray="2 3" />
+								<circle cx="30" cy="30" r="21" />
+								<circle cx="47" cy="18" r="3.2" fill={acc} stroke={ink} />
+								<path d="M4 54l6-3M54 6l-5 3" stroke-width="1.2" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'noggin' && (
+							<g>
+								<path d="M15 40v-6a15 9 0 0 1 30 0v6" fill={acc} />
+								<ellipse cx="30" cy="40" rx="15" ry="4.5" />
+								<path d="M30 12v8M18 16l4 6M42 16l-4 6" stroke-width="2" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'chorusify' && (
+							<g>
+								{[8, 16, 11, 22, 14, 26, 9].map((h, i) => (
+									<path d={`M${12 + i * 6} 48v-${h}`} stroke-width="3" />
+								))}
+								<path d="M38 14l10-3v18" stroke-width="2" />
+								<circle cx="44" cy="30" r="3.5" fill={ink} />
+							</g>
+						)
+					}
+					{
+						s.motif === 'qno' && (
+							<g>
+								<rect x="22" y="14" width="18" height="27" rx="2" fill={paper} transform="rotate(8 31 27)" />
+								<text x="31" y="32" text-anchor="middle" font-size="9" font-family="Geist Mono, monospace" fill={ink} stroke="none" transform="rotate(8 31 27)">
+									|ψ⟩
+								</text>
+								<path d="M10 50h40" stroke-dasharray="1 3" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'knock' && (
+							<g>
+								<rect x="17" y="14" width="18" height="32" rx="3" fill={paper} />
+								<path d="M23 18h6" />
+								<circle cx="26" cy="40" r="1.6" fill={ink} />
+							</g>
+						)
+					}
+					{
+						s.motif === 'mosaic' && (
+							<g>
+								{[0, 1, 2, 3].flatMap((r) =>
+									[0, 1, 2, 3].map((c) => (
+										<rect x={12 + c * 9} y={12 + r * 9} width="8" height="8" stroke-width="0.9" fill={(r + c) % 2 ? 'none' : ink} />
+									)),
+								)}
+								<path d="M44 44l8 8" stroke-width="2.2" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'borderline' && (
+							<g>
+								<path d="M8 24c6-6 14-8 20-4s16 4 24 0v26H8z" fill={paper} />
+								<path d="M30 18c-2 8 4 14 0 28" stroke-dasharray="3 3" stroke-width="1.6" />
+								<circle cx="40" cy="30" r="2" fill={ink} />
+							</g>
+						)
+					}
+					{
+						s.motif === 'cubby' && (
+							<g>
+								<rect x="18" y="26" width="24" height="20" rx="2" fill={paper} />
+								<path d="M22 26v-6a8 8 0 0 1 16 0v6" />
+								<circle cx="30" cy="35" r="2.4" fill={ink} />
+								<path d="M30 37v4" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'explorer' && (
+							<g>
+								<circle cx="30" cy="20" r="8" fill={paper} />
+								<path d="M22 18q8-12 16 0z" fill={ink} />
+								<path d="M24 28l-2 18h16l-2-18z" fill={paper} />
+								<rect x="14" y="28" width="9" height="14" rx="3" fill={acc} />
+								<path d="M24 30l-8-12" />
+								<path d="M27 46v6M33 46v6" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'lamp' && (
+							<g>
+								<path d="M30 6v14" />
+								<path d="M20 34a10 10 0 0 1 20 0c0 4-4 6-4 10H24c0-4-4-6-4-10z" fill={paper} />
+								<path d="M25 48h10M26 52h8" />
+								<path d="M44 46l3 2" stroke-width="1" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'log' && (
+							<g>
+								<path d="M30 16v28M30 16c-6-3-12-3-18 0v28c6-3 12-3 18 0 6-3 12-3 18 0V16c-6-3-12-3-18 0z" fill={paper} />
+								<path d="M16 24h10M16 30h10M34 24h10M34 30h7" stroke-width="1.1" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'jinx' && (
+							<g>
+								<path d="M18 28l4-10 5 8h6l5-8 4 10v12a12 10 0 0 1-24 0z" fill={paper} />
+								<circle cx="25" cy="34" r="1.6" fill={ink} />
+								<circle cx="35" cy="34" r="1.6" fill={ink} />
+								<path d="M30 38v2M14 38h6M40 38h6" stroke-width="1" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'desk' && (
+							<g>
+								<path d="M24 14h24v22l-6 6H24z" fill={acc} transform="rotate(-8 36 28)" />
+								<path d="M42 42v-6h6" stroke-width="1.2" transform="rotate(-8 36 28)" />
+								<path d="M28 22h14M28 27h10" stroke-width="1.1" transform="rotate(-8 36 28)" />
+								<path d="M10 52h40" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'vote' && (
+							<g>
+								<path d="M18 18v26M24 18v26M30 18v26M36 18v26" stroke-width="2.2" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'toys' && (
+							<g>
+								<circle cx="20" cy="42" r="5" fill={paper} />
+								<circle cx="34" cy="42" r="5" fill={paper} />
+								<path d="M23 38l18-24M31 38L19 16" stroke-width="2" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'wink' && (
+							<g>
+								<path d="M18 24q12-10 24 0" />
+								<path d="M20 34a4 4 0 0 1 8 0M34 32h8" stroke-width="2.2" />
+								<path d="M24 42q6 5 12 0" />
+							</g>
+						)
+					}
+					{
+						s.motif === 'post' && (
+							<g>
+								<rect x="12" y="18" width="36" height="26" fill={paper} />
+								<path d="M12 18l18 14 18-14" />
+								<rect x="38" y="21" width="7" height="8" fill={acc} stroke-width="0.8" />
+							</g>
+						)
+					}
+				</g>
+			</g>
+		</svg>
+
+		<!-- the printing along the top and bottom -->
+		<text x={pad + 5} y={top - 5} class="stamp-denom" fill={ink}>{s.denom}</text>
+		<text x={W - pad - 5} y={top - 5} class="stamp-office" fill={ink} text-anchor="end">FUTILE POST</text>
+		<text x={W / 2} y={H - pad - 9} class="stamp-title" fill={ink} text-anchor="middle">
+			{s.title.toUpperCase()}
+		</text>
+		<text x={W / 2} y={H - pad - 3.5} class="stamp-serial" fill={ink} text-anchor="middle">
+			{s.edition ? `${s.serial} · ${s.edition.toUpperCase()}` : s.serial}
+		</text>
+	</g>
+
+	{
+		cancelled && (
+			<g class="stamp-cancel" fill="none" stroke={ink} opacity="0.55" transform={`rotate(-14 ${W * 0.7} ${H * 0.35})`}>
+				<circle cx={W * 0.72} cy={H * 0.34} r="15" stroke-width="1.3" />
+				<circle cx={W * 0.72} cy={H * 0.34} r="11.5" stroke-width="0.6" />
+				<text x={W * 0.72} y={H * 0.34 + 2} text-anchor="middle" class="stamp-pm" fill={ink} stroke="none">
+					RECEIVED
+				</text>
+				{[0, 5, 10, 15].map((d) => (
+					<path d={`M${W * 0.72 - 40} ${H * 0.34 - 7 + d}q6-3 12 0t12 0t12 0`} stroke-width="1" />
+				))}
+			</g>
+		)
+	}
+</svg>
+
+<style is:global>
+	.stamp-art {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+		filter: drop-shadow(0 1px 1px rgba(27, 33, 50, 0.18)) drop-shadow(0 6px 10px rgba(27, 33, 50, 0.16));
+	}
+	/* Lamp on: light paper stamps on light paper lose their edge, so the
+	   perforated outline gets a thin ink keyline (the drop shadow follows the
+	   punched mask), the engraved frame prints heavier, the halftone denser,
+	   and the inks a touch richer. Lamp off is left exactly as it was. */
+	html:not([data-lamp='off']) .stamp-art {
+		filter: drop-shadow(0 0 0.5px rgba(27, 33, 50, 0.85)) drop-shadow(0 1px 1px rgba(27, 33, 50, 0.22))
+			drop-shadow(0 6px 9px rgba(27, 33, 50, 0.2)) saturate(1.12) contrast(1.06);
+	}
+	html:not([data-lamp='off']) .stamp-frame {
+		stroke-width: 2.1px;
+	}
+	html:not([data-lamp='off']) .stamp-frame-in {
+		stroke-width: 0.75px;
+	}
+	html:not([data-lamp='off']) .stamp-halftone {
+		opacity: 0.75;
+	}
+	html:not([data-lamp='off']) .stamp-cancel {
+		opacity: 0.7;
+	}
+	.stamp-art text {
+		font-family: var(--mono, monospace);
+	}
+	.stamp-denom {
+		font-size: 8.5px;
+		font-weight: 600;
+	}
+	.stamp-office {
+		font-size: 4.6px;
+		letter-spacing: 0.08em;
+	}
+	.stamp-title {
+		font-family: var(--display, sans-serif) !important;
+		font-weight: 800;
+		font-size: 8.4px;
+		letter-spacing: 0.02em;
+	}
+	.stamp-serial {
+		font-size: 3.6px;
+		letter-spacing: 0.1em;
+		opacity: 0.8;
+	}
+	.stamp-pm {
+		font-size: 4px;
+		letter-spacing: 0.12em;
+	}
+</style>

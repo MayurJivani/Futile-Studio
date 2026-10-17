@@ -17,6 +17,7 @@
 
 <script>
 	import { API_BASE } from '../lib/api.js';
+	import { hello, remember } from '../lib/visitor.js';
 
 	const layer = document.getElementById('peers');
 
@@ -38,14 +39,16 @@
 			return base.replace(/^http/, 'ws') + '/ws/presence';
 		};
 
-		function makeCursor(id: string, colour: number) {
+		function makeCursor(id: string, colour: number, name = '') {
 			const el = document.createElement('div');
 			el.className = 'peer';
 			el.dataset.colour = String(colour % 8);
 			el.innerHTML =
 				'<svg viewBox="0 0 24 24" aria-hidden="true">' +
 				'<path d="M4 2l7 18 2.5-7.5L21 10z" fill="currentColor" stroke="rgba(27,33,50,.75)" stroke-width="1.4" stroke-linejoin="round"/>' +
-				'</svg><span class="peer-tag">someone</span>';
+				'</svg><span class="peer-tag"></span>';
+			/* the name is the server's, set as text: never markup */
+			el.querySelector('.peer-tag')!.textContent = name || 'someone';
 			layer!.appendChild(el);
 			peers.set(id, { el, x: 0, y: 0, tx: 0, ty: 0 });
 		}
@@ -103,7 +106,7 @@
 			socket = ws;
 
 			ws.addEventListener('open', () => {
-				ws.send(JSON.stringify({ t: 'hello', room: location.pathname }));
+				ws.send(JSON.stringify(hello(location.pathname)));
 				window.addEventListener('pointermove', onMove, { passive: true });
 				raf = requestAnimationFrame(tick);
 			});
@@ -116,12 +119,16 @@
 					return;
 				}
 				if (m.t === 'welcome') {
+					if (m.name) remember(m.token, m.name);
 					for (const p of m.peers) {
-						makeCursor(p.id, p.colour);
+						makeCursor(p.id, p.colour, p.name);
 						place(p.id, p.x, p.y);
 					}
 				} else if (m.t === 'hi') {
-					makeCursor(m.id, m.colour);
+					makeCursor(m.id, m.colour, m.name);
+				} else if (m.t === 'name') {
+					const tag = peers.get(m.id)?.el.querySelector('.peer-tag');
+					if (tag) tag.textContent = m.name;
 				} else if (m.t === 'm') {
 					if (!peers.has(m.id)) makeCursor(m.id, 0);
 					place(m.id, m.x, m.y);

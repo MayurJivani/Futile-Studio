@@ -1,0 +1,94 @@
+---
+/**
+ * Selected work: the seven projects worth opening first, as spreads.
+ *
+ * Two motions, both optional and both off under reduced motion:
+ *   - each screenshot is uncovered as it scrolls in (a clip, so nothing
+ *     jumps and the layout never moves);
+ *   - on a fine pointer, the layers of a spread shift a few pixels with the
+ *     pointer, by depth, so the collage reads as stacked paper.
+ */
+import FeaturedSpread from './FeaturedSpread.astro';
+import { open } from '../data/board.js';
+import { featured } from '../data/studio.js';
+
+const byId = Object.fromEntries(open.map((p) => [p.id, p]));
+const spreads = featured.filter((f) => byId[f.id]);
+---
+
+<section id="work" class="featured" aria-labelledby="work-title">
+	<div class="featured-head wrap">
+		<h2 id="work-title" class="sect-label">Selected work</h2>
+		<p class="sect-lede">
+			Seven things worth opening first. Every screenshot is the running product, and every link goes to it.
+		</p>
+	</div>
+	{spreads.map((f, i) => <FeaturedSpread p={byId[f.id]} f={f} index={i} />)}
+</section>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	gsap.registerPlugin(ScrollTrigger);
+
+	const root = document.documentElement;
+	const still =
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	/* The site's own motion switch is not a media query, so the still frame the
+	   <picture> picks for reduced motion is swapped in by hand when it is off. */
+	if (still) {
+		document.querySelectorAll<HTMLImageElement>('.spread-live-clip img').forEach((img) => {
+			const s = img.parentElement?.querySelector<HTMLSourceElement>('source');
+			if (s) img.src = s.srcset;
+			s?.remove();
+		});
+	}
+
+	if (!still) {
+		gsap.utils.toArray<HTMLElement>('[data-spread] .spread-shot').forEach((shot) => {
+			gsap.fromTo(
+				shot,
+				{ clipPath: 'inset(0% 0% 100% 0%)' },
+				{
+					clipPath: 'inset(0% 0% 0% 0%)',
+					duration: 1.1,
+					ease: 'expo.out',
+					scrollTrigger: { trigger: shot, start: 'top 85%', once: true },
+				},
+			);
+		});
+
+		if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+			document.querySelectorAll<HTMLElement>('[data-depth-stage]').forEach((stage) => {
+				const layers = [...stage.querySelectorAll<HTMLElement>('[data-depth]')];
+				stage.addEventListener('pointermove', (e) => {
+					const r = stage.getBoundingClientRect();
+					const nx = (e.clientX - r.left) / r.width - 0.5;
+					const ny = (e.clientY - r.top) / r.height - 0.5;
+					for (const l of layers) {
+						const d = parseFloat(l.dataset.depth!) * 6;
+						l.style.setProperty('--dx', `${(nx * d).toFixed(1)}px`);
+						l.style.setProperty('--dy', `${(ny * d).toFixed(1)}px`);
+					}
+				});
+				stage.addEventListener('pointerleave', () =>
+					layers.forEach((l) => {
+						l.style.removeProperty('--dx');
+						l.style.removeProperty('--dy');
+					}),
+				);
+			});
+		}
+	}
+</script>
+
+<style>
+	.featured {
+		padding-top: clamp(4rem, 9vw, 7rem);
+	}
+	.featured-head {
+		margin-bottom: clamp(1rem, 3vw, 2rem);
+	}
+</style>

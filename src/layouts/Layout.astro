@@ -1,4 +1,8 @@
 ---
+import { url } from '../lib/url.js';
+import AsciiMode from '../components/AsciiMode.astro';
+import StampCollector from '../components/StampCollector.astro';
+
 interface Props {
 	title?: string;
 	description?: string;
@@ -13,16 +17,17 @@ interface Props {
 }
 
 const {
-	title = 'Futile Studio — Mayur Jivani',
+	title = 'Futile Studio · Mayur Jivani',
 	description = 'The studio scrapbook of Mayur Jivani: small software, built and shipped, pasted in as it lands.',
 	noindex = false,
 	theme = 'scrapbook',
 } = Astro.props;
 
 const isScrapbook = theme === 'scrapbook';
+const isField = Astro.url.pathname.replace(/\/$/, '').endsWith('/ascii');
 
 const fonts = isScrapbook
-	? 'family=Sniglet:wght@400;800&family=Shantell+Sans:ital,wght@0,400;0,600;0,700;1,400'
+	? 'family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Caveat:wght@500;700&family=Sniglet:wght@800&family=Fraunces:opsz,wght,SOFT,WONK@144,800,100,1&family=Bowlby+One+SC'
 	: 'family=Big+Shoulders+Display:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400';
 const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 ---
@@ -35,8 +40,10 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		{noindex && <meta name="robots" content="noindex, nofollow" />}
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<!-- ?v= forces browsers past their favicon cache when the icon changes -->
+		<link rel="icon" type="image/svg+xml" href={url('favicon.svg?v=2')} />
+		<link rel="icon" href={url('favicon.ico?v=2')} sizes="16x16 32x32 48x48" />
+		<link rel="apple-touch-icon" href={url('apple-touch-icon.png?v=2')} />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href={fontHref} rel="stylesheet" media="print" onload="this.media='all'" />
@@ -60,8 +67,13 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 		</script>
 	</head>
 	<body>
+		{/* The field is a full-screen game, so none of the blueprint
+		    instrumentation belongs on it: the station name, the coordinates,
+		    the corner crop marks, the loading percentage and the cursor's own
+		    X/Y readout all end up as loose text floating over the world. It
+		    keeps the booth palette, it just loses the furniture. */}
 		{
-			!isScrapbook && (
+			!isScrapbook && !isField && (
 				<Fragment>
 					{/* ---- Guideline A chrome: blueprint instrumentation ---- */}
 					<div class="preloader" id="preloader" aria-hidden="true">
@@ -133,13 +145,21 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 
 		<slot />
 
+		{/* Not on /ascii: that route is the field already, and the restored
+		    takeover would hide its gate and run a second world behind it. */}
+		{!isField && <AsciiMode />}
+		{isScrapbook && !isField && <StampCollector />}
+
 		<script>
 			import { gsap } from 'gsap';
 			import { ScrollTrigger } from 'gsap/ScrollTrigger';
 			gsap.registerPlugin(ScrollTrigger);
 
 			const root = document.documentElement;
-			const booth = root.dataset.theme === 'booth';
+			/* Matches the markup gate above: on the field none of the booth
+			   chrome is rendered, and the cursor setup asserts those elements
+			   exist, so it must not run there either. */
+			const booth = root.dataset.theme === 'booth' && !document.querySelector('main.field');
 
 			/* The scrapbook's motion setting overrides the OS one in both
 			   directions, so 'on' is honoured on a reduce-motion machine too. */
@@ -352,12 +372,31 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 
 	html {
 		scroll-behavior: smooth;
-		overflow-x: hidden;
+		scroll-padding-top: 5rem;
+		/* clip, not hidden: hidden makes a scroll container and breaks the sticky nav */
+		overflow-x: clip;
 		width: 100%;
 	}
 
 	a {
 		color: inherit;
+	}
+
+	/* Text for a screen reader only. Two components were already marking copy
+	   up with this class and nothing defined it, so every stamp was printing
+	   its own hint beside itself and the log book was ending on a stray
+	   sentence. Clipped rather than display:none, which would take it out of
+	   the accessibility tree as well. */
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	/* ===================================================================
@@ -368,28 +407,62 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 	   =================================================================== */
 
 	[data-theme='scrapbook'] {
-		/* Shared with lab.futile.studio so the two read as one studio: paper,
-		   cream, ink and both accents are Lab's exact tokens. (FRC/Lab/THEME-B.md) */
-		--paper: #f7f4ec;
-		--paper-2: #efeade;
-		--card: #f8f4e7;
-		--card-2: #f1ecdd;
+		/* Warm paper, one ink, one accent. The vermilion is the only colour
+		   that is allowed to shout; green and yellow exist for meaning (live,
+		   highlighted) and nothing else. */
+		--paper: #f2eee5;
+		--paper-2: #e8e2d4;
+		--card: #fbf9f4;
+		--card-2: #f4f0e6;
 
 		--ink: #1b2132;
-		--ink-soft: rgba(27, 33, 50, 0.68);
-		--ink-faint: rgba(27, 33, 50, 0.4);
-		--ink-ghost: rgba(27, 33, 50, 0.16);
+		--ink-soft: rgba(27, 33, 50, 0.72);
+		--ink-faint: rgba(27, 33, 50, 0.5);
+		--ink-ghost: rgba(27, 33, 50, 0.14);
 
-		--stamp: #e0574a;
-		--live: #3fa34d;
-		--marker: #f5d547;
+		/* a shade under the printed red, so it reads at 4.5:1 on every paper tone */
+		--stamp: #b53a25;
+		--stamp-ink: #fbf9f4;
+		--live: #2a7034;
+		--marker: #f0d36b;
 		--thread: #9a6b4f;
+		/* the blue of an airmail border; the wordmark's second ink */
+		--airmail: #2f5d8a;
+		/* The dark half of the studio, and the one acid note it is allowed. */
+		--forest: #1f3a2c;
+		--forest-ink: #ece4d2;
+		--lime: #c6e84a;
+		--night: #171b26;
 
-		--shadow: rgba(27, 33, 50, 0.26);
-		--shadow-deep: rgba(27, 33, 50, 0.3);
+		/* Depth is soft and offset, like paper lifted off a table under one
+		   lamp, never the hard block shadow of a sticker sheet. */
+		--shadow: rgba(27, 33, 50, 0.2);
+		--shadow-deep: rgba(27, 33, 50, 0.32);
+		--lift: 0 1px 1px rgba(27, 33, 50, 0.06), 0 10px 28px -14px var(--shadow-deep);
+		--lift-high: 0 2px 2px rgba(27, 33, 50, 0.06), 0 26px 48px -22px var(--shadow-deep);
 
-		--bubble: 'Sniglet', 'Comic Sans MS', cursive;
-		--hand: 'Shantell Sans', 'Segoe Print', cursive;
+		--display: 'Bricolage Grotesque', 'Arial Narrow', sans-serif;
+		--body: 'Geist', 'Segoe UI', system-ui, sans-serif;
+		--script: 'Caveat', 'Segoe Print', cursive;
+		--mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', monospace;
+		/* The live site's mark, kept exactly: Sniglet, a red dot, a slight tilt. */
+		--brand: 'Sniglet', 'Comic Sans MS', cursive;
+		/* The display face: heavy slab capitals, cut out of paper letter by
+		   letter on the door. */
+		--wordmark: 'Bowlby One SC', 'Arial Black', Impact, sans-serif;
+		/* The door's wordmark only. To use a licensed face instead, add an
+		   @font-face for it (file in public/fonts/) and put its name first here. */
+		--hero-mark: var(--wordmark);
+		/* Soft, slightly wonky letterpress serif for small display numerals
+		   (log book years, the ticket title). */
+		--letterpress: 'Fraunces', Georgia, serif;
+		/* Older names, kept so every existing component follows the new type. */
+		--bubble: var(--display);
+		--hand: var(--body);
+
+		--gutter: clamp(1.2rem, 4vw, 3rem);
+		--page: 1240px;
+		--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
 		--text-scale: 1;
 		font-size: calc(16px * var(--text-scale));
@@ -397,100 +470,121 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 
 	/* The desk lamp, switched off: same paper, late in the evening. */
 	[data-theme='scrapbook'][data-lamp='off'] {
-		--paper: #2a2620;
-		--paper-2: #221e19;
-		--card: #39332b;
-		--card-2: #322c25;
+		--paper: #23201b;
+		--paper-2: #1c1a16;
+		--card: #302b25;
+		--card-2: #2a2620;
 
-		--ink: #f2ead8;
-		--ink-soft: rgba(242, 234, 216, 0.7);
-		--ink-faint: rgba(242, 234, 216, 0.42);
-		--ink-ghost: rgba(242, 234, 216, 0.16);
+		--ink: #f1e9d8;
+		--ink-soft: rgba(241, 233, 216, 0.74);
+		--ink-faint: rgba(241, 233, 216, 0.52);
+		--ink-ghost: rgba(241, 233, 216, 0.14);
 
-		--stamp: #ef7565;
-		--live: #5fbf6c;
+		--stamp: #ee7a62;
+		--stamp-ink: #1c1a16;
+		--live: #6cc77a;
 		--marker: #b2922c;
 		--thread: #b08a68;
+		--airmail: #7fa9d8;
 
-		--shadow: rgba(0, 0, 0, 0.5);
-		--shadow-deep: rgba(0, 0, 0, 0.58);
+		--shadow: rgba(0, 0, 0, 0.45);
+		--shadow-deep: rgba(0, 0, 0, 0.6);
+		color-scheme: dark;
 	}
 
 	/* Real contrast, not a darker grey: borders and secondary ink go solid. */
 	[data-theme='scrapbook'][data-contrast='high'] {
 		--ink-soft: var(--ink);
 		--ink-faint: var(--ink);
-		--ink-ghost: rgba(27, 33, 50, 0.4);
-		--shadow: var(--ink);
-		--shadow-deep: var(--ink);
+		--ink-ghost: rgba(27, 33, 50, 0.45);
 	}
 	[data-theme='scrapbook'][data-contrast='high'][data-lamp='off'] {
-		--ink-ghost: rgba(242, 234, 216, 0.4);
+		--ink-ghost: rgba(241, 233, 216, 0.45);
 	}
 
 	[data-theme='scrapbook'] body {
 		background-color: var(--paper);
-		/* Faint ledger grid: the page is still a working sheet. */
-		background-image:
-			linear-gradient(var(--ink-ghost) 1px, transparent 1px),
-			linear-gradient(90deg, var(--ink-ghost) 1px, transparent 1px);
-		background-size: 34px 34px;
 		color: var(--ink);
-		font-family: var(--hand);
-		font-size: 0.93rem;
-		line-height: 1.65;
-		min-height: 100vh;
-		overflow-x: hidden;
+		font-family: var(--body);
+		font-size: 1rem;
+		line-height: 1.6;
+		min-height: 100dvh;
+		overflow-x: clip;
+		-webkit-font-smoothing: antialiased;
 		transition:
 			background-color 0.45s ease,
 			color 0.45s ease;
 	}
 
-	/* Paper grain, multiplied into the stock. */
+	/* Paper grain, multiplied into the stock. Fixed and inert, so it costs
+	   one layer and never repaints with the scroll. */
 	[data-theme='scrapbook'] body::before {
 		content: '';
 		position: fixed;
 		inset: 0;
 		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-		opacity: 0.055;
+		opacity: 0.07;
 		mix-blend-mode: multiply;
 		pointer-events: none;
 		z-index: 900;
 	}
 	[data-theme='scrapbook'][data-lamp='off'] body::before {
 		mix-blend-mode: screen;
-		opacity: 0.04;
+		opacity: 0.035;
 	}
 
 	[data-theme='scrapbook'] ::selection {
-		background: var(--marker);
-		color: #1b2132;
+		background: var(--stamp);
+		color: var(--stamp-ink);
+	}
+	[data-theme='scrapbook'] {
+		scrollbar-color: var(--ink-faint) var(--paper-2);
+		caret-color: var(--stamp);
+		accent-color: var(--stamp);
 	}
 
 	[data-theme='scrapbook'] h1,
 	[data-theme='scrapbook'] h2,
 	[data-theme='scrapbook'] h3 {
-		font-family: var(--bubble);
-		font-weight: 800;
-		letter-spacing: 0;
-		line-height: 1.14;
+		font-family: var(--display);
+		font-weight: 700;
+		letter-spacing: -0.025em;
+		line-height: 1.05;
+		text-wrap: balance;
+	}
+
+	[data-theme='scrapbook'] p {
+		text-wrap: pretty;
+	}
+
+	[data-theme='scrapbook'] a {
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 1px;
 	}
 
 	[data-theme='scrapbook'] :focus-visible {
-		outline: 3px solid var(--stamp);
+		outline: 2px solid var(--stamp);
 		outline-offset: 3px;
+		border-radius: 4px;
 	}
 
-	/* ---------- Guideline B primitives ---------- */
+	/* ---------- studio primitives ---------- */
 
-	/* A sheet of bright paper pasted onto the kraft ground. Flat offset
-	   shadow, no blur, thin ink border at partial alpha, softly rounded. */
+	/* One width and one gutter for every scene. */
+	[data-theme='scrapbook'] .wrap {
+		width: 100%;
+		max-width: var(--page);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* A sheet of good paper lying on the table. Soft lift, hairline edge. */
 	[data-theme='scrapbook'] .sheet {
 		position: relative;
 		background: var(--card);
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 7px;
-		box-shadow: 4px 4px 0 var(--shadow);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+		box-shadow: var(--lift);
 		transform: rotate(var(--rot, 0deg));
 	}
 
@@ -498,55 +592,50 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 	[data-theme='scrapbook'] .sheet-catear::after {
 		content: '';
 		position: absolute;
-		right: 0;
-		bottom: 0;
-		width: 20px;
-		height: 20px;
-		background: linear-gradient(
-			135deg,
-			transparent 50%,
-			rgba(0, 0, 0, 0.14) 50%,
-			rgba(0, 0, 0, 0.07) 55%,
-			var(--paper) 55%
-		);
+		right: -1px;
+		bottom: -1px;
+		width: 18px;
+		height: 18px;
+		background: linear-gradient(135deg, var(--card-2) 50%, var(--paper) 50%);
+		box-shadow: -2px -2px 4px -2px var(--shadow);
 	}
 
-	/* Mounts. Assigned in markup, never randomised: a mix of pin, tape and
-	   photo corners reads as a deliberate choice; a random one reads as noise. */
+	/* Mounts. Reserved for the few things that are actually stuck down; most
+	   paper just lies on the table. */
 	[data-theme='scrapbook'] .mount {
 		position: absolute;
 		z-index: 2;
 		pointer-events: none;
 	}
 	[data-theme='scrapbook'] .mount-pin {
-		top: -9px;
+		top: -8px;
 		left: 50%;
 		transform: translateX(-50%);
-		width: 15px;
-		height: 15px;
+		width: 14px;
+		height: 14px;
 		border-radius: 50%;
-		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #8f2c1b 100%);
-		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #7d2618 100%);
+		box-shadow: 0 3px 4px -1px rgba(0, 0, 0, 0.35);
 	}
 	[data-theme='scrapbook'] .mount-tape {
-		top: -11px;
+		top: -12px;
 		left: 50%;
-		width: 68px;
-		height: 22px;
+		width: 74px;
+		height: 24px;
 		transform: translateX(-50%) rotate(-3deg);
-		background: rgba(255, 255, 255, 0.5);
-		border: 1px solid rgba(255, 255, 255, 0.22);
-		box-shadow: inset 0 0 0 1px rgba(27, 33, 50, 0.05);
+		background: rgba(236, 226, 200, 0.72);
+		/* torn ends, not a clean rectangle */
+		clip-path: polygon(0 8%, 4% 0, 2% 30%, 5% 55%, 1% 80%, 4% 100%, 96% 100%, 99% 75%, 95% 50%, 100% 25%, 97% 0, 100% 6%);
+		box-shadow: 0 1px 2px rgba(27, 33, 50, 0.12);
 	}
 	[data-theme='scrapbook'][data-lamp='off'] .mount-tape {
-		background: rgba(255, 255, 255, 0.14);
+		background: rgba(255, 255, 255, 0.16);
 	}
-	/* Photo corner: a paper triangle the sheet tucks into. */
 	[data-theme='scrapbook'] .mount-corner {
-		width: 22px;
-		height: 22px;
-		background: var(--ink-soft);
-		opacity: 0.55;
+		width: 20px;
+		height: 20px;
+		background: var(--ink);
+		opacity: 0.75;
 	}
 	[data-theme='scrapbook'] .mount-corner-tl {
 		top: -1px;
@@ -558,20 +647,18 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 		bottom: -1px;
 		clip-path: polygon(100% 100%, 100% 0, 0 100%);
 	}
-	/* Paperclip, bent over the top edge. */
 	[data-theme='scrapbook'] .mount-clip {
 		top: -14px;
 		left: 22px;
-		width: 16px;
-		height: 34px;
+		width: 14px;
+		height: 32px;
 		border: 2px solid var(--ink-faint);
 		border-radius: 8px;
-		background: transparent;
 	}
 	[data-theme='scrapbook'] .mount-clip::after {
 		content: '';
 		position: absolute;
-		inset: 4px 4px 10px;
+		inset: 4px 3px 10px;
 		border: 2px solid var(--ink-ghost);
 		border-radius: 5px;
 		border-bottom: none;
@@ -580,22 +667,22 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 	/* A pressed rubber stamp. Slightly rotated, ink never quite solid. */
 	[data-theme='scrapbook'] .stamp {
 		display: inline-block;
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.6rem;
-		letter-spacing: 0.1em;
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 0.66rem;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--stamp);
-		border: 2px solid var(--stamp);
-		border-radius: 4px;
+		border: 1.5px solid var(--stamp);
+		border-radius: 3px;
 		padding: 2px 7px;
-		opacity: 0.8;
-		transform: rotate(-4deg);
+		transform: rotate(-3deg);
 	}
 
-	/* Highlighter swipe behind inline text. */
+	/* Highlighter swipe behind inline text. Used once or twice, not as a
+	   way of saying everything is important. */
 	[data-theme='scrapbook'] .marker {
-		background: linear-gradient(to top, var(--marker) 0 42%, transparent 42%);
+		background: linear-gradient(to top, color-mix(in srgb, var(--marker) 75%, transparent) 0 40%, transparent 40%);
 		padding: 0 2px;
 	}
 
@@ -607,79 +694,131 @@ const fontHref = `https://fonts.googleapis.com/css2?${fonts}&display=swap`;
 	[data-theme='scrapbook'] .underline-wrap svg {
 		position: absolute;
 		left: -4px;
-		bottom: -0.16em;
+		bottom: -0.12em;
 		width: calc(100% + 8px);
-		height: 0.22em;
+		height: 0.2em;
 		overflow: visible;
 		color: var(--stamp);
 	}
 
-	/* The shared scrapbook button: a small paper tab you can press. */
+	/* Buttons: a quiet paper tab, and one inked primary per scene. */
 	[data-theme='scrapbook'] .btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 7px;
+		gap: 0.5rem;
+		min-height: 44px;
 		background: var(--card);
 		color: var(--ink);
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 8px;
-		padding: 0.5rem 0.9rem;
-		font-family: var(--hand);
-		font-weight: 700;
-		font-size: 0.82rem;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 999px;
+		padding: 0.55rem 1.1rem;
+		font-family: var(--body);
+		font-weight: 600;
+		font-size: 0.9rem;
+		line-height: 1;
+		white-space: nowrap;
 		text-decoration: none;
 		cursor: pointer;
-		box-shadow: 3px 3px 0 var(--shadow);
+		box-shadow: var(--lift);
 		transition:
-			transform 0.12s ease,
-			box-shadow 0.12s ease,
-			background 0.2s ease;
+			transform 0.25s var(--ease-out),
+			box-shadow 0.25s var(--ease-out),
+			background 0.2s ease,
+			border-color 0.2s ease;
 	}
 	[data-theme='scrapbook'] .btn:hover {
-		transform: translate(-1px, -1px);
-		box-shadow: 5px 5px 0 var(--shadow);
+		transform: translateY(-2px);
+		box-shadow: var(--lift-high);
+		border-color: var(--ink-faint);
 	}
 	[data-theme='scrapbook'] .btn:active {
-		transform: translate(1px, 1px);
-		box-shadow: 1px 1px 0 var(--shadow);
+		transform: translateY(0) scale(0.98);
+		box-shadow: var(--lift);
+	}
+	[data-theme='scrapbook'] .btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
 	}
 	[data-theme='scrapbook'] .btn svg {
-		width: 0.9em;
-		height: 0.9em;
+		width: 1em;
+		height: 1em;
+		flex: none;
 	}
 	[data-theme='scrapbook'] .btn-stamp {
 		background: var(--stamp);
 		border-color: var(--stamp);
-		color: #fff;
+		color: var(--stamp-ink);
+	}
+	[data-theme='scrapbook'] .btn-stamp:hover {
+		border-color: var(--stamp);
 	}
 
-	/* Hand-lettered margin note, the kind written sideways up a page edge. */
-	[data-theme='scrapbook'] .margin-note {
-		font-family: var(--hand);
-		font-style: italic;
-		font-size: 0.78rem;
-		color: var(--ink-faint);
-		line-height: 1.5;
+	/* The one real hand on the page: notes written beside things. */
+	[data-theme='scrapbook'] .margin-note,
+	[data-theme='scrapbook'] .script {
+		font-family: var(--script);
+		font-weight: 500;
+		font-size: 1.25rem;
+		line-height: 1.15;
+		color: var(--ink-soft);
 	}
 
-	/* Section heading: bubbly, with room for a doodle beside it. */
-	[data-theme='scrapbook'] .sect-label {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.8rem;
-		font-family: var(--bubble);
+	/* Metadata in monospace: dates, statuses, serials, coordinates. Never a
+	   label above a heading; it sits beside the thing it describes. */
+	[data-theme='scrapbook'] .label {
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		font-weight: 500;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+	}
+
+	/* The futile.studio mark, as it is on the live site. */
+	[data-theme='scrapbook'] .brandmark {
+		display: inline-block;
+		font-family: var(--brand);
 		font-weight: 800;
-		font-size: 1.3rem;
+		letter-spacing: 0;
 		color: var(--ink);
-		margin-bottom: 1.5rem;
+		rotate: -1.5deg;
+	}
+	[data-theme='scrapbook'] .brandmark b {
+		font-weight: inherit;
+		color: var(--stamp);
 	}
 
-	/* Doodles are seasoning, not content: they go away on small screens
-	   rather than fight the copy for room. */
+	/* Scene heading. Big, plain, and allowed to be the only thing on its line. */
+	/* --reg is the misregistered second ink: a red ghost the scroll pulls back
+	   into place (index.astro). At rest it is zero and the title is clean. */
+	@property --reg {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	[data-theme='scrapbook'] .sect-label {
+		text-shadow: var(--reg) calc(var(--reg) * -0.4) 0 color-mix(in srgb, var(--stamp) 55%, transparent);
+		display: block;
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: clamp(2rem, 4.6vw, 3.6rem);
+		letter-spacing: -0.035em;
+		font-variation-settings: 'wdth' 85;
+		color: var(--ink);
+		margin-bottom: 1rem;
+	}
+	[data-theme='scrapbook'] .sect-lede {
+		max-width: 38rem;
+		font-size: 1.05rem;
+		color: var(--ink-soft);
+	}
+
+	/* Doodles are seasoning, not content. */
 	[data-theme='scrapbook'] .doodle {
 		position: absolute;
-		color: var(--ink-soft);
-		opacity: 0.6;
+		color: var(--ink-faint);
+		opacity: 0.7;
 		pointer-events: none;
 		z-index: 1;
 	}

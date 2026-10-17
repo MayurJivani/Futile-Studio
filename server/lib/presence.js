@@ -12,7 +12,9 @@
 //  - Everything inbound is treated as hostile: payload size, message rate,
 //    socket count per IP and total sockets are all capped before any work.
 
+import { createHash } from 'node:crypto';
 import { WebSocketServer } from 'ws';
+import { cleanDisplayName } from './validate.js';
 
 const MAX_SOCKETS = 200; // total, across every room
 const MAX_PER_IP = 6; // one person with tabs open is fine; a script is not
@@ -41,6 +43,38 @@ function cleanRoom(raw) {
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
+/* The ASCII world rides this relay as one more room, so a game move is just
+   another message type with the same caps. Names are the only free text any
+   client can send, so they are sanitised here and not only in the browser. */
+const WORLD_LIMIT = 1_000_000; // cells; past this the terrain hash is mush anyway
+
+/* The shared studio is one more room. Everyone in it is listed on arrival
+   (an explorer per visitor, no position needed) and it is the only room that
+   takes votes. */
+const STUDIO = '/studio';
+const MIN_MS_BETWEEN_VOTES = 400;
+const MIN_MS_BETWEEN_MARKS = 1500;
+const MIN_MS_BETWEEN_NAMES = 2000;
+
+/* Every socket that belongs to one visitor (several tabs share a token). */
+function socketsOf(wss, vkey) {
+	return [...wss.clients].filter((c) => c.vkey && c.vkey === vkey);
+}
+
+/* Behind the reverse proxy every socket arrives from the proxy's address, which
+   made the per-IP cap a cap on the whole site. The proxy appends the real
+   client last, so the last entry is the one nobody upstream could forge. */
+function clientIp(req, trustProxy) {
+	if (trustProxy) {
+		const fwd = String(req.headers['x-forwarded-for'] || '')
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+		if (fwd.length) return fwd[fwd.length - 1];
+	}
+	return req.socket.remoteAddress || 'unknown';
+}
+
 function send(ws, obj) {
 	if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(obj));
 }
@@ -64,11 +98,13 @@ function leave(ws) {
 	if (n > 0) perIp.set(ws.ip, n);
 	else perIp.delete(ws.ip);
 
-	broadcast(ws.room, { t: 'bye', id: ws.id });
+	broadcast(ws.room, { t: 'bye', id: ws.id, name: ws.name });
 }
 
-export function attachPresence(server, { allowedOrigin } = {}) {
+export function attachPresence(server, { allowedOrigin, trustProxy = false, votes = null, visitors = null, marks = null } = {}) {
 	const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_PAYLOAD });
+	/* moderation empties the board: everyone watching it sees that at once */
+	marks?.onClear(() => broadcast(STUDIO, { t: 'marks', marks: [] }));
 
 	server.on('upgrade', (req, socket, head) => {
 		let path;
@@ -95,7 +131,7 @@ export function attachPresence(server, { allowedOrigin } = {}) {
 	});
 
 	wss.on('connection', (ws, req) => {
-		const ip = req.socket.remoteAddress || 'unknown';
+		const ip = clientIp(req, trustProxy);
 		const open = perIp.get(ip) || 0;
 		if (open >= MAX_PER_IP) {
 			ws.close(1013, 'too many');
@@ -108,6 +144,12 @@ export function attachPresence(server, { allowedOrigin } = {}) {
 		ws.colour = Math.floor(Math.random() * COLOURS);
 		ws.room = null;
 		ws.last = 0;
+		ws.lastVote = 0;
+		ws.lastMark = 0;
+		ws.lastName = 0;
+		ws.name = null;
+		ws.vkey = null;
+		ws.voter = votes ? votes.voterFor(ip) : null;
 		ws.alive = true;
 		ws.on('pong', () => {
 			ws.alive = true;
@@ -134,15 +176,92 @@ export function attachPresence(server, { allowedOrigin } = {}) {
 				peers.add(ws);
 				rooms.set(room, peers);
 
+				/* The visitor's name is the server's to give: the client only
+				   hands back the token it was given last time, if any. */
+				let you = null;
+				if (visitors) {
+					try {
+						you = visitors.claim(msg.token);
+						ws.name = you.name;
+						ws.vkey = createHash('sha256').update(you.token).digest('hex');
+					} catch (err) {
+						console.error('[presence] name failed:', err.message);
+					}
+				}
+
 				send(ws, {
 					t: 'welcome',
 					id: ws.id,
 					colour: ws.colour,
+					...(you ? { name: you.name, token: you.token } : {}),
 					peers: [...peers]
-						.filter((p) => p !== ws && finite(p.x))
-						.map((p) => ({ id: p.id, colour: p.colour, x: p.x, y: p.y })),
+						.filter((p) => p !== ws && (room === STUDIO || finite(p.x) || p.g))
+						.map((p) => ({ id: p.id, colour: p.colour, name: p.name, x: p.x, y: p.y, g: p.g })),
 				});
-				broadcast(room, { t: 'hi', id: ws.id, colour: ws.colour }, ws);
+				broadcast(room, { t: 'hi', id: ws.id, colour: ws.colour, name: ws.name }, ws);
+				if (room === STUDIO && votes) {
+					send(ws, { t: 'tally', votes: votes.tally() });
+					send(ws, { t: 'mine', ideas: votes.mine(ws.voter) });
+				}
+				if (room === STUDIO && marks) send(ws, { t: 'marks', marks: marks.list() });
+				return;
+			}
+
+			/* A new name: a fresh random one, or one the visitor chose. Applied
+			   to every tab the visitor has open, and told to each room. */
+			if ((msg.t === 'reroll' || msg.t === 'name') && visitors && ws.vkey) {
+				const now = Date.now();
+				if (now - ws.lastName < MIN_MS_BETWEEN_NAMES) return;
+				ws.lastName = now;
+				const token = msg.token;
+				if (typeof token !== 'string' || createHash('sha256').update(token).digest('hex') !== ws.vkey) return;
+				const result = msg.t === 'reroll' ? { name: visitors.reroll(token) } : visitors.choose(token, msg.name);
+				if (!result.name) return send(ws, { t: 'name-no', error: result.error || 'Could not rename.' });
+				const was = ws.name;
+				for (const c of socketsOf(wss, ws.vkey)) {
+					c.name = result.name;
+					send(c, { t: 'you', name: result.name });
+					broadcast(c.room, { t: 'name', id: c.id, name: result.name, was }, c);
+				}
+				marks?.rename(ws.vkey, result.name);
+				if (marks) broadcast(STUDIO, { t: 'marks', marks: marks.list() });
+				return;
+			}
+
+			/* A mark on the studio's board, or lifting one of your own. */
+			if ((msg.t === 'mark' || msg.t === 'unmark') && marks && ws.room === STUDIO && ws.vkey) {
+				const now = Date.now();
+				if (now - ws.lastMark < MIN_MS_BETWEEN_MARKS) return;
+				ws.lastMark = now;
+				if (msg.t === 'mark') {
+					const placed = marks.place(ws.vkey, ws.name, msg);
+					if (!placed) return;
+					broadcast(STUDIO, { t: 'marks', marks: marks.list() });
+					broadcast(STUDIO, { t: 'act', who: ws.name, did: 'mark', kind: placed.kind });
+				} else if (typeof msg.id === 'string' && marks.lift(ws.vkey, msg.id)) {
+					broadcast(STUDIO, { t: 'marks', marks: marks.list() });
+				}
+				return;
+			}
+
+			/* A vote: toggle this visitor's mark on one idea from the fixed
+			   list, then tell the whole room the new tally. */
+			if (msg.t === 'v') {
+				if (ws.room !== STUDIO || !votes) return;
+				const now = Date.now();
+				if (now - ws.lastVote < MIN_MS_BETWEEN_VOTES) return;
+				ws.lastVote = now;
+				let stands;
+				try {
+					stands = votes.toggle(ws.voter, msg.idea);
+				} catch (err) {
+					console.error('[presence] vote failed:', err.message);
+					return;
+				}
+				if (stands === null) return;
+				broadcast(STUDIO, { t: 'tally', votes: votes.tally() });
+				broadcast(STUDIO, { t: 'act', who: ws.name, did: stands ? 'vote' : 'unvote', idea: msg.idea });
+				send(ws, { t: 'mine', ideas: votes.mine(ws.voter) });
 				return;
 			}
 
@@ -155,6 +274,36 @@ export function attachPresence(server, { allowedOrigin } = {}) {
 				ws.x = clamp(msg.x, 0, 1);
 				ws.y = clamp(msg.y, 0, 1_000_000);
 				broadcast(ws.room, { t: 'm', id: ws.id, x: ws.x, y: ws.y }, ws);
+				return;
+			}
+
+			/* Game move. Same throttle and the same hostile-input treatment as
+			   a cursor move: validate every field, clamp the rest, keep the
+			   name sanitised so one player cannot write markup into another
+			   player's screen. */
+			if (msg.t === 'g') {
+				if (!ws.room) return;
+				const now = Date.now();
+				if (now - ws.last < MIN_MS_BETWEEN) return;
+				ws.last = now;
+				if (!finite(msg.x) || !finite(msg.y)) return;
+
+				const f = Number.isInteger(msg.f) ? clamp(msg.f, 0, 3) : 0;
+				const a = Number.isInteger(msg.a) ? clamp(msg.a, 0, 3) : 0;
+				const n = cleanDisplayName(msg.n);
+
+				ws.g = {
+					x: clamp(msg.x, -WORLD_LIMIT, WORLD_LIMIT),
+					y: clamp(msg.y, -WORLD_LIMIT, WORLD_LIMIT),
+					f,
+					a,
+					n,
+				};
+				broadcast(
+					ws.room,
+					{ t: 'g', id: ws.id, colour: ws.colour, ...ws.g },
+					ws,
+				);
 			}
 		});
 

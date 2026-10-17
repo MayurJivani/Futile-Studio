@@ -7,12 +7,33 @@
  * year-only ones into the loose tray, and counts the undated rest rather than
  * guessing, which on a portfolio would be inventing a fact.
  *
+ * `origin` is optional and only present where the log book actually records an
+ * earlier attempt. It is lineage, not flavour: no project gets a backstory
+ * invented for it.
+ *
+ * `status` only appears on the workbench. Everything in `open` is running by
+ * definition, so storing a status there would be a second place for the same
+ * fact to go stale.
+ *
  * `mount` is assigned by hand, never randomised. A mix of pin, tape, clip and
  * photo corners reads as deliberate; a random one reads as noise. (Guideline B)
  */
 
 /** @type {Array<{id:string,name:string,kind:string,href?:string,cta:string,shipped?:string,mount:string,art:string,pick?:boolean,desc:string,stack:string}>} */
 export const open = [
+	{
+		id: 'borderline',
+		name: 'Borderline',
+		kind: 'daily game',
+		href: 'https://borderline.futile.studio',
+		cta: 'Play today',
+		shipped: '2026-01',
+		mount: 'tape',
+		art: 'postcard',
+		pick: true,
+		desc: 'Five geography rounds a day that ask you to draw, not to name. Two neighbouring countries arrive as one landmass with the border missing and you draw where you think it runs, or a city is named and you click where it sits. The reveal lays the real answer over your guess and scores it in kilometres.',
+		stack: 'Astro, React, static, 29 tests',
+	},
 	{
 		id: 'patina',
 		name: 'Patina',
@@ -52,17 +73,6 @@ export const open = [
 		stack: 'Astro, React, WebSockets',
 	},
 	{
-		id: 'drowned-parish',
-		name: 'The Drowned Parish',
-		kind: 'social deduction',
-		href: 'https://15mm.futile.studio',
-		cta: 'Play it',
-		mount: 'pin',
-		art: 'parish',
-		desc: 'Everyone plays, and the rules keep themselves. Phones around a table and fifteen minutes of lying to each other, straight from the browser.',
-		stack: 'Astro, WebSockets',
-	},
-	{
 		id: 'qno',
 		name: 'Qno',
 		kind: 'card game',
@@ -72,6 +82,7 @@ export const open = [
 		mount: 'clip',
 		art: 'qno',
 		pick: true,
+		origin: 'Started as a C# desktop app in 2023. It worked, and nobody could play it without installing something.',
 		desc: 'Uno, except the cards are quantum gates. Superposition and entanglement arrive as hand mechanics you actually hold, which gets the idea across rather better than a lecture slide.',
 		stack: 'React, Node, WebSockets',
 	},
@@ -109,6 +120,7 @@ export const open = [
 		shipped: '2023-12',
 		mount: 'corner',
 		art: 'chorus',
+		origin: 'The second attempt. The first was a PHP thing in 2022 that proved the idea was good and the execution was not.',
 		desc: 'A Wordle-shaped daily music guessing game: daily, multiplayer and artist modes, a ten-song challenge and a leaderboard, with the clips playing in the browser rather than sending you elsewhere.',
 		stack: 'React 18, TypeScript, Deezer Web API, Postgres',
 	},
@@ -132,36 +144,20 @@ export const workbench = [
 		id: 'uauth',
 		name: 'UAuth',
 		kind: 'research',
+		status: 'bench',
 		mount: 'corner',
 		art: 'cubby',
 		desc: 'A university project group comparing four ways of proving who you are: passwords, WebAuthn passkeys, face recognition and the EU Digital Identity Wallet. Run as a full Scrum process, which is its own kind of experiment.',
 		stack: 'React, TypeScript, Express',
 	},
 	{
-		id: 'chorus-place',
-		name: 'Chorus Place',
-		kind: 'instrument',
-		mount: 'clip',
-		art: 'patina',
-		desc: "r/place with instruments instead of pixels. A 32x16 grid that plays forever, two bars at 100bpm on a downbeat everyone shares, where clearing somebody's note means putting your own where it was. Finished, and waiting for somewhere to live.",
-		stack: 'Node, WebSockets, Web Audio',
-	},
-	{
-		id: 'sextant',
-		name: 'Sextant',
-		kind: 'positioning',
-		mount: 'pin',
-		art: 'sextant',
-		desc: 'Phones working out where they are by listening to each other. The maths is settled; making it survive a real room is the open part.',
-		stack: 'Web Audio, time-of-flight',
-	},
-	{
 		id: 'murmur',
 		name: 'Murmur',
 		kind: 'audio',
+		status: 'monster',
 		mount: 'tape',
 		art: 'murmur',
-		desc: 'One sound field rendered across a pile of phones scattered round a room. The capstone of the audio work, and gated on Sextant knowing where each phone is.',
+		desc: 'One sound field rendered across a pile of phones scattered round a room. The capstone of the audio work, and still waiting on the part that works out where each phone actually is.',
 		stack: 'Web Audio, WebRTC',
 	},
 ];

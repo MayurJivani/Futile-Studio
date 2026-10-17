@@ -15,7 +15,9 @@ const loopEnd = 100 / repeats;
 ---
 
 <div class="marquee" style={`--speed:${speed}s;--loop-end:${loopEnd}%`}>
-	<div class="marquee-track">
+	<!-- read once; the moving strip repeats them for the eye only -->
+	<p class="visually-hidden">{items.join('. ')}.</p>
+	<div class="marquee-track" aria-hidden="true">
 		{repeated.map((item, i) => <span class={i % 2 === 0 ? 'is-fill' : 'is-outline'}>{item}</span>)}
 	</div>
 </div>
@@ -66,7 +68,7 @@ const loopEnd = 100 / repeats;
 
 	/* Alternating words sit slightly off the line, like hand-set type. */
 	:global([data-theme='scrapbook']) .marquee-track span.is-outline {
-		color: var(--ink-faint);
+		color: var(--ink-soft);
 		transform: rotate(1.2deg);
 	}
 	:global([data-theme='scrapbook']) .marquee-track span.is-fill {

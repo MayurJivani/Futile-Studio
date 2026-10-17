@@ -1,0 +1,42 @@
+---
+/**
+ * Pixel art from a grid of characters: one string per row, one character per
+ * cell, a palette mapping characters to colours. A character the palette does
+ * not name is left empty (transparent).
+ *
+ * Drawn as an SVG of merged horizontal runs with crispEdges, so it stays sharp
+ * at any size and costs one rect per run rather than one per pixel.
+ */
+import { runs } from '../lib/pixels.js';
+
+interface Props {
+	rows: string[];
+	palette: Record<string, string>;
+	label?: string;
+	class?: string;
+}
+const { rows, palette, label, class: cls = '' } = Astro.props;
+const w = rows[0]?.length ?? 0;
+const h = rows.length;
+const cells = runs(rows, palette);
+---
+
+<svg
+	class:list={['pixel-art', cls]}
+	viewBox={`0 0 ${w} ${h}`}
+	shape-rendering="crispEdges"
+	role={label ? 'img' : undefined}
+	aria-label={label}
+	aria-hidden={label ? undefined : 'true'}
+>
+	{cells.map(([x, y, len, fill]) => <rect x={x} y={y} width={len} height="1" fill={fill} />)}
+</svg>
+
+<style>
+	.pixel-art {
+		display: block;
+		width: 100%;
+		height: auto;
+		image-rendering: pixelated;
+	}
+</style>
