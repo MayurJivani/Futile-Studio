@@ -1,0 +1,121 @@
+---
+/* Rubber stamps for where a thing has got to.
+ *
+ * One component, several inks. Each status gets its own shape as well as its
+ * own colour, so the state survives a greyscale print and a colourblind reader:
+ * a round stamp is running, a ragged one is stuck, a tag-shaped one is waiting.
+ * Colour alone would be the lazy half of this.
+ *
+ * The wording is the studio's, not a dashboard's. "Blocked" is what a tracker
+ * says; what actually happened is that something is hard and nobody has beaten
+ * it yet.
+ */
+
+interface Props {
+	kind: 'running' | 'bench' | 'homeless' | 'monster' | 'retired';
+	class?: string;
+}
+
+const { kind, class: cls = '' } = Astro.props;
+
+const STAMPS = {
+	running: { label: 'answering', hint: 'up right now, on my own hardware', shape: 'round' },
+	bench: { label: 'on the bench', hint: 'being worked on', shape: 'box' },
+	homeless: { label: 'wants a home', hint: 'finished, nowhere to run it', shape: 'tag' },
+	monster: { label: 'out with a monster', hint: 'blocked on a genuinely hard part', shape: 'ragged' },
+	retired: { label: 'retired', hint: 'switched off on purpose', shape: 'oval' },
+};
+
+const s = STAMPS[kind] ?? STAMPS.bench;
+---
+
+<span class:list={['status-stamp', `status-${kind}`, `shape-${s.shape}`, cls]} title={s.hint}>
+	<span class="status-stamp-ink">{s.label}</span>
+	<span class="visually-hidden">. {s.hint}.</span>
+</span>
+
+<style>
+	.status-stamp {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.32rem 0.75rem;
+		font-family: var(--bubble, 'Sniglet', cursive);
+		font-weight: 800;
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		border: 2px solid currentColor;
+		/* Stamps are pressed by hand, so none of them sit straight. */
+		transform: rotate(var(--stamp-tilt, -4deg));
+	}
+
+	/* Ink never covers evenly, but the speckle has to stay behind the letters
+	   and well under them in weight: at the same colour and density as the
+	   type it reads as a printing fault rather than as texture, and 0.68rem
+	   tracked-out capitals cannot survive being drawn through. */
+	.status-stamp::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background-image: radial-gradient(currentColor 0.5px, transparent 0.5px);
+		background-size: 4px 4px;
+		opacity: 0.22;
+		pointer-events: none;
+	}
+
+	.status-stamp-ink {
+		position: relative;
+		z-index: 1;
+	}
+
+	/* ---- shapes carry the state as well as the colour ---- */
+	.shape-round {
+		border-radius: 999px;
+		padding-inline: 0.75rem;
+	}
+	.shape-box {
+		border-radius: 2px;
+		border-style: dashed;
+	}
+	.shape-oval {
+		border-radius: 50% / 60%;
+		padding-inline: 0.85rem;
+	}
+	.shape-tag {
+		border-radius: 2px;
+		/* a luggage tag: notched at the left where the string goes */
+		clip-path: polygon(0 50%, 8px 0, 100% 0, 100% 100%, 8px 100%);
+		padding-left: 0.85rem;
+	}
+	.shape-ragged {
+		border-radius: 2px;
+		clip-path: polygon(
+			0 12%, 4% 0, 96% 3%, 100% 16%,
+			97% 52%, 100% 86%, 94% 100%, 6% 97%, 0 88%, 3% 50%
+		);
+		border-width: 2.5px;
+	}
+
+	/* ---- inks. Tuned per theme so they stay legible on dark paper. ---- */
+	.status-running { color: #2f7d3a; }
+	.status-bench { color: #94611a; }
+	.status-homeless { color: #2563a8; }
+	.status-monster { color: #a8332a; }
+	.status-retired { color: rgba(27, 33, 50, 0.55); }
+
+	:global([data-lamp='off']) .status-running { color: #74d98c; }
+	:global([data-lamp='off']) .status-bench { color: #e0ad5c; }
+	:global([data-lamp='off']) .status-homeless { color: #7fb8f0; }
+	:global([data-lamp='off']) .status-monster { color: #f08b7e; }
+	:global([data-lamp='off']) .status-retired { color: rgba(242, 234, 216, 0.6); }
+
+	/* High contrast drops the speckle and the fade: the point there is to be
+	   read, not to look pressed. */
+	:global([data-contrast='high']) .status-stamp {
+		opacity: 1;
+		background-image: none;
+	}
+</style>

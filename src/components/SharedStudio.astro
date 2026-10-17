@@ -1,0 +1,884 @@
+---
+/**
+ * The shared studio: whoever else has this section open right now, drawn as
+ * explorers on one floor, and a tally of what should be built next.
+ *
+ * Rides the existing presence relay as the `/studio` room. It only connects
+ * while this section is near the screen and the tab is visible, and never if
+ * the visitor has switched it off (here or in the desk drawer). Nothing here
+ * is needed by the rest of the page: when the relay is down the section says
+ * so and every other scene carries on.
+ */
+import Explorer from './Explorer.astro';
+import { ideas } from '../data/studio.js';
+---
+
+<section id="studio" class="studio wrap" aria-labelledby="studio-title">
+	<div class="studio-head">
+		<h2 id="studio-title" class="sect-label" data-split data-split-group>The shared studio</h2>
+		<p class="sect-lede">
+			Everyone reading this part of the page right now, one explorer each, under a name the studio makes up. Nothing
+			about you is kept: no address, no account, just a name and the marks you leave.
+		</p>
+	</div>
+
+	<div class="floor-card">
+		<p class="floor-status" id="studio-status" aria-live="polite">Looking for the studio…</p>
+		<div class="you-are" id="you-are" hidden>
+			<p>You arrived as <b data-myname></b>.</p>
+			<div class="you-actions">
+				<button class="you-btn" type="button" id="name-reroll">Give me another</button>
+				<button class="you-btn" type="button" id="name-pick" aria-expanded="false" aria-controls="name-form">Choose one</button>
+			</div>
+			<form class="name-form" id="name-form" hidden>
+				<label class="label" for="name-input">Your name here</label>
+				<input id="name-input" name="name" type="text" maxlength="20" autocomplete="off" spellcheck="false" pattern="[A-Za-z][A-Za-z0-9]{2,19}" aria-describedby="name-msg" />
+				<button class="you-btn" type="submit">Use it</button>
+				<p class="name-msg" id="name-msg" role="status">Letters and digits, 3 to 20.</p>
+			</form>
+		</div>
+		<div class="floor" id="studio-floor" aria-hidden="true"></div>
+		<div class="studio-log-wrap">
+			<p class="label">Since you arrived</p>
+			<ol class="studio-log" id="studio-log" role="list" aria-live="polite">
+				<li class="studio-log-empty">Nothing yet. Arrivals and new marks show up here as they happen.</li>
+			</ol>
+		</div>
+		<label class="studio-opt">
+			<input type="checkbox" id="studio-opt" checked />
+			<span>Show me here, and show me the others</span>
+		</label>
+	</div>
+
+	<div class="board-card">
+		<h3 class="ballot-title" id="board-title">Leave a mark</h3>
+		<p class="ballot-note">
+			Pick a sticker, then press a spot on the board. Three each; they fade after a day. Press one of yours to lift it.
+		</p>
+		<div class="board-kinds" role="radiogroup" aria-label="Sticker">
+			{
+				['star', 'heart', 'cat', 'spiral', 'stamp', 'flower'].map((k, i) => (
+					<label class="kind">
+						<input type="radio" name="mark-kind" value={k} checked={i === 0} />
+						<span><svg viewBox="0 0 24 24" aria-hidden="true"><use href={`#mk-${k}`} /></svg><span class="visually-hidden">{k}</span></span>
+					</label>
+				))
+			}
+		</div>
+		<div
+			class="board"
+			id="marks-board"
+			tabindex="0"
+			role="group"
+			aria-labelledby="board-title"
+			aria-describedby="board-help"
+			data-offline="true"
+		>
+			<span class="board-cross" id="board-cross" aria-hidden="true"></span>
+			<p class="board-empty" id="board-empty">The board is empty. Somebody has to go first.</p>
+		</div>
+		<p class="board-help label" id="board-help">
+			Keyboard: focus the board, move with the arrow keys, Enter to stick.
+		</p>
+	</div>
+
+	<div class="ballot">
+		<h3 class="ballot-title">What should I build next?</h3>
+		<p class="ballot-note">One mark per idea. Press again to take it back.</p>
+		<ul class="ideas" role="list">
+			{
+				ideas.map((i) => (
+					<li>
+						<button class="idea" type="button" data-idea={i.id} data-clue="vote" aria-pressed="false" disabled>
+							<span class="idea-copy">
+								<span class="idea-name">{i.name}</span>
+								<span class="idea-note">{i.note}</span>
+							</span>
+							<span class="idea-tally" aria-hidden="true" />
+							<span class="idea-n" data-n>
+								0
+							</span>
+							<span class="visually-hidden" data-sr>
+								votes
+							</span>
+						</button>
+					</li>
+				))
+			}
+		</ul>
+		<p class="ballot-rules">
+			The rules, such as they are: ideas come from a fixed list, so there is no free text to moderate. One mark
+			per idea per connection, and the server slows down anyone pressing too fast.
+		</p>
+	</div>
+
+	<template id="explorer-tpl"><Explorer class="mini-explorer is-idle" /></template>
+
+	<!-- the stickers, drawn once and used by reference -->
+	<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+		<symbol id="mk-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z" fill="#f0d36b" stroke="#1b2132" stroke-width="1.4" stroke-linejoin="round" /></symbol>
+		<symbol id="mk-heart" viewBox="0 0 24 24"><path d="M12 20.5S3 15 3 8.8A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 9 1.8C21 15 12 20.5 12 20.5z" fill="#e86a8a" stroke="#1b2132" stroke-width="1.4" /></symbol>
+		<symbol id="mk-cat" viewBox="0 0 24 24"><path d="M5 9l1-6 4 4h4l4-4 1 6v5a7 6 0 0 1-14 0z" fill="#3a4152" stroke="#1b2132" stroke-width="1.4" stroke-linejoin="round" /><circle cx="9.5" cy="12" r="1.2" fill="#c6e84a" /><circle cx="14.5" cy="12" r="1.2" fill="#c6e84a" /></symbol>
+		<symbol id="mk-spiral" viewBox="0 0 24 24"><path d="M12 12a1.5 1.5 0 1 1 1.5 1.5A3 3 0 1 1 15 9a4.5 4.5 0 1 1-6 6.4A6 6 0 1 1 18 7.8" fill="none" stroke="#2f5d8a" stroke-width="2" stroke-linecap="round" /></symbol>
+		<symbol id="mk-stamp" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" fill="#fbf9f4" stroke="#1b2132" stroke-width="1.4" stroke-dasharray="1.6 1.4" /><rect x="7" y="6" width="10" height="9" fill="#c4402a" /><path d="M7 18h10" stroke="#1b2132" stroke-width="1.2" /></symbol>
+		<symbol id="mk-flower" viewBox="0 0 24 24"><g fill="#f6f1e4" stroke="#1b2132" stroke-width="1.3"><circle cx="12" cy="6.5" r="3.5" /><circle cx="17.5" cy="11" r="3.5" /><circle cx="15" cy="17" r="3.5" /><circle cx="9" cy="17" r="3.5" /><circle cx="6.5" cy="11" r="3.5" /></g><circle cx="12" cy="12" r="2.6" fill="#d9a62e" stroke="#1b2132" stroke-width="1.2" /></symbol>
+	</svg>
+</section>
+
+<script>
+	import { animate } from 'motion';
+	import { API_BASE } from '../lib/api.js';
+	import { hello, remember, visitor } from '../lib/visitor.js';
+
+	const section = document.getElementById('studio')!;
+	const floor = document.getElementById('studio-floor')!;
+	const statusEl = document.getElementById('studio-status')!;
+	const opt = document.getElementById('studio-opt') as HTMLInputElement;
+	const tpl = document.getElementById('explorer-tpl') as HTMLTemplateElement;
+	const buttons = [...section.querySelectorAll<HTMLButtonElement>('.idea')];
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	const PACKS = ['#c4402a', '#d9a62e', '#2f7d3a', '#3b6fb0', '#c76b93', '#d07a3c', '#7a62b8', '#2f8f83'];
+	const SHOWN = 14;
+	const KEY = 'futile-desk';
+
+	let ws: WebSocket | null = null;
+	let me = '';
+	const people = new Map<string, { colour: number; name: string }>();
+	let near = false;
+	const logEl = document.getElementById('studio-log')!;
+	const names = Object.fromEntries(buttons.map((b) => [b.dataset.idea!, b.querySelector('.idea-name')!.textContent!.trim()]));
+
+	/* A short record of real relay events seen by this tab. Nothing is
+	   replayed from the server and nothing is invented. */
+	function log(text: string) {
+		logEl.querySelector('.studio-log-empty')?.remove();
+		const li = document.createElement('li');
+		const t = new Date();
+		li.innerHTML = `<span class="label"></span> `;
+		li.firstElementChild!.textContent = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+		li.append(text);
+		logEl.prepend(li);
+		while (logEl.children.length > 6) logEl.lastElementChild!.remove();
+	}
+	let retry = 0;
+	let retryTimer = 0;
+
+	/* ---------- the visitor's switch, shared with the desk drawer ---------- */
+	function wanted() {
+		try {
+			return JSON.parse(localStorage.getItem(KEY) || '{}').studio !== false;
+		} catch {
+			return true;
+		}
+	}
+	function setWanted(on: boolean) {
+		try {
+			const d = JSON.parse(localStorage.getItem(KEY) || '{}');
+			localStorage.setItem(KEY, JSON.stringify({ ...d, studio: on }));
+		} catch {
+			/* storage blocked: the switch still holds for this visit */
+		}
+		window.dispatchEvent(new CustomEvent('futile-desk-change'));
+	}
+	opt.checked = wanted();
+	opt.addEventListener('change', () => setWanted(opt.checked));
+
+	/* ---------- drawing ---------- */
+	function drawFloor() {
+		floor.textContent = '';
+		const ids = [...people.keys()].sort((a, b) => (a === me ? -1 : b === me ? 1 : 0));
+		ids.slice(0, SHOWN).forEach((id, i) => {
+			const fig = document.createElement('div');
+			fig.className = 'floor-fig';
+			fig.style.setProperty('--pack', PACKS[people.get(id)!.colour % PACKS.length]);
+			fig.style.setProperty('--delay', `${(i * 0.37) % 3}s`);
+			fig.appendChild(tpl.content.cloneNode(true));
+			if (id === me) {
+				const tag = document.createElement('span');
+				tag.className = 'floor-you script';
+				tag.textContent = 'you';
+				fig.appendChild(tag);
+			}
+			const nm = document.createElement('span');
+			nm.className = 'floor-name';
+			nm.textContent = people.get(id)!.name || 'someone';
+			fig.appendChild(nm);
+			floor.appendChild(fig);
+			if (!still()) animate(fig, { y: [18, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 300, damping: 22 });
+		});
+		if (ids.length > SHOWN) {
+			const more = document.createElement('span');
+			more.className = 'floor-more script';
+			more.textContent = `+${ids.length - SHOWN} more`;
+			floor.appendChild(more);
+		}
+		const others = people.size - 1;
+		const named = [...people.entries()].filter(([id]) => id !== me).map(([, p]) => p.name).filter(Boolean);
+		statusEl.textContent =
+			others <= 0
+				? 'Just you in the studio right now. Leave the light on for the next one.'
+				: `You and ${others === 1 ? named[0] || 'one other' : `${others} others`} in the studio right now.`;
+	}
+
+	/** Gate-of-five tally marks, the way a tally is kept on paper. */
+	function tallySvg(n: number) {
+		const marks = Math.min(n, 25);
+		let d = '';
+		for (let i = 0; i < marks; i++) {
+			const g = Math.floor(i / 5);
+			const k = i % 5;
+			const x0 = g * 34;
+			d += k < 4 ? `M${x0 + 4 + k * 6} 3 l${(k % 2) - 0.5} 18 ` : `M${x0} 16 L${x0 + 26} 6 `;
+		}
+		return `<svg viewBox="0 0 ${Math.max(1, Math.ceil(marks / 5)) * 34} 24"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+	}
+
+	function setTally(votes: Record<string, number>) {
+		for (const b of buttons) {
+			const n = Number(votes[b.dataset.idea!]) || 0;
+			const nEl = b.querySelector<HTMLElement>('[data-n]')!;
+			const changed = nEl.textContent !== String(n);
+			nEl.textContent = String(n);
+			b.querySelector('[data-sr]')!.textContent = n === 1 ? 'vote' : 'votes';
+			b.querySelector('.idea-tally')!.innerHTML = tallySvg(n);
+			if (changed && !still()) animate(nEl, { scale: [1.5, 1] }, { type: 'spring', stiffness: 500, damping: 15 });
+		}
+	}
+
+	function setMine(list: string[]) {
+		for (const b of buttons) b.setAttribute('aria-pressed', String(list.includes(b.dataset.idea!)));
+	}
+
+	/* ---------- the connection ---------- */
+	function connect() {
+		if (ws || !near || !wanted() || document.visibilityState !== 'visible') return;
+		statusEl.textContent = 'Looking for the studio…';
+		let sock: WebSocket;
+		try {
+			sock = new WebSocket((API_BASE || location.origin).replace(/^http/, 'ws') + '/ws/presence');
+		} catch {
+			return offline();
+		}
+		ws = sock;
+
+		sock.addEventListener('open', () => {
+			retry = 0;
+			sock.send(JSON.stringify(hello('/studio')));
+		});
+		sock.addEventListener('message', (ev) => {
+			let m;
+			try {
+				m = JSON.parse(ev.data);
+			} catch {
+				return;
+			}
+			if (m.t === 'welcome') {
+				me = m.id;
+				people.clear();
+				if (m.name) {
+					remember(m.token, m.name);
+					showMe(m.name);
+				}
+				people.set(me, { colour: m.colour, name: m.name || '' });
+				for (const p of m.peers) people.set(p.id, { colour: p.colour, name: p.name || '' });
+				buttons.forEach((b) => (b.disabled = false));
+				board.dataset.offline = 'false';
+				drawFloor();
+			} else if (m.t === 'hi') {
+				people.set(m.id, { colour: m.colour, name: m.name || '' });
+				drawFloor();
+				log(`${m.name || 'Someone'} walked in.`);
+			} else if (m.t === 'bye') {
+				people.delete(m.id);
+				drawFloor();
+				log(`${m.name || 'Someone'} left.`);
+			} else if (m.t === 'tally' && m.votes) {
+				setTally(m.votes);
+			} else if (m.t === 'act') {
+				const who = m.who === visitor().name ? 'You' : m.who || 'Someone';
+				if (m.did === 'vote' || m.did === 'unvote') log(m.did === 'vote' ? `${who} marked “${names[m.idea] ?? 'an idea'}”.` : `${who} took a mark off “${names[m.idea] ?? 'an idea'}”.`);
+				if (m.did === 'mark') log(`${who} stuck a ${m.kind} on the board.`);
+			} else if (m.t === 'mine' && Array.isArray(m.ideas)) {
+				setMine(m.ideas);
+			} else if (m.t === 'marks' && Array.isArray(m.marks)) {
+				drawMarks(m.marks);
+			} else if (m.t === 'you' && m.name) {
+				const was = visitor().name;
+				remember('', m.name);
+				showMe(m.name);
+				if (people.has(me)) people.get(me)!.name = m.name;
+				drawFloor();
+				nameMsg.textContent = `Done. You are ${m.name} now.`;
+				if (was) log(`You are now ${m.name}.`);
+			} else if (m.t === 'name' && people.has(m.id)) {
+				people.get(m.id)!.name = m.name;
+				drawFloor();
+				log(`${m.was || 'Someone'} is now ${m.name}.`);
+			} else if (m.t === 'name-no') {
+				nameMsg.textContent = m.error;
+			}
+		});
+		const closed = () => {
+			if (ws !== sock) return;
+			ws = null;
+			buttons.forEach((b) => (b.disabled = true));
+			board.dataset.offline = 'true';
+			if (!wanted()) return;
+			offline();
+			/* Back off and try again: a restart on the box should not need a reload. */
+			retry = Math.min(retry + 1, 5);
+			clearTimeout(retryTimer);
+			retryTimer = window.setTimeout(connect, 1000 * 2 ** retry);
+		};
+		sock.addEventListener('close', closed);
+		sock.addEventListener('error', () => sock.close());
+	}
+
+	function offline() {
+		people.clear();
+		floor.textContent = '';
+		statusEl.textContent =
+			'The studio is closed for the moment, so nobody shows up here. Everything else on the page still works.';
+	}
+
+	function disconnect(reason: string) {
+		clearTimeout(retryTimer);
+		const s = ws;
+		ws = null;
+		s?.close();
+		people.clear();
+		floor.textContent = '';
+		buttons.forEach((b) => (b.disabled = true));
+		board.dataset.offline = 'true';
+		statusEl.textContent = reason;
+	}
+
+	buttons.forEach((b) =>
+		b.addEventListener('click', () => {
+			if (ws?.readyState === WebSocket.OPEN) {
+				ws.send(JSON.stringify({ t: 'v', idea: b.dataset.idea }));
+			}
+		}),
+	);
+
+	/* ---------- who you are ---------- */
+	const youAre = document.getElementById('you-are')!;
+	const nameForm = document.getElementById('name-form') as HTMLFormElement;
+	const nameInput = document.getElementById('name-input') as HTMLInputElement;
+	const nameMsg = document.getElementById('name-msg')!;
+	const pickBtn = document.getElementById('name-pick')!;
+	function showMe(name: string) {
+		youAre.hidden = false;
+		youAre.querySelector('[data-myname]')!.textContent = name;
+	}
+	const sendName = (msg: object) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ ...msg, token: visitor().token }));
+	document.getElementById('name-reroll')!.addEventListener('click', () => sendName({ t: 'reroll' }));
+	pickBtn.addEventListener('click', () => {
+		nameForm.hidden = !nameForm.hidden;
+		pickBtn.setAttribute('aria-expanded', String(!nameForm.hidden));
+		if (!nameForm.hidden) nameInput.focus();
+	});
+	nameForm.addEventListener('submit', (e) => {
+		e.preventDefault();
+		if (!nameInput.checkValidity()) {
+			nameMsg.textContent = 'Letters and digits only, 3 to 20, starting with a letter.';
+			return;
+		}
+		sendName({ t: 'name', name: nameInput.value });
+	});
+
+	/* ---------- the marks board ---------- */
+	const board = document.getElementById('marks-board')!;
+	const cross = document.getElementById('board-cross')!;
+	const emptyEl = document.getElementById('board-empty')!;
+	type Mark = { id: string; kind: string; x: number; y: number; name: string };
+	const kind = () => (section.querySelector<HTMLInputElement>('input[name="mark-kind"]:checked')?.value ?? 'star');
+	const place = (x: number, y: number) => {
+		if (ws?.readyState !== WebSocket.OPEN) return;
+		ws.send(JSON.stringify({ t: 'mark', kind: kind(), x, y }));
+	};
+	function drawMarks(list: Mark[]) {
+		board.querySelectorAll('.mk').forEach((n) => n.remove());
+		emptyEl.hidden = list.length > 0;
+		const mine = visitor().name;
+		for (const m of list) {
+			const own = m.name === mine;
+			const el = document.createElement(own ? 'button' : 'span');
+			el.className = `mk${own ? ' mk-own' : ''}`;
+			el.style.left = `${m.x * 100}%`;
+			el.style.top = `${m.y * 100}%`;
+			el.style.setProperty('--r', `${((parseInt(m.id.slice(0, 2), 16) % 30) - 15).toFixed(0)}deg`);
+			el.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#mk-${m.kind}"/></svg>`;
+			if (own) {
+				(el as HTMLButtonElement).type = 'button';
+				el.setAttribute('aria-label', `Your ${m.kind}. Press to lift it.`);
+				el.addEventListener('click', (e) => {
+					e.stopPropagation();
+					if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'unmark', id: m.id }));
+				});
+			} else {
+				el.title = `${m.kind} from ${m.name}`;
+				el.setAttribute('role', 'img');
+				el.setAttribute('aria-label', `A ${m.kind} from ${m.name}`);
+			}
+			board.appendChild(el);
+		}
+	}
+	board.addEventListener('click', (e) => {
+		if ((e.target as HTMLElement).closest('.mk-own')) return;
+		const r = board.getBoundingClientRect();
+		place((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+	});
+	/* the keyboard's pointer: a crosshair that arrows move and Enter sticks */
+	let cx = 0.5;
+	let cy = 0.5;
+	const showCross = () => {
+		cross.style.left = `${cx * 100}%`;
+		cross.style.top = `${cy * 100}%`;
+	};
+	board.addEventListener('keydown', (e) => {
+		const d = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, -0.07], ArrowDown: [0, 0.07] }[e.key];
+		if (d) {
+			e.preventDefault();
+			cx = Math.min(0.97, Math.max(0.03, cx + d[0]));
+			cy = Math.min(0.95, Math.max(0.05, cy + d[1]));
+			showCross();
+		} else if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			place(cx, cy);
+		}
+	});
+	showCross();
+
+	function sync() {
+		opt.checked = wanted();
+		if (!wanted()) return disconnect('You are hidden. Nobody sees you here, and you see nobody.');
+		if (near && document.visibilityState === 'visible') connect();
+	}
+
+	new IntersectionObserver(
+		([e]) => {
+			near = e.isIntersecting;
+			if (near) sync();
+		},
+		{ rootMargin: '400px 0px' },
+	).observe(section);
+
+	window.addEventListener('futile-desk-change', sync);
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'hidden') disconnect('Paused while the tab is in the background.');
+		else sync();
+	});
+</script>
+
+<style>
+	.studio {
+		padding-block: clamp(5rem, 12vw, 9rem);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 2.4rem clamp(2rem, 5vw, 4.5rem);
+		align-items: start;
+	}
+	.studio-head {
+		grid-column: 1 / -1;
+	}
+
+	/* The worktable: a long plank seen from the front, with whoever is here
+	   standing on it. */
+	.floor-card {
+		position: relative;
+		padding: 1.6rem 1.6rem 1.2rem;
+		background:
+			repeating-linear-gradient(90deg, transparent 0 140px, rgba(27, 33, 50, 0.04) 140px 142px),
+			#e3d6bb;
+		color: #1b2132;
+		border-radius: 4px;
+		box-shadow: var(--lift-high);
+	}
+	.floor-card .label,
+	.floor-card .studio-opt {
+		color: rgba(27, 33, 50, 0.74);
+	}
+	.studio-log-wrap {
+		margin: 0.4rem 0 0.8rem;
+	}
+	.studio-log {
+		list-style: none;
+		margin-top: 0.4rem;
+		font-size: 0.85rem;
+		min-height: 3.2em;
+	}
+	.studio-log li {
+		padding: 0.15rem 0;
+	}
+	.studio-log .label {
+		margin-right: 0.4rem;
+	}
+	.studio-log-empty {
+		color: rgba(27, 33, 50, 0.7);
+	}
+	.floor-status {
+		font-weight: 600;
+		min-height: 3em;
+	}
+	.floor {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 0.2rem 0.6rem;
+		min-height: 7rem;
+		margin: 1rem 0 0.8rem;
+		padding-bottom: 0.4rem;
+		border-bottom: 2px solid currentColor;
+	}
+	/* The table is the same wood with the lamp on or off, so its people are too. */
+	.floor :global(.explorer) {
+		color: #1b2132;
+		--card: #fbf9f4;
+		--ink: #1b2132;
+	}
+	.floor :global(.floor-fig) {
+		position: relative;
+		width: 3.3rem;
+	}
+	.floor :global(.floor-fig .ex-bob) {
+		animation-delay: var(--delay);
+	}
+	.floor :global(.floor-you) {
+		position: absolute;
+		top: -1.1rem;
+		left: 50%;
+		translate: -50% 0;
+		font-size: 1.15rem;
+		color: var(--stamp);
+	}
+	.floor :global(.floor-more) {
+		align-self: center;
+		font-size: 1.2rem;
+		color: var(--ink-soft);
+	}
+	.studio-opt {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		min-height: 44px;
+		font-size: 0.88rem;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+	.studio-opt input {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.ballot-title {
+		font-size: clamp(1.5rem, 2.6vw, 2rem);
+		font-variation-settings: 'wdth' 85;
+	}
+	.ballot-note {
+		color: var(--ink-soft);
+		font-size: 0.9rem;
+		margin: 0.3rem 0 1.2rem;
+	}
+	.ideas {
+		list-style: none;
+	}
+	/* Each idea is a paper slip pinned to the board, tallied in pen. */
+	.ideas {
+		display: grid;
+		gap: 0.9rem;
+	}
+	.ideas li {
+		position: relative;
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		box-shadow: var(--lift);
+		rotate: var(--slip-tilt, -0.6deg);
+	}
+	.ideas li:nth-child(2n) {
+		--slip-tilt: 0.7deg;
+	}
+	.ideas li::before {
+		content: '';
+		position: absolute;
+		top: -6px;
+		left: 1.2rem;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #7d2618 100%);
+		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+		z-index: 1;
+	}
+	.idea {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto 2.4rem;
+		align-items: center;
+		gap: 1rem;
+		width: 100%;
+		min-height: 64px;
+		padding: 0.9rem 1rem;
+		background: none;
+		border: none;
+		border-radius: 4px;
+		font: inherit;
+		color: var(--ink);
+		text-align: left;
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+	.idea:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--ink) 4%, transparent);
+	}
+	.idea:disabled {
+		cursor: default;
+		color: var(--ink-faint);
+	}
+	.idea-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.idea-name {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 1.15rem;
+	}
+	.idea-note {
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+	}
+	.idea-tally {
+		display: block;
+		height: 1.3rem;
+		color: var(--ink-soft);
+	}
+	.idea-tally :global(svg) {
+		height: 100%;
+		width: auto;
+	}
+	.idea-n {
+		justify-self: end;
+		font-family: var(--mono);
+		font-size: 1rem;
+		font-variant-numeric: tabular-nums;
+	}
+	/* Your own mark is the one in vermilion. */
+	.idea[aria-pressed='true'] .idea-tally,
+	.idea[aria-pressed='true'] .idea-n {
+		color: var(--stamp);
+	}
+	.idea[aria-pressed='true'] .idea-name::after {
+		content: ' · your mark';
+		font-family: var(--script);
+		font-weight: 500;
+		color: var(--stamp);
+	}
+	.ballot-rules {
+		margin-top: 1.4rem;
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+		max-width: 34rem;
+	}
+
+	/* The table on the left with the board under it, the ballot on the right. */
+	.floor-card {
+		grid-column: 1;
+	}
+	.board-card {
+		grid-column: 1;
+	}
+	.ballot {
+		grid-column: 2;
+		grid-row: 2 / span 2;
+	}
+
+	/* ---------- who you are ---------- */
+	.you-are {
+		margin: 0.6rem 0 0.2rem;
+		font-size: 0.95rem;
+	}
+	.you-are[hidden],
+	.name-form[hidden] {
+		display: none;
+	}
+	.you-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.4rem;
+	}
+	.you-btn {
+		min-height: 40px;
+		padding: 0 0.9rem;
+		background: #fbf9f4;
+		color: #1b2132;
+		border: 1px solid rgba(27, 33, 50, 0.3);
+		border-radius: 999px;
+		font: 500 0.82rem var(--body);
+		cursor: pointer;
+	}
+	.you-btn:hover {
+		border-color: #1b2132;
+	}
+	.name-form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.4rem 0.5rem;
+		margin-top: 0.6rem;
+	}
+	.name-form .label {
+		grid-column: 1 / -1;
+	}
+	.name-form input {
+		min-height: 40px;
+		padding: 0 0.7rem;
+		font: 500 0.95rem var(--mono);
+		color: #1b2132;
+		background: #fbf9f4;
+		border: 1px solid rgba(27, 33, 50, 0.45);
+		border-radius: 4px;
+	}
+	.name-msg {
+		grid-column: 1 / -1;
+		font-size: 0.8rem;
+		color: rgba(27, 33, 50, 0.75);
+	}
+	.floor :global(.floor-name) {
+		display: block;
+		max-width: 5.5rem;
+		margin: 0.2rem auto 0;
+		font: 500 0.6rem var(--mono);
+		text-align: center;
+		color: #1b2132;
+		overflow-wrap: anywhere;
+	}
+
+	/* ---------- the marks board: cork, with stickers on it ---------- */
+	.board-card .ballot-note {
+		margin-bottom: 0.8rem;
+	}
+	.board-kinds {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-bottom: 0.7rem;
+	}
+	.kind {
+		position: relative;
+	}
+	.kind input {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		margin: 0;
+		cursor: pointer;
+	}
+	.kind > span {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 8px;
+		background: var(--card);
+	}
+	.kind svg {
+		width: 26px;
+		height: 26px;
+	}
+	.kind input:checked + span {
+		border: 2px solid var(--ink);
+		background: color-mix(in srgb, var(--marker) 35%, var(--card));
+	}
+	.kind input:focus-visible + span {
+		outline: 2px solid var(--stamp);
+		outline-offset: 2px;
+	}
+	.board {
+		position: relative;
+		aspect-ratio: 16 / 9;
+		background:
+			radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.05) 0 1px, transparent 2px) 0 0 / 9px 9px,
+			#c9a776;
+		border: 6px solid #8b6a43;
+		border-radius: 4px;
+		box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+		cursor: crosshair;
+		overflow: hidden;
+	}
+	.board[data-offline='true'] {
+		cursor: not-allowed;
+		filter: grayscale(0.6);
+	}
+	.board:focus-visible {
+		outline: 3px solid var(--stamp);
+		outline-offset: 3px;
+	}
+	.board-cross {
+		position: absolute;
+		width: 22px;
+		height: 22px;
+		translate: -50% -50%;
+		border: 2px dashed #1b2132;
+		border-radius: 50%;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.board:focus-visible .board-cross {
+		opacity: 0.8;
+	}
+	.board-empty {
+		position: absolute;
+		inset: auto 0 0.6rem;
+		text-align: center;
+		font-family: var(--script);
+		font-size: 1.2rem;
+		color: rgba(27, 33, 50, 0.7);
+		pointer-events: none;
+	}
+	.board :global(.mk) {
+		position: absolute;
+		width: 34px;
+		height: 34px;
+		padding: 0;
+		translate: -50% -50%;
+		rotate: var(--r, 0deg);
+		background: none;
+		border: none;
+		filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+	}
+	.board :global(.mk svg) {
+		width: 100%;
+		height: 100%;
+	}
+	.board :global(.mk-own) {
+		cursor: pointer;
+		outline: 2px dashed rgba(27, 33, 50, 0.55);
+		outline-offset: 2px;
+		border-radius: 50%;
+	}
+	.board :global(.mk-own:focus-visible) {
+		outline: 3px solid var(--stamp);
+	}
+	.board-help {
+		margin-top: 0.5rem;
+		text-transform: none;
+	}
+
+	@media (max-width: 860px) {
+		.studio {
+			grid-template-columns: 1fr;
+		}
+		.floor-card,
+		.board-card,
+		.ballot {
+			grid-column: 1;
+			grid-row: auto;
+		}
+	}
+</style>

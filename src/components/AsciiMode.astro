@@ -1,0 +1,173 @@
+---
+/* ASCII mode: the page becomes the world.
+ *
+ * Going through the door does not repaint the site, it replaces it. The whole
+ * viewport turns into the field, with reactive grass, two-wave water carrying
+ * the sun or moon's reflection, drifting weather, a day and night cycle, and a
+ * character you walk around with. It is the same engine the /ascii route runs,
+ * mounted in place.
+ *
+ * The page underneath is hidden rather than destroyed, so putting the paper
+ * back is instant and the scroll position survives.
+ */
+---
+
+<canvas id="ascii-field" aria-hidden="true" tabindex="-1"></canvas>
+
+<div class="ascii-bar" id="ascii-bar" hidden>
+	<span class="ascii-bar-tag">WASD / arrows to walk, or drag</span>
+	<button type="button" class="ascii-bar-out" id="ascii-out">put the paper back</button>
+</div>
+
+<style is:global>
+	#ascii-field {
+		position: fixed;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: none;
+		z-index: 40;
+		background: #070b09;
+		/* The drag-to-walk stick owns the gesture, so the page cannot pan
+		   under the player's thumb. */
+		touch-action: none;
+	}
+	:root[data-ascii='on'] #ascii-field {
+		display: block;
+	}
+
+	/* The site steps out of the way. Hidden, not removed: coming back is a
+	   single attribute flip and the scroll position is still where it was. */
+	:root[data-ascii='on'] body > *:not(#ascii-field):not(.ascii-bar) {
+		display: none !important;
+	}
+	:root[data-ascii='on'],
+	:root[data-ascii='on'] body {
+		overflow: hidden;
+		background: #070b09;
+		color-scheme: dark;
+	}
+
+	/* --------------------------------------------------------------- bar -- */
+	.ascii-bar {
+		position: fixed;
+		left: 50%;
+		bottom: 1.1rem;
+		transform: translateX(-50%);
+		z-index: 60;
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		padding: 0.55rem 0.9rem;
+		background: rgba(7, 11, 9, 0.9);
+		border: 1px solid #2f7d4c;
+		font-family: 'DM Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+		font-size: 0.78rem;
+		color: #4ee07a;
+	}
+	.ascii-bar[hidden] {
+		display: none;
+	}
+	.ascii-bar-tag {
+		color: #2f7d4c;
+		letter-spacing: 0.1em;
+	}
+	.ascii-bar-out {
+		font: inherit;
+		cursor: pointer;
+		background: #4ee07a;
+		color: #070b09;
+		border: 0;
+		padding: 0.3rem 0.7rem;
+	}
+	.ascii-bar-out:focus-visible {
+		outline: 2px solid #cfe8d6;
+		outline-offset: 2px;
+	}
+</style>
+
+<script>
+	import { AsciiWorld } from '../game/game.js';
+
+	const root = document.documentElement;
+	const canvas = document.getElementById('ascii-field') as HTMLCanvasElement;
+	const bar = document.getElementById('ascii-bar')!;
+	const out = document.getElementById('ascii-out')!;
+
+	let world: InstanceType<typeof AsciiWorld> | null = null;
+	let scrollY = 0;
+
+	function startWorld() {
+		if (world) return true;
+		try {
+			/* Always 'wanderer': the takeover has nowhere to ask for a name, and
+			   the /ascii gate promises it keeps yours in the tab only. */
+			world = new AsciiWorld(canvas, { name: 'wanderer' });
+			world.start();
+			/* The canvas takes focus so the first keypress walks instead of
+			   scrolling whatever had focus on the page before. */
+			canvas.focus({ preventScroll: true });
+			return true;
+		} catch {
+			/* No WebGL2: there is no world to show, so do not strand the
+			   visitor on a black rectangle with their page hidden. */
+			world = null;
+			return false;
+		}
+	}
+
+	function stopWorld() {
+		world?.destroy();
+		world = null;
+	}
+
+	function set(on: boolean, remember = true) {
+		if (on) {
+			scrollY = window.scrollY;
+			if (!startWorld()) {
+				console.warn('ascii mode: no WebGL2, staying on the paper');
+				return;
+			}
+		}
+		root.dataset.ascii = on ? 'on' : '';
+		bar.hidden = !on;
+		if (!on) {
+			stopWorld();
+			/* Put them back exactly where they were standing on the page. */
+			window.scrollTo(0, scrollY);
+		}
+		if (remember) {
+			try {
+				localStorage.setItem('futile-ascii', on ? '1' : '0');
+			} catch {
+				/* storage blocked: the mode still works, it just will not persist */
+			}
+		}
+	}
+
+	/* The door and anything else that wants to flip the site talk to this. */
+	(window as any).futileAscii = {
+		on: () => set(true),
+		off: () => set(false),
+		toggle: () => set(root.dataset.ascii !== 'on'),
+	};
+
+	out.addEventListener('click', () => set(false));
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && root.dataset.ascii === 'on') set(false);
+	});
+
+	/* Restore a previous visit. */
+	try {
+		if (localStorage.getItem('futile-ascii') === '1') set(true, false);
+	} catch {
+		/* first visit, or storage blocked */
+	}
+
+	/* Stop the loop on a tab nobody is looking at, and pick it back up after. */
+	document.addEventListener('visibilitychange', () => {
+		if (root.dataset.ascii !== 'on') return;
+		if (document.hidden) world?.stop();
+		else world?.start();
+	});
+</script>

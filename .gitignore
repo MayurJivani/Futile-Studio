@@ -31,3 +31,5 @@ server/uploads/*
 # Claude Code and local tooling
 .claude/
 .codegraph/
+.impeccable/
+PRODUCT.md

@@ -1,0 +1,963 @@
+---
+/* The log book: a wall calendar of what started this year.
+ *
+ * Borrowed in spirit from ludwigschedule.com (a spiral-bound month on the
+ * wall, the month name set large down the side, a card that opens when you
+ * press an event) and re-cut for what this data actually knows: the month a
+ * repository was created (src/data/log.js), never the day. So an event is a
+ * slip taped to its month's page, not a mark on a date nobody recorded.
+ *
+ * The page opens on this month of this year, by the visitor's clock. The
+ * agenda under it is the same entries as a plain list: the text version of
+ * the calendar, and what shows when no script runs.
+ *
+ * Status comes from the board: running is shipped, the bench is in progress or
+ * an experiment, a GitHub link is source only, and anything the board does not
+ * carry is a repository and nothing more.
+ */
+import { entries } from '../data/log.js';
+import { open, workbench } from '../data/board.js';
+import { MONTHS } from '../lib/calendar.js';
+import { thumbOf } from '../data/studio.js';
+import { url } from '../lib/url.js';
+
+/* Which board entry a log line is, by name. Presentation, so it lives here. */
+const ID: Record<string, string> = {
+	Chorusify: 'chorusify',
+	'Qno for the web': 'qno',
+	Mosaic: 'mosaic',
+	"Noggin'": 'noggin',
+	Knock: 'knock',
+	Patina: 'patina',
+	Orbitle: 'orbitle',
+	Murmur: 'murmur',
+	Cubby: 'cubby',
+	Borderline: 'borderline',
+};
+const board = Object.fromEntries([...open, ...workbench].map((p: any) => [p.id, p]));
+const featured = new Set(['patina', 'orbitle', 'noggin', 'chorusify', 'qno', 'knock', 'mosaic']);
+
+type Line = { year: number; month: number; name: string; note: string; href?: string; ext?: boolean; mark: string; markLabel: string; kind?: string; thumb?: string };
+function line(e: { month: string; name: string; note?: string }): Line {
+	const year = Number(e.month.slice(0, 4));
+	const month = Number(e.month.slice(5)) - 1;
+	const id = ID[e.name];
+	const base = { year, month, name: e.name, kind: board[id]?.kind, thumb: id && thumbOf[id] ? url(thumbOf[id]) : undefined };
+	if (e.name === 'Futile Studio') return { ...base, note: e.note ?? 'this page', href: '#top', mark: 'ship', markLabel: 'Shipped' };
+	if (e.name === 'Lab') return { ...base, note: 'unfinished things, kept in public', href: 'https://lab.futile.studio', ext: true, mark: 'wip', markLabel: 'In progress' };
+	const p = board[ID[e.name]];
+	if (!p) return { ...base, note: e.note ?? 'a repository, not on the board', mark: 'repo', markLabel: 'Repository only' };
+	const href = featured.has(p.id) ? `#spread-${p.id}` : `#row-${p.id}`;
+	const note = e.note ?? p.kind;
+	if (p.shelf === 'workbench') {
+		const exp = p.status === 'monster';
+		return { ...base, note, href, mark: exp ? 'exp' : 'wip', markLabel: exp ? 'Experiment' : 'In progress' };
+	}
+	const live = p.href && !p.href.includes('github.com');
+	return { ...base, note, href, mark: live ? 'ship' : 'src', markLabel: live ? 'Shipped' : 'Source only' };
+}
+
+const lines = entries.map(line);
+const years = [...new Set(lines.map((l) => l.year))];
+const builtYear = new Date().getFullYear();
+const legend = [
+	['ship', 'Shipped, running'],
+	['src', 'Source only'],
+	['wip', 'In progress'],
+	['exp', 'Experiment'],
+	['repo', 'Repository only'],
+];
+---
+
+<section class="cal wrap" id="log" aria-labelledby="logbook-title">
+	<header class="cal-head">
+		<h2 class="sect-label" id="logbook-title">The log book, <span data-log-year>{builtYear}</span></h2>
+		<div class="cal-views" role="group" aria-label="How to show it" data-views hidden>
+			<button type="button" data-view="cal" aria-pressed="true">Calendar</button>
+			<button type="button" data-view="list" aria-pressed="false">List</button>
+		</div>
+	</header>
+
+	<!-- the calendar: built in the browser, from the same lines as the list -->
+	<div class="cal-board" data-cal hidden>
+		<!-- the top of the wall: today, the latest entry, and the notes pinned beside it -->
+		<div class="cal-top">
+			<p class="cal-today" aria-label="Today">
+				<span class="cal-today-k">Today</span>
+				<b data-today-d></b>
+				<span data-today-m></span>
+			</p>
+			<article class="cal-feature" data-feature aria-labelledby="cal-feature-title">
+				<p class="cal-feature-k label">Latest in the log</p>
+				<h3 class="cal-feature-title" id="cal-feature-title" data-f-name></h3>
+				<p class="cal-feature-tags" data-f-tags></p>
+				<p class="cal-feature-note script" data-f-note></p>
+				<p class="cal-feature-when label" data-f-when></p>
+				<a class="cal-feature-go" data-f-go data-clue="log" hidden>Go to it</a>
+				<figure class="cal-feature-photo" data-f-photo hidden>
+					<span class="mount mount-tape" aria-hidden="true"></span>
+				</figure>
+			</article>
+			<div class="cal-pins">
+				<aside class="pin-note pin-month" aria-label="This month">
+					<p class="label" data-pin-month></p>
+					<p class="pin-big" data-pin-count></p>
+				</aside>
+				<aside class="pin-note pin-post">
+					<p>Started something strange this month too?</p>
+					<a href={url('post/')}>Send a postcard</a>
+				</aside>
+			</div>
+		</div>
+
+		<nav class="cal-tabs" aria-label="Months">
+			<button type="button" class="cal-step" data-step="-1" aria-label="Previous month">‹</button>
+			<div class="cal-tab-row" data-tabs></div>
+			<button type="button" class="cal-step" data-step="1" aria-label="Next month">›</button>
+		</nav>
+
+		<div class="cal-page">
+			<div class="cal-rings" aria-hidden="true"></div>
+			<p class="cal-side" aria-hidden="true"><span data-side-month></span><small data-side-year></small></p>
+			<div class="cal-body">
+				<div class="cal-slips" data-slips aria-live="polite"></div>
+				<table class="cal-grid">
+					<caption class="visually-hidden" data-caption></caption>
+					<thead><tr data-weekdays></tr></thead>
+					<tbody data-days></tbody>
+				</table>
+				<p class="cal-tally label" data-tally></p>
+			</div>
+
+			<div class="cal-card" data-card hidden role="region" aria-labelledby="cal-card-title">
+				<button type="button" class="cal-card-close" data-card-close aria-label="Close">✕</button>
+				<p class="cal-card-when label" data-card-when></p>
+				<h3 class="cal-card-title" id="cal-card-title" tabindex="-1" data-card-title></h3>
+				<p class="cal-card-mark" data-card-mark></p>
+				<p class="cal-card-note script" data-card-note></p>
+				<a class="cal-card-go" data-card-go hidden>Go to it</a>
+			</div>
+		</div>
+
+		<ul class="cal-legend pin-note" role="list" aria-label="Guide: what the marks mean">
+			<li class="cal-legend-head label" aria-hidden="true">Guide</li>
+			{legend.map(([k, t]) => <li><span class:list={['jl-mark', `jl-mark-${k}`]} aria-hidden="true" />{t}</li>)}
+			<li class="cal-legend-note">Dates are the month a repository was created, read from git. The day was never recorded, so none is shown.</li>
+		</ul>
+	</div>
+
+	<!-- the agenda: every entry for the year, in order; what shows without script -->
+	<div class="agenda" data-agenda>
+		{
+			years.map((year) => (
+				<ol class="agenda-year" data-log-page={year} hidden={year !== builtYear} role="list" aria-label={`Started in ${year}`}>
+					{lines
+						.filter((l) => l.year === year)
+						.map((l) => (
+							<li class="agenda-line">
+								<span class="agenda-when label">{MONTHS[l.month].slice(0, 3)}</span>
+								<span class:list={['jl-mark', `jl-mark-${l.mark}`]} aria-hidden="true" />
+								<span class="visually-hidden">{l.markLabel}: </span>
+								{l.href ? (
+									<a class="agenda-name" href={l.href} data-clue="log" {...(l.ext ? { target: '_blank', rel: 'noopener' } : {})}>
+										{l.name}
+										{l.ext && <span class="visually-hidden">, opens in a new tab</span>}
+									</a>
+								) : (
+									<span class="agenda-name">{l.name}</span>
+								)}
+								<span class="agenda-note script">{l.note}</span>
+							</li>
+						))}
+				</ol>
+			))
+		}
+		<p class="agenda-empty" data-log-empty hidden={years.includes(builtYear)}>
+			Nothing has started yet this year. A clean page; the archive has everything up to now.
+		</p>
+	</div>
+</section>
+
+<script define:vars={{ calLines: lines, firstYear: Math.min(...years) }} is:inline>
+	window.__futileCal = { lines: calLines, firstYear };
+</script>
+
+<script>
+	import { monthGrid, MONTHS, WEEKDAYS } from '../lib/calendar.js';
+
+	type Line = { year: number; month: number; name: string; note: string; href?: string; ext?: boolean; mark: string; markLabel: string; kind?: string; thumb?: string };
+	const { lines, firstYear } = (window as any).__futileCal as { lines: Line[]; firstYear: number };
+	const root = document.getElementById('log')!;
+	const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+	const now = new Date();
+	const year = now.getFullYear();
+
+	/* ---------- the agenda: this year only ---------- */
+	let found = false;
+	root.querySelectorAll<HTMLElement>('[data-log-page]').forEach((p) => {
+		p.hidden = Number(p.dataset.logPage) !== year;
+		if (!p.hidden) found = true;
+	});
+	q<HTMLElement>('[data-log-empty]').hidden = found;
+	root.querySelectorAll('[data-log-year]').forEach((y) => (y.textContent = String(year)));
+
+	/* ---------- the calendar ---------- */
+	const board = q<HTMLElement>('[data-cal]');
+	const agenda = q<HTMLElement>('[data-agenda]');
+	const views = q<HTMLElement>('[data-views]');
+	board.hidden = false;
+	views.hidden = false;
+	agenda.hidden = true;
+	views.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
+		b.addEventListener('click', () => {
+			const list = b.dataset.view === 'list';
+			board.hidden = list;
+			agenda.hidden = !list;
+			views.querySelectorAll('[data-view]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+		}),
+	);
+
+	q('[data-weekdays]').innerHTML = WEEKDAYS.map((d) => `<th scope="col" abbr="${d}">${d}</th>`).join('');
+
+	let shown = { y: year, m: now.getMonth() };
+	const at = (y: number, m: number) => lines.filter((l) => l.year === y && l.month === m);
+	const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+	function render() {
+		const { y, m } = shown;
+		const here = at(y, m);
+		q('[data-side-month]').textContent = MONTHS[m];
+		q('[data-side-year]').textContent = String(y);
+		q('[data-caption]').textContent = `${MONTHS[m]} ${y}`;
+		q('[data-days]').innerHTML = monthGrid(y, m)
+			.map(
+				(w) =>
+					`<tr>${w
+						.map((c) => {
+							const today = c.inMonth && c.y === year && c.m === now.getMonth() && c.d === now.getDate();
+							return `<td class="${c.inMonth ? '' : 'out'}${today ? ' today' : ''}"${today ? ' aria-current="date"' : ''}>${c.d}</td>`;
+						})
+						.join('')}</tr>`,
+			)
+			.join('');
+		q('[data-slips]').innerHTML = here.length
+			? here
+					.map(
+						(l, i) =>
+							`<button type="button" class="cal-slip cal-slip-${l.mark}" data-slip="${i}" style="--r:${((i * 37) % 7) - 3}deg"><span class="jl-mark jl-mark-${l.mark}" aria-hidden="true"></span><b>${esc(l.name)}</b><span class="visually-hidden">, ${esc(l.markLabel)}. Details</span></button>`,
+					)
+					.join('')
+			: `<p class="cal-slip-none script">Nothing started in ${MONTHS[m]}.</p>`;
+		q('[data-tally]').textContent = here.length ? `${here.length} started in ${MONTHS[m]} · ${lines.filter((l) => l.year === y).length} in ${y}` : '';
+		q<HTMLElement>('[data-slips]').querySelectorAll<HTMLButtonElement>('[data-slip]').forEach((b) => b.addEventListener('click', () => openCard(here[Number(b.dataset.slip)], b)));
+		closeCard(false);
+		/* the tabs: one per month of the year on show, busy months marked */
+		q('[data-tabs]').innerHTML = MONTHS.map((name, i) => {
+			const n = at(y, i).length;
+			return `<button type="button" data-tab="${i}" aria-pressed="${i === m}" aria-label="${name} ${y}${n ? `, ${n} started` : ''}"${n ? ' class="busy"' : ''}>${name.slice(0, 3)}${n ? `<i aria-hidden="true">${n}</i>` : ''}</button>`;
+		}).join('');
+		q<HTMLElement>('[data-tabs]').querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) =>
+			b.addEventListener('click', () => go(y, Number(b.dataset.tab), b.dataset.tab)),
+		);
+		/* keep the open month's tab in view on a phone, without scrolling the page */
+		const row = q<HTMLElement>('[data-tabs]');
+		const on = row.querySelector<HTMLElement>('[aria-pressed="true"]');
+		if (on && row.scrollWidth > row.clientWidth) row.scrollLeft = on.offsetLeft - row.clientWidth / 2 + on.offsetWidth / 2;
+		root.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => {
+			const back = b.dataset.step === '-1';
+			b.disabled = back ? y === firstYear && m === 0 : y === year && m === 11;
+		});
+	}
+	function go(y: number, m: number, focusTab?: string) {
+		shown = { y, m };
+		render();
+		if (focusTab) q<HTMLElement>(`[data-tab="${focusTab}"]`).focus();
+	}
+	root.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) =>
+		b.addEventListener('click', () => {
+			const d = new Date(shown.y, shown.m + Number(b.dataset.step), 1);
+			go(d.getFullYear(), d.getMonth());
+		}),
+	);
+
+	/* ---------- the card an event opens ---------- */
+	const card = q<HTMLElement>('[data-card]');
+	let opener: HTMLElement | null = null;
+	function openCard(l: Line, from: HTMLElement) {
+		opener = from;
+		q('[data-card-when]').textContent = `Started ${MONTHS[l.month]} ${l.year}, repository created`;
+		q('[data-card-title]').textContent = l.name;
+		q('[data-card-mark]').innerHTML = `<span class="jl-mark jl-mark-${l.mark}" aria-hidden="true"></span>${esc(l.markLabel)}`;
+		q('[data-card-note]').textContent = l.note;
+		const go = q<HTMLAnchorElement>('[data-card-go]');
+		go.hidden = !l.href;
+		if (l.href) {
+			go.href = l.href;
+			go.dataset.clue = 'log';
+			go.textContent = l.ext ? `Open ${l.name} ↗` : `Go to ${l.name}`;
+			if (l.ext) Object.assign(go, { target: '_blank', rel: 'noopener' });
+			else go.removeAttribute('target');
+		}
+		card.hidden = false;
+		q<HTMLElement>('[data-card-title]').focus();
+	}
+	function closeCard(refocus = true) {
+		if (card.hidden) return;
+		card.hidden = true;
+		if (refocus) opener?.focus();
+	}
+	q('[data-card-close]').addEventListener('click', () => closeCard());
+	root.addEventListener('keydown', (e) => e.key === 'Escape' && closeCard());
+
+	/* ---------- the top of the wall ---------- */
+	q('[data-today-d]').textContent = String(now.getDate());
+	q('[data-today-m]').textContent = MONTHS[now.getMonth()].slice(0, 3);
+	/* the latest month with anything in it, preferring an entry with a real screenshot */
+	const latest = [...lines].sort((a, b) => b.year - a.year || b.month - a.month);
+	const top = latest.filter((l) => l.year === latest[0]?.year && l.month === latest[0]?.month);
+	const f = top.find((l) => l.thumb) ?? top[0];
+	if (f) {
+		q('[data-f-name]').textContent = f.name;
+		q('[data-f-tags]').innerHTML = [f.markLabel, f.kind].filter(Boolean).map((t) => `<span>${esc(t!)}</span>`).join('');
+		q('[data-f-note]').textContent = f.note === f.kind ? '' : f.note;
+		q('[data-f-when]').textContent = `Started ${MONTHS[f.month]} ${f.year}`;
+		const fgo = q<HTMLAnchorElement>('[data-f-go]');
+		if (f.href) {
+			fgo.hidden = false;
+			fgo.href = f.href;
+			fgo.textContent = `Go to ${f.name}`;
+		}
+		if (f.thumb) {
+			const fig = q<HTMLElement>('[data-f-photo]');
+			/* the photo exists only once there is one to show */
+			fig.append(Object.assign(new Image(1280, 800), { src: f.thumb, alt: '', loading: 'lazy', decoding: 'async' }));
+			fig.hidden = false;
+		}
+	} else q<HTMLElement>('[data-feature]').hidden = true;
+	const thisMonth = at(year, now.getMonth());
+	q('[data-pin-month]').textContent = `${MONTHS[now.getMonth()]}, so far`;
+	q('[data-pin-count]').innerHTML = thisMonth.length
+		? `<b>${thisMonth.length}</b> started · <b>${thisMonth.filter((l) => l.mark === 'ship').length}</b> shipped`
+		: 'nothing started yet';
+
+	render();
+</script>
+
+<style>
+	.cal {
+		padding-block: clamp(4rem, 9vw, 7rem);
+	}
+	.cal-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: end;
+		justify-content: space-between;
+		gap: 0.6rem 1.4rem;
+		margin-bottom: 1.4rem;
+	}
+	.cal-head .sect-label {
+		margin-bottom: 0;
+	}
+	.cal-views {
+		display: inline-flex;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 999px;
+		padding: 3px;
+		background: var(--card);
+	}
+	.cal-views[hidden],
+	.cal-board[hidden],
+	.agenda[hidden] {
+		display: none;
+	}
+	.cal-views button {
+		min-height: 40px;
+		padding: 0 1rem;
+		border: none;
+		border-radius: 999px;
+		background: none;
+		font: 500 0.78rem var(--mono);
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+	.cal-views button[aria-pressed='true'] {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	/* ---------- the top of the wall ---------- */
+	.cal-top {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) minmax(0, 15rem);
+		gap: 1.2rem;
+		align-items: start;
+		margin-bottom: 1.8rem;
+	}
+	/* a tear-off date block, a little crooked, pinned at the corner */
+	.cal-today {
+		display: grid;
+		justify-items: center;
+		align-content: center;
+		width: 6.6rem;
+		padding: 0.6rem 0.4rem 0.7rem;
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-top: 0.55rem solid var(--live);
+		box-shadow: var(--lift);
+		rotate: -3deg;
+		text-align: center;
+	}
+	.cal-today-k,
+	.cal-today span:last-child {
+		font: 500 0.68rem var(--mono);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+	}
+	.cal-today b {
+		font-family: var(--wordmark);
+		font-size: 2.8rem;
+		line-height: 1;
+		color: var(--ink);
+	}
+	/* the latest entry: a framed board with a photo taped to it */
+	.cal-feature {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 13rem);
+		grid-template-areas: 'k photo' 'title photo' 'tags photo' 'note photo' 'when photo' 'go photo';
+		align-content: start;
+		gap: 0.25rem 1.4rem;
+		padding: 1.1rem 1.3rem 1.2rem;
+		background: var(--card);
+		border: 8px solid color-mix(in srgb, var(--thread) 70%, var(--card));
+		border-radius: 3px;
+		box-shadow: var(--lift-high);
+	}
+	.cal-feature[hidden] {
+		display: none;
+	}
+	.cal-feature-k {
+		grid-area: k;
+		color: var(--live);
+	}
+	.cal-feature-title {
+		grid-area: title;
+		font-family: var(--wordmark);
+		font-weight: 400;
+		font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+		line-height: 1.05;
+		overflow-wrap: anywhere;
+	}
+	.cal-feature-tags {
+		grid-area: tags;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.cal-feature-tags :global(span) {
+		padding: 0.15rem 0.5rem;
+		border: 1px solid var(--ink-faint);
+		border-radius: 2px;
+		font: 500 0.66rem var(--mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		background: color-mix(in srgb, var(--marker) 30%, var(--card));
+		color: var(--ink);
+	}
+	.cal-feature-note {
+		grid-area: note;
+		font-size: 1.25rem;
+	}
+	.cal-feature-when {
+		grid-area: when;
+		text-transform: none;
+	}
+	.cal-feature-go {
+		grid-area: go;
+		justify-self: start;
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 600;
+		color: var(--stamp);
+	}
+	.cal-feature-photo {
+		grid-area: photo;
+		position: relative;
+		align-self: center;
+		margin: 0;
+		padding: 0.4rem 0.4rem 1.2rem;
+		background: #fbf9f4;
+		box-shadow: var(--lift);
+		rotate: 3deg;
+	}
+	.cal-feature-photo[hidden] {
+		display: none;
+	}
+	.cal-feature-photo img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	/* small notes pinned beside the calendar, like the day cards on the wall */
+	.cal-pins {
+		display: grid;
+		gap: 1rem;
+	}
+	.pin-note {
+		position: relative;
+		padding: 0.9rem 1rem 1rem;
+		background: color-mix(in srgb, var(--marker) 26%, var(--card));
+		box-shadow: var(--lift);
+		rotate: 1.5deg;
+	}
+	.pin-note::before {
+		content: '';
+		position: absolute;
+		top: -6px;
+		left: 50%;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #fff, var(--stamp) 45%, #7d2618 100%);
+		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+	}
+	.pin-post {
+		rotate: -2deg;
+		background: var(--card);
+		border-top: 4px solid var(--live);
+		font-size: 0.9rem;
+	}
+	.pin-post a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 600;
+		color: var(--stamp);
+	}
+	.pin-big {
+		margin-top: 0.2rem;
+		font-family: var(--script);
+		font-size: 1.35rem;
+		line-height: 1.2;
+		color: var(--ink);
+	}
+	.pin-big :global(b) {
+		font-family: var(--wordmark);
+		font-weight: 400;
+		font-size: 1.5rem;
+	}
+
+	/* ---------- month tabs, like the index tabs of a planner ---------- */
+	.cal-tabs {
+		display: flex;
+		align-items: stretch;
+		gap: 0.3rem;
+		margin-bottom: 0.6rem;
+	}
+	.cal-tab-row {
+		flex: 1;
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: 0.25rem;
+	}
+	.cal-tab-row :global(button),
+	.cal-step {
+		position: relative;
+		min-height: 44px;
+		padding: 0;
+		border: 1px solid var(--ink-ghost);
+		border-radius: 6px 6px 2px 2px;
+		background: var(--paper-2);
+		font: 500 0.72rem var(--mono);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+	.cal-step {
+		width: 44px;
+		font-size: 1.2rem;
+		color: var(--ink);
+	}
+	.cal-step:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+	.cal-tab-row :global(button.busy) {
+		color: var(--ink);
+		font-weight: 600;
+	}
+	.cal-tab-row :global(button i) {
+		position: absolute;
+		top: -0.45rem;
+		right: -0.2rem;
+		display: grid;
+		place-items: center;
+		min-width: 1.15rem;
+		height: 1.15rem;
+		border-radius: 50%;
+		background: var(--stamp);
+		color: var(--stamp-ink);
+		font-style: normal;
+		font-size: 0.62rem;
+	}
+	.cal-tab-row :global(button[aria-pressed='true']) {
+		background: var(--card);
+		border-color: var(--ink);
+		color: var(--ink);
+	}
+
+	/* ---------- the wall calendar ---------- */
+	.cal-page {
+		position: relative;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0 clamp(0.6rem, 2vw, 1.4rem);
+		padding: 2.2rem clamp(0.8rem, 3vw, 2rem) 1.4rem clamp(0.4rem, 2vw, 1.2rem);
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+		box-shadow: var(--lift-high);
+	}
+	/* the spiral binding along the top */
+	.cal-rings {
+		position: absolute;
+		left: 4%;
+		right: 4%;
+		top: -0.7rem;
+		height: 1.5rem;
+		background: radial-gradient(circle at 50% 70%, transparent 0.32rem, var(--ink-faint) 0.34rem, var(--ink-faint) 0.45rem, transparent 0.47rem) 0 0 / 1.6rem 100% repeat-x;
+		pointer-events: none;
+	}
+	.cal-side {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.6rem;
+		writing-mode: vertical-rl;
+		rotate: 180deg;
+		font-family: var(--wordmark);
+		font-size: clamp(2rem, 5vw, 3.6rem);
+		line-height: 1;
+		letter-spacing: 0.03em;
+		color: var(--ink);
+	}
+	.cal-side small {
+		font: 500 0.75rem var(--mono);
+		letter-spacing: 0.2em;
+		color: var(--ink-soft);
+	}
+	.cal-body {
+		min-width: 0;
+	}
+	.cal-slips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 0.7rem;
+		min-height: 3rem;
+		margin-bottom: 0.8rem;
+		padding-bottom: 0.8rem;
+		border-bottom: 1px dashed var(--ink-ghost);
+	}
+	/* an event: a slip of paper taped to this month's page */
+	.cal-slips :global(.cal-slip) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-height: 40px;
+		padding: 0.3rem 0.8rem;
+		background: var(--paper);
+		border: 1px solid var(--ink-ghost);
+		box-shadow: var(--lift);
+		font: inherit;
+		font-size: 0.9rem;
+		color: var(--ink);
+		rotate: var(--r);
+		cursor: pointer;
+		transition:
+			rotate 0.25s var(--ease-out),
+			translate 0.25s var(--ease-out);
+	}
+	.cal-slips :global(.cal-slip:hover),
+	.cal-slips :global(.cal-slip:focus-visible) {
+		rotate: 0deg;
+		translate: 0 -2px;
+	}
+	.cal-slips :global(.cal-slip-ship) {
+		border-top: 3px solid var(--live);
+	}
+	.cal-slips :global(.cal-slip-exp) {
+		border-top: 3px solid var(--stamp);
+	}
+	.cal-slips :global(.cal-slip-wip) {
+		border-top: 3px solid var(--marker);
+	}
+	.cal-slips :global(.cal-slip-none) {
+		align-self: center;
+		color: var(--ink-faint);
+	}
+	.cal-grid {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+	.cal-grid :global(th) {
+		padding: 0.2rem 0 0.5rem;
+		font: 500 0.66rem var(--mono);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+	}
+	.cal-grid :global(td) {
+		height: clamp(2.4rem, 5vw, 3.4rem);
+		text-align: center;
+		vertical-align: middle;
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: clamp(0.95rem, 2vw, 1.25rem);
+		color: var(--ink);
+		border-top: 1px solid var(--ink-ghost);
+	}
+	.cal-grid :global(td + td) {
+		border-left: 1px solid var(--ink-ghost);
+	}
+	/* the neighbouring months: lighter in weight and ink, still readable */
+	.cal-grid :global(td.out) {
+		color: var(--ink-soft);
+		font-weight: 400;
+	}
+	/* today: a red pencil ring, present but quiet */
+	.cal-grid :global(td.today) {
+		color: var(--stamp);
+		background: radial-gradient(circle, transparent 0.95rem, var(--stamp) 1rem, var(--stamp) 1.1rem, transparent 1.15rem);
+	}
+	.cal-tally {
+		margin-top: 0.8rem;
+		min-height: 1.2em;
+		text-transform: none;
+	}
+
+	/* the card an event opens, pinned to the page */
+	.cal-card {
+		position: absolute;
+		top: 1.6rem;
+		right: clamp(0.6rem, 2vw, 1.4rem);
+		z-index: 5;
+		width: min(20rem, calc(100% - 1.2rem));
+		padding: 1rem 1.1rem 1.1rem;
+		background: var(--paper);
+		border: 1px solid var(--ink-faint);
+		box-shadow: var(--lift-high);
+	}
+	.cal-card[hidden] {
+		display: none;
+	}
+	.cal-card-close {
+		position: absolute;
+		top: 0.2rem;
+		right: 0.2rem;
+		width: 44px;
+		height: 44px;
+		background: none;
+		border: none;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+	.cal-card-when {
+		padding-right: 2rem;
+		text-transform: none;
+	}
+	.cal-card-title {
+		margin: 0.3rem 0 0.4rem;
+		font-size: 1.5rem;
+	}
+	.cal-card-mark {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+	}
+	.cal-card-note {
+		margin-top: 0.4rem;
+		font-size: 1.25rem;
+	}
+	.cal-card-go {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		margin-top: 0.3rem;
+		font-weight: 600;
+		color: var(--stamp);
+	}
+
+	.cal-legend {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1.2rem;
+		margin-top: 1.8rem;
+		max-width: 44rem;
+		rotate: -0.8deg;
+		font-family: var(--mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+	}
+	.cal-legend li {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+	.cal-legend .cal-legend-head {
+		flex-basis: 100%;
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.cal-legend .cal-legend-note {
+		flex-basis: 100%;
+		text-transform: none;
+		letter-spacing: 0.01em;
+	}
+
+	/* ---------- the agenda ---------- */
+	.agenda {
+		max-width: 46rem;
+	}
+	.agenda-year {
+		list-style: none;
+		border-top: 2px solid var(--ink);
+	}
+	.agenda-year[hidden] {
+		display: none;
+	}
+	.agenda-line {
+		display: grid;
+		grid-template-columns: 3rem auto minmax(0, auto) minmax(0, 1fr);
+		align-items: baseline;
+		gap: 0.2rem 0.7rem;
+		padding: 0.55rem 0;
+		border-bottom: 1px solid var(--ink-ghost);
+	}
+	.agenda-name {
+		font-weight: 600;
+		color: var(--ink);
+	}
+	a.agenda-name {
+		text-decoration-color: var(--stamp);
+		text-underline-offset: 0.22em;
+	}
+	.agenda-note {
+		font-size: 1.1rem;
+	}
+
+	/* The marks: five shapes as well as five inks, so they survive a
+	   greyscale print the way the board's status stamps do. */
+	.cal :global(.jl-mark) {
+		flex: none;
+		display: inline-block;
+		width: 0.7rem;
+		height: 0.7rem;
+		align-self: center;
+	}
+	.cal :global(.jl-mark-ship) {
+		background: var(--live);
+		border-radius: 50%;
+	}
+	.cal :global(.jl-mark-src) {
+		border: 2px solid var(--ink);
+		border-radius: 50%;
+	}
+	.cal :global(.jl-mark-wip) {
+		background: linear-gradient(135deg, var(--marker) 50%, transparent 50%);
+		border: 1.5px solid var(--ink);
+	}
+	.cal :global(.jl-mark-exp) {
+		background: var(--stamp);
+		rotate: 45deg;
+		scale: 0.85;
+	}
+	.cal :global(.jl-mark-repo) {
+		width: 0.8rem;
+		height: 2px;
+		background: var(--ink-faint);
+	}
+
+	/* On a phone: the tabs scroll sideways rather than shrinking to nothing,
+	   the month name lies down along the top, and the card becomes a sheet
+	   across the page instead of a corner note. */
+	@media (max-width: 900px) {
+		.cal-top {
+			grid-template-columns: auto minmax(0, 1fr);
+		}
+		.cal-pins {
+			grid-column: 1 / -1;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.cal-top {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.cal-today {
+			width: auto;
+			grid-template-columns: auto auto auto;
+			justify-content: start;
+			gap: 0.6rem;
+			justify-self: start;
+			padding-inline: 0.9rem;
+		}
+		.cal-feature {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'photo' 'k' 'title' 'tags' 'note' 'when' 'go';
+		}
+		.cal-feature-photo {
+			max-width: 70%;
+			margin-bottom: 0.6rem;
+		}
+		.cal-pins {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.cal-tab-row {
+			display: flex;
+			overflow-x: auto;
+			scroll-snap-type: x mandatory;
+			scrollbar-width: none;
+		}
+		.cal-tab-row :global(button) {
+			flex: 0 0 3.4rem;
+			scroll-snap-align: start;
+		}
+		.cal-page {
+			grid-template-columns: minmax(0, 1fr);
+			padding-inline: 0.7rem;
+		}
+		.cal-side {
+			writing-mode: horizontal-tb;
+			rotate: none;
+			flex-direction: row;
+			align-items: baseline;
+			margin-bottom: 0.8rem;
+			font-size: 2rem;
+		}
+		/* in the flow under the month, so it never covers the slips */
+		.cal-card {
+			position: relative;
+			inset: auto;
+			grid-column: 1 / -1;
+			width: auto;
+			margin-top: 1rem;
+		}
+		.agenda-line {
+			grid-template-columns: 2.6rem auto minmax(0, 1fr);
+		}
+		.agenda-note {
+			grid-column: 3;
+		}
+	}
+</style>

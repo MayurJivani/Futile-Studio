@@ -1,800 +1,1688 @@
 ---
+import { url } from '../lib/url.js';
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import DeskPanel from '../components/DeskPanel.astro';
 import Cursors from '../components/Cursors.astro';
 import DeskToys from '../components/DeskToys.astro';
-import Stickers from '../components/Stickers.astro';
-import DeskClock from '../components/DeskClock.astro';
-import Legend from '../components/Legend.astro';
-import ShippingLog from '../components/ShippingLog.astro';
-import Marquee from '../components/Marquee.astro';
-import Sketch from '../components/Sketch.astro';
-import { open, workbench } from '../data/projects.js';
+import Logbook from '../components/Logbook.astro';
+import Explorer from '../components/Explorer.astro';
+import Featured from '../components/Featured.astro';
+import Board from '../components/Board.astro';
+import FieldGuide from '../components/FieldGuide.astro';
+import BackRoom from '../components/BackRoom.astro';
+import SharedStudio from '../components/SharedStudio.astro';
+import { workbench } from '../data/board.js';
+import { ideas } from '../data/studio.js';
 
 const spec = [
 	['Makes', 'Web things, mostly games and small tools'],
 	['Studying', 'M.Sc. Computer Science at Paderborn'],
 	['Speaks', 'English, and German if you are patient'],
 	['Plays', 'Vinyl, cassettes, and whatever Chorusify picks'],
-	['Sits in', 'Paderborn, Germany'],
 ];
 
-/* What I actually reach for. Grouped the way I think about it rather than the
-   way a keyword filter would like it. */
+/* What I actually reach for, grouped the way the work is split. */
 const kit = [
-	{ group: 'Front of house', items: ['React', 'Astro', 'TypeScript', 'Next.js', 'Tailwind', 'Vite'] },
-	{ group: 'Back of house', items: ['Node', 'Express', 'Python', 'Flask', 'WebSockets', 'REST'] },
-	{ group: 'Where things are kept', items: ['Postgres', 'SQLite', 'MongoDB', 'MySQL', 'Redis'] },
-	{
-		group: 'Getting it out there',
-		items: ['Docker', 'Proxmox', 'Caddy', 'Nginx', 'Cloudflare', 'CI/CD', 'Git', 'AWS'],
-	},
+	{ group: 'Frontend', items: ['React', 'Astro', 'TypeScript', 'Next.js', 'Tailwind', 'Vite'] },
+	{ group: 'Backend', items: ['Node', 'Express', 'Python', 'Flask', 'WebSockets', 'REST'] },
+	{ group: 'Data', items: ['Postgres', 'SQLite', 'MongoDB', 'MySQL', 'Redis'] },
+	{ group: 'Infrastructure', items: ['Docker', 'Proxmox', 'Caddy', 'Nginx', 'Cloudflare', 'CI/CD', 'Git', 'AWS'] },
+];
+
+/* "Currently tinkering with": only things genuinely on the bench or on the
+   shared studio's list, never invented. */
+const tinkering = [
+	...workbench.map((p) => `${p.name}. ${p.desc.split('. ')[0]}.`),
+	...ideas.map((i) => `${i.name}: ${i.note}.`),
 ];
 ---
 
 <Layout>
+	<a class="skip" href="#work">Skip to the projects</a>
 	<Nav />
 	<DeskPanel />
 	<Cursors />
 
-	<!-- ============ HERO: the inside cover ============ -->
-	<header class="cover">
-		<DeskToys />
-
-		<div class="cover-meta" data-reveal>
-			<p class="cover-tag">studio scrapbook · Paderborn, DE</p>
-			<DeskClock />
-		</div>
-
-		<h1 class="cover-title" data-split-group>
-			<span class="split-mask"><span class="split-word">A</span></span>
-			<span class="split-mask"><span class="split-word">paper</span></span>
-			<span class="split-mask"><span class="split-word">trail</span></span><br />
-			<span class="underline-wrap">
-				<span class="split-mask"><span class="split-word">of</span></span>
-				<span class="split-mask"><span class="split-word">small</span></span>
-				<span class="split-mask"><span class="split-word">software.</span></span>
-				<svg viewBox="0 0 300 12" preserveAspectRatio="none" aria-hidden="true">
-					<path
-						d="M2 7c44-7 214-7 296 2"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="4"
-						stroke-linecap="round"></path>
-				</svg>
-			</span>
-		</h1>
-
-		<p class="cover-sub" data-reveal style="--d:140ms">
-			I'm Mayur. I make small things for the web, mostly games and tools, and stick them in here as they land. <span
-				class="marker">{open.length} are open to anyone</span
-			> right now.
-		</p>
-
-		<div class="cover-actions" data-reveal style="--d:220ms">
-			<a href="#work" class="btn btn-stamp" data-magnetic="0.2">
-				See the board
-				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-					<path d="M8 3v10M4 9l4 4 4-4"></path>
-				</svg>
-			</a>
-			<a href="/jinx" class="btn" data-magnetic="0.2">
-				Meet the server
-				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-					<path d="M3 8h10M9 4l4 4-4 4"></path>
-				</svg>
-			</a>
-			<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="btn" data-magnetic="0.2">
-				Take the CV
-				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-					<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
-				</svg>
-			</a>
-		</div>
-
-		<Stickers />
-	</header>
-
-	<Legend />
-
-	<!-- ============ ABOUT ============ -->
-	<section id="about" class="about">
-		<span class="doodle doodle-vinyl" aria-hidden="true"><Sketch name="vinyl" /></span>
-		<h2 class="sect-label" data-annotate>Who is sticking all this up</h2>
-
-		<div class="about-grid">
-			<article class="card-index sheet sheet-catear" data-paste="-1.2">
-				<span class="mount mount-corner mount-corner-tl" aria-hidden="true"></span>
-				<span class="mount mount-corner mount-corner-br" aria-hidden="true"></span>
-
-				<p>
-					I like knowing how things work, so I tend to build one until it does. Most of this page began as a
-					scribble that could have stayed a scribble, and the interesting part was carrying on past the point
-					where it stopped being fun.
+	<main id="main">
+		<!-- ============ 1. the door ============ -->
+		<header id="top" class="door wrap">
+			<div class="door-copy">
+				<p class="door-status label">
+					<span class="door-status-dot" aria-hidden="true"></span>Currently making things
 				</p>
-				<p>
-					Everything here runs on a machine I can walk over to, which keeps the whole chain within reach: the
-					metal, the containers, the routing, the backups. At 1am the problem is on this side of the wall,
-					which is the quickest way I know to learn how any of it holds together.
-				</p>
-				<p>
-					Away from a keyboard I collect vinyl and cassettes, and record a little under
-					<span class="marker">Futile Rec. Co</span>. A record is a thing you can hand to somebody, and a
-					shelf says more about a few years than a listening history does.
-				</p>
-			</article>
 
-			<aside class="card-spec sheet" data-paste="1.8">
-				<span class="mount mount-clip" aria-hidden="true"></span>
-				<h3 class="card-spec-head">The short version</h3>
-				<dl class="spec-list">
+				<h1 class="wordmark" aria-label="Futile Studio">
 					{
-						spec.map(([k, v]) => (
-							<div class="spec-row">
-								<dt>{k}</dt>
-								<dd>{v}</dd>
+						['Futile', 'Studio'].map((word, w) => (
+							<span class:list={['wm-line', { 'wm-line-2': w }]} aria-hidden="true">
+								{[...word].map((ch, i) => (
+									<span class="cut" style={`--i:${w * 6 + i}; --r:${[-4, 3, -2, 5, -3, 2][(i + w) % 6]}deg`}>
+										{ch}
+									</span>
+								))}
+							</span>
+						))
+					}
+					<span class="brandmark wm-sticker" aria-hidden="true">futile<b>.</b>studio</span>
+				</h1>
+
+				<p class="manifesto" data-reveal style="--d:150ms">
+					Nothing matters. <span class="manifesto-2">Build cool shit anyway.</span>
+				</p>
+				<p class="door-sub" data-reveal style="--d:250ms">
+					I'm Mayur. I build small games, tools and odd experiments, and run every one on a server in my flat.
+				</p>
+
+				<div class="door-actions" data-reveal style="--d:330ms">
+					<a href="#work" class="btn btn-stamp">
+						Browse projects
+						<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+							<path d="M8 3v10M4 9l4 4 4-4"></path>
+						</svg>
+					</a>
+					<a href={url('cv.pdf')} class="btn" target="_blank" rel="noopener">
+						View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
+					</a>
+				</div>
+			</div>
+
+			<div class="collage" data-depth-stage>
+				<a class="c-photo" href="#spread-orbitle" data-depth="0.6" aria-label="Orbitle, the newest one. Jump to it.">
+					<span class="mount mount-tape c-tape-a" aria-hidden="true"></span>
+					<img src={url('shots/orbitle-d.webp')} alt="" width="1280" height="800" fetchpriority="high" />
+					<span class="c-caption script" aria-hidden="true">orbitle, newest</span>
+				</a>
+
+				<a class="c-phone" href="#spread-chorusify" data-depth="1.3" aria-label="Chorusify on a phone. Jump to it.">
+					<span class="c-corner c-corner-tl" aria-hidden="true"></span>
+					<span class="c-corner c-corner-br" aria-hidden="true"></span>
+					<img src={url('shots/chorusify-m.webp')} alt="" width="390" height="780" />
+				</a>
+
+				<div class="c-ticket" data-depth="1.8">
+					<div class="tk-card">
+						<a class="tk-face tk-front" href="#spread-noggin" aria-label="Noggin', a quiz for a room of phones. Jump to it.">
+							<span class="tk-main">
+								<span class="tk-kicker">Futile Studio presents</span>
+								<span class="tk-name">Noggin'</span>
+								<span class="tk-sub">a quiz for a room of phones</span>
+								<span class="tk-meta"><span>Seat · your phone</span><span>Screen · the TV</span></span>
+							</span>
+							<span class="tk-stub">
+								<span class="tk-admit">Admit one</span>
+								<span class="tk-code" aria-hidden="true"></span>
+								<span class="tk-no">FS-003</span>
+							</span>
+						</a>
+						<div class="tk-face tk-back" id="tk-back" inert>
+							<p class="tk-back-head">Conditions of entry</p>
+							<p>Good for one round. The TV is the board and every phone in the room is a buzzer.</p>
+							<p class="tk-back-hint">The matching stub is stamp FS-003 in the Field Guide. The Noggin' spread is hiding it.</p>
+						</div>
+					</div>
+					<button class="tk-flip" type="button" aria-pressed="false" aria-controls="tk-back">
+						<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8a6 6 0 0 1 11-2m1-3v3.5h-3.5M16 12a6 6 0 0 1-11 2m-1 3v-3.5h3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+						<span class="visually-hidden">Turn the ticket over</span>
+					</button>
+				</div>
+
+				<a class="c-postmark label" href={url('post/')} data-depth="1">
+					<span aria-hidden="true">Paderborn</span>
+					<span id="postmark-date" aria-hidden="true">DE</span>
+					<span class="visually-hidden">Write to the studio: open the postcard desk</span>
+				</a>
+				<button class="c-note" type="button" aria-expanded="false" aria-controls="c-note-back" aria-describedby="c-note-how" data-depth="1.6">
+					<span class="c-note-front script">psst. open me</span>
+					<span class="c-note-back" id="c-note-back">
+						Stamps are hidden all over the studio. The little counter by the menu keeps score. None of it is
+						required.
+					</span>
+					<span class="visually-hidden" id="c-note-how">Not stuck down: drag it, or use the arrow keys to move it.</span>
+				</button>
+				<button class="c-tidy" type="button" hidden>Tidy the desk</button>
+
+				<p class="c-arrow script" aria-hidden="true">
+					<svg viewBox="0 0 80 40"><path d="M76 4C50 4 20 10 8 30m0 0 10-2M8 30l-1-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+					everything here runs
+				</p>
+
+				<button class="c-explorer" type="button" data-clue="explorer" aria-label="Wave at the explorer" aria-expanded="false" aria-controls="explorer-says">
+					<Explorer class="is-idle door-explorer" />
+				</button>
+			</div>
+
+			<div class="c-bubble" id="explorer-says" role="status" hidden>
+				<p class="c-bubble-text script"><span data-hello>Hello. Nice of you to come in.</span></p>
+				<button class="c-bubble-close" type="button" aria-label="Close the greeting">✕</button>
+			</div>
+		</header>
+
+		<!-- ============ 2. selected work ============ -->
+		<Featured />
+
+		<!-- ============ 3. everything ============ -->
+		<Board />
+
+		<!-- ============ 4. the guide ============ -->
+		<FieldGuide />
+
+		<!-- ============ 5. the maker's journal ============ -->
+		<section id="about" class="journal wrap" aria-labelledby="journal-title">
+			<div class="journal-book">
+				<div class="j-page j-left">
+					<h2 id="journal-title" class="j-title" data-annotate>Who keeps this place</h2>
+					<p class="j-statement" data-annotate>I like knowing how things work, so I tend to build one until it does.</p>
+					<p>
+						Most of this began as a scribble that could have stayed a scribble. The interesting part is carrying
+						on past the point where it stopped being fun.
+					</p>
+					<p>
+						Everything here runs on a machine I can walk over to, which keeps the whole chain within reach. At
+						1am the problem is on this side of the wall.
+					</p>
+
+					<div class="tinker">
+						<p class="label">Currently tinkering with</p>
+						<p class="tinker-text script" id="tinker-text" aria-live="polite">{tinkering[0]}</p>
+						<button class="tinker-next" type="button" id="tinker-next">Turn the page</button>
+					</div>
+				</div>
+
+				<div class="j-page j-right">
+					<figure class="desk-diagram">
+						<svg viewBox="0 0 420 220" role="img" aria-labelledby="desk-cap">
+							<title id="desk-cap">A sketch of the desk: a laptop, a turntable and a cassette tape, each labelled by hand.</title>
+							<g fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M10 170h400M30 170v40M390 170v40"></path>
+								<path d="M60 168l12-62h96l12 62z" fill="var(--card)"></path>
+								<path d="M48 168h144"></path>
+								<rect x="220" y="140" width="96" height="28" rx="3" fill="var(--card)"></rect>
+								<ellipse cx="258" cy="140" rx="24" ry="6" fill="var(--ink)"></ellipse>
+								<path d="M300 140l-14-14"></path>
+								<rect x="334" y="148" width="40" height="20" rx="2" fill="var(--card)"></rect>
+								<circle cx="346" cy="158" r="4"></circle>
+								<circle cx="362" cy="158" r="4"></circle>
+							</g>
+							<g fill="none" stroke="var(--stamp)" stroke-width="1.4" stroke-dasharray="3 4">
+								<path d="M110 100C100 70 90 60 70 52"></path>
+								<path d="M262 132C270 100 284 84 300 72"></path>
+								<path d="M356 146C366 120 378 110 392 104"></path>
+							</g>
+							<g class="desk-notes">
+								<text x="20" y="46">where the code happens</text>
+								<text x="250" y="64">vinyl, mostly</text>
+								<text x="296" y="98">Futile Rec. Co</text>
+							</g>
+						</svg>
+					</figure>
+
+					<dl class="j-spec">
+						{
+							spec.map(([k, v]) => (
+								<div>
+									<dt class="label">{k}</dt>
+									<dd>{v}</dd>
+								</div>
+							))
+						}
+					</dl>
+
+					<div class="j-links">
+						<a href={url('cv.pdf')} class="btn btn-stamp" target="_blank" rel="noopener">
+							View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
+						</a>
+						<a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a>
+						<a class="btn" href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a>
+						<a class="btn" href="mailto:mayur@futile.studio">Email</a>
+					</div>
+				</div>
+			</div>
+
+			<div class="kit" aria-labelledby="kit-title">
+				<h3 id="kit-title" class="kit-title">What I reach for</h3>
+				<div class="kit-grid">
+					{
+						kit.map((k) => (
+							<div class="kit-col">
+								<h4 class="label kit-group">{k.group}</h4>
+								<ul class="kit-items" role="list">
+									{k.items.map((i) => (
+										<li>{i}</li>
+									))}
+								</ul>
 							</div>
 						))
 					}
-				</dl>
-				<a href="/cv.pdf" download="Mayur_Jivani_CV.pdf" class="btn spec-cv">
-					Full CV, one page
-					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-						<path d="M8 3v7M5 7l3 3 3-3M3 13h10"></path>
-					</svg>
-				</a>
-			</aside>
-		</div>
-	</section>
+				</div>
+			</div>
+		</section>
 
-	<!-- ============ THE KIT ============ -->
-	<section id="kit" class="kit">
-		<span class="doodle doodle-can" aria-hidden="true"><Sketch name="can" /></span>
-		<h2 class="sect-label" data-annotate>What I reach for</h2>
-		<p class="kit-intro">
-			The things I keep picking up. Most of the board above is some arrangement of these.
-		</p>
-		<div class="kit-grid">
-			{
-				kit.map((k) => (
-					<div class="kit-card sheet" data-paste>
-						<span class="mount mount-tape" aria-hidden="true" />
-						<h3 class="kit-group">{k.group}</h3>
-						<ul class="kit-items">
-							{k.items.map((i) => (
-								<li class="kit-item">{i}</li>
-							))}
-						</ul>
-					</div>
-				))
-			}
-		</div>
-	</section>
+		<Logbook />
 
-	<!-- ============ THE BOARD ============ -->
-	<section id="work" class="board">
-		<span class="doodle doodle-postcard" aria-hidden="true"><Sketch name="postcard" /></span>
-		<div class="board-head">
-			<h2 class="sect-label" data-annotate>The board</h2>
-			<p class="board-intro">
-				Everything anyone can open, newest first. Each link goes straight to the running thing, so you can
-				judge it the way anybody else would.
-			</p>
-		</div>
+		<!-- ============ 6. the back room ============ -->
+		<BackRoom />
 
-		<div class="board-grid">
-			{
-				open.map((p) => (
-					<a
-						class:list={['proj', 'sheet', 'sheet-catear', { 'is-pick': p.pick }]}
-						href={p.href}
-						target="_blank"
-						rel="noopener"
-						data-paste
-					>
-						<span
-							class:list={['mount', `mount-${p.mount === 'corner' ? 'corner mount-corner-tl' : p.mount}`]}
-							aria-hidden="true"
-						/>
+		<!-- ============ 7. together ============ -->
+		<SharedStudio />
+	</main>
 
-						<span class="proj-sketch" aria-hidden="true">
-							<Sketch name={p.art} class="proj-sketch-svg" />
-						</span>
+	<!-- ============ 8. the post office ============ -->
+	<footer id="contact" class="post" aria-labelledby="post-title">
+		<div class="wrap post-inner">
+			<div class="post-copy">
+				<h2 id="post-title" class="post-title" data-annotate>Write to the studio.</h2>
+				<p class="post-sub">Work, questions, or an idea that sounds slightly pointless. All of it gets read.</p>
+				<a class="post-mail" href="mailto:mayur@futile.studio" data-annotate>mayur@futile.studio</a>
+				<ul class="post-links" role="list">
+					<li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
+					<li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a></li>
+					<li>
+						<a href={url('cv.pdf')} target="_blank" rel="noopener">CV<span class="visually-hidden">, PDF</span></a>
+					</li>
+					<li><a href={url('jinx')}>Jinx</a></li>
+				</ul>
+			</div>
 
-						<span class="proj-meta">
-							<span class="proj-dot" aria-hidden="true" />
-							{p.kind}
-							{p.shipped && <span class="proj-year">{p.shipped.slice(0, 4)}</span>}
-						</span>
-
-						<h3 class="proj-name">{p.name}</h3>
-						{p.pick && <span class="proj-pick stamp">start here</span>}
-
-						<p class="proj-desc">{p.desc}</p>
-						<p class="proj-stack">{p.stack}</p>
-						<span class="proj-cta">{p.cta} →</span>
-					</a>
-				))
-			}
-		</div>
-
-		<!-- the half-built half -->
-		<div class="bench">
-			<span class="doodle doodle-crate" aria-hidden="true"><Sketch name="crate" /></span>
-			<p class="bench-head">
-				Still on the workbench
-				<span class="bench-rule"></span>
-			</p>
-			<p class="bench-note margin-note">
-				Some half-built, some finished and waiting for somewhere to live. Here because a page showing only the
-				flattering half would be a brochure.
-			</p>
-			<div class="bench-grid">
-				{
-					workbench.map((p) => (
-						<article class="proj proj-bench sheet" data-paste>
-							<span class:list={['mount', `mount-${p.mount}`]} aria-hidden="true" />
-							<span class="proj-sketch" aria-hidden="true">
-								<Sketch name={p.art} class="proj-sketch-svg" />
-							</span>
-							<span class="proj-meta">
-								<span class="proj-dot proj-dot-off" aria-hidden="true" />
-								{p.kind}
-							</span>
-							<h3 class="proj-name">{p.name}</h3>
-							<p class="proj-desc">{p.desc}</p>
-							<p class="proj-stack">{p.stack}</p>
-						</article>
-					))
-				}
+			<div class="post-scene">
+				<div class="envelope" id="envelope">
+					<div class="env-stamp" id="env-stamp" aria-hidden="true"><span>your stamp here</span></div>
+					<p class="env-to script">
+						Mayur Jivani<br />futile.studio<br />Paderborn, DE
+					</p>
+					<p class="env-mark label" aria-hidden="true">Par avion · Futile Post</p>
+				</div>
+				<div class="post-box">
+					<div class="post-explorer" aria-hidden="true"><Explorer class="is-idle" /></div>
+					<a class="btn btn-stamp" href={url('post/')} id="post-it" data-clue="post">Post it</a>
+				</div>
+				<p class="post-hint">Opens the postcard desk: write on the back and post it to the studio.</p>
+				<DeskToys />
 			</div>
 		</div>
-	</section>
 
-	<ShippingLog />
-
-	<!-- ============ JINX TEASER ============ -->
-	<section class="jinx-card-wrap">
-		<span class="doodle doodle-plant" aria-hidden="true"><Sketch name="plant" /></span>
-		<a href="/jinx" class="jinx-card sheet sheet-catear" data-paste="-1.4">
-			<span class="mount mount-tape" aria-hidden="true"></span>
-			<span class="jinx-card-art" aria-hidden="true"><Sketch name="cat" /></span>
-			<div class="jinx-card-copy">
-				<h2 class="jinx-card-head">Everything here sits on one box</h2>
+		<div class="wrap post-foot">
+			<p class="brandmark post-brand" aria-hidden="true">futile<b>.</b>studio</p>
+			<div class="post-small">
+				<a href="#top" class="post-top">Back to the door ↑</a>
 				<p>
-					Jinx, bare metal in my flat. Its own page has the layers it is built from, and how it is doing
-					today.
+					© 2026 Mayur Jivani.{' '}
+					<button class="post-wink" type="button" data-clue="wink">Named in a mood, kept out of habit.</button>
 				</p>
-				<span class="proj-cta">Go and look →</span>
 			</div>
-		</a>
-	</section>
-
-	<Marquee items={['Cut out', 'Stuck down', 'Annotated', 'Cat-eared', 'Filed']} speed={30} />
-
-	<!-- ============ FOOTER ============ -->
-	<footer class="foot">
-		<span class="doodle doodle-reel" aria-hidden="true"><Sketch name="tape-reel" /></span>
-		<div class="foot-left">
-			<p class="foot-logo">futile<span class="nav-dot">.</span>studio</p>
-			<p class="foot-copy">© 2026 Mayur Jivani · cut and pasted by hand</p>
-			<p class="margin-note foot-wink">Named in a mood. Kept out of habit.</p>
 		</div>
-
-		<ul class="foot-links">
-			<li><a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
-			<li>
-				<a class="btn" href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a>
-			</li>
-			<li><a class="btn" href="mailto:mayur@futile.studio">Email</a></li>
-			<li><a class="btn" href="/cv.pdf" download="Mayur_Jivani_CV.pdf">CV</a></li>
-		</ul>
 	</footer>
 </Layout>
 
+<script define:vars={{ tinkering }} is:inline>
+	window.__futileTinkering = tinkering;
+</script>
+
+<script>
+	import { animate } from 'motion';
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	import { collect, collected } from '../lib/guide.js';
+	gsap.registerPlugin(ScrollTrigger);
+
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+	const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+	/* ---------- the postmark: today, from the visitor's own clock ---------- */
+	const pm = document.getElementById('postmark-date');
+	if (pm) pm.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+	/* ---------- the note: flips when tapped, moves when dragged ----------
+	   A loose scrap on the desk. Dragging is pointer events on the note alone,
+	   with touch-action: pan-y, so a vertical swipe still scrolls the page and
+	   only a sideways or mouse drag moves paper. Arrow keys do the same for a
+	   keyboard. The first move earns the Rearranged stamp; Tidy puts it back. */
+	const note = document.querySelector<HTMLButtonElement>('.c-note');
+	const tidy = document.querySelector<HTMLButtonElement>('.c-tidy');
+	const stage = document.querySelector<HTMLElement>('.collage');
+	if (note && tidy && stage) {
+		let mx = 0;
+		let my = 0;
+		let start: { x: number; y: number; mx: number; my: number } | null = null;
+		let dragging = false;
+		let justDragged = false;
+		const place = (nx: number, ny: number) => {
+			/* stay on the desk: the note may hang a little past the edge, never leave */
+			const st = stage.getBoundingClientRect();
+			const r = note.getBoundingClientRect();
+			const baseL = r.left - mx;
+			const baseT = r.top - my;
+			const slack = 24;
+			mx = Math.min(st.right + slack - r.width - baseL, Math.max(st.left - slack - baseL, nx));
+			my = Math.min(st.bottom + slack - r.height - baseT, Math.max(st.top - slack - baseT, ny));
+			note.style.setProperty('--mx', `${Math.round(mx)}px`);
+			note.style.setProperty('--my', `${Math.round(my)}px`);
+			tidy.hidden = !mx && !my;
+		};
+		const moved = () => collect('desk');
+		note.addEventListener('pointerdown', (e) => {
+			if (e.button !== 0) return;
+			start = { x: e.clientX, y: e.clientY, mx, my };
+			dragging = false;
+		});
+		note.addEventListener('pointermove', (e) => {
+			if (!start) return;
+			const dx = e.clientX - start.x;
+			const dy = e.clientY - start.y;
+			if (!dragging && Math.hypot(dx, dy) > 6) {
+				dragging = true;
+				note.setPointerCapture(e.pointerId);
+				note.classList.add('is-lifted');
+			}
+			if (dragging) place(start.mx + dx, start.my + dy);
+		});
+		const drop = () => {
+			if (dragging) {
+				justDragged = true;
+				note.classList.remove('is-lifted');
+				moved();
+			}
+			start = null;
+			dragging = false;
+		};
+		note.addEventListener('pointerup', drop);
+		/* the browser took the gesture for a scroll: let it, and leave the note */
+		note.addEventListener('pointercancel', () => {
+			note.classList.remove('is-lifted');
+			start = null;
+			dragging = false;
+		});
+		note.addEventListener('click', () => {
+			if (justDragged) return void (justDragged = false);
+			note.setAttribute('aria-expanded', String(note.getAttribute('aria-expanded') !== 'true'));
+		});
+		note.addEventListener('keydown', (e) => {
+			const step = e.shiftKey ? 36 : 12;
+			const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+			if (!d) return;
+			e.preventDefault();
+			place(mx + d[0], my + d[1]);
+			moved();
+		});
+		tidy.addEventListener('click', () => {
+			place(0, 0);
+			note.focus();
+		});
+	}
+
+	/* ---------- the ticket: a front and a reverse ---------- */
+	const ticket = document.querySelector<HTMLElement>('.c-ticket');
+	ticket?.querySelector('.tk-flip')?.addEventListener('click', (e) => {
+		const flipped = ticket.classList.toggle('is-flipped');
+		(e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(flipped));
+		ticket.querySelector<HTMLElement>('.tk-front')!.inert = flipped;
+		ticket.querySelector<HTMLElement>('.tk-back')!.inert = !flipped;
+	});
+
+	/* ---------- the explorer: looks at the pointer, waves when greeted, hops at a stamp ---------- */
+	const door = document.querySelector<HTMLButtonElement>('.c-explorer');
+	const fig = door?.querySelector<SVGElement>('.explorer');
+	/* The greeting: a speech bubble that never lands on anything you might
+	   want to read or press. Each candidate spot round the explorer is tried in
+	   turn and the first that covers no link, button, heading or paragraph wins;
+	   if none is clear (a narrow phone), it opens in the space under the
+	   collage, with its tail still pointing at the explorer. */
+	const bubble = document.getElementById('explorer-says')!;
+	const doorEl = document.querySelector<HTMLElement>('.door')!;
+	const busy = () =>
+		[...doorEl.querySelectorAll<HTMLElement>('a, button, h1, p, .c-ticket, .c-note, .c-phone, .c-photo')]
+			.filter((el) => !el.closest('.c-bubble') && el !== door && !door?.contains(el) && el.offsetParent)
+			.map((el) => el.getBoundingClientRect());
+	const hits = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+	function placeBubble() {
+		if (!door) return;
+		const host = doorEl.getBoundingClientRect();
+		const me = door.getBoundingClientRect();
+		bubble.style.left = '0px';
+		bubble.style.top = '0px';
+		const w = bubble.offsetWidth;
+		const h = bubble.offsetHeight;
+		const gap = 14;
+		const spots: Array<[string, number, number]> = [
+			['above', me.left + me.width / 2 - w * 0.25, me.top - h - gap],
+			['right', me.right + gap, me.top + me.height * 0.1],
+			['left', me.left - w - gap, me.top + me.height * 0.1],
+			['below', me.left + me.width / 2 - w * 0.25, me.bottom + gap],
+		];
+		const others = busy();
+		const fits = ([, x, y]: [string, number, number]) => {
+			const r = new DOMRect(x, y, w, h);
+			return x >= 8 && x + w <= innerWidth - 8 && !others.some((o) => hits(r, o));
+		};
+		const pick = spots.find(fits);
+		const collage = doorEl.querySelector('.collage')!.getBoundingClientRect();
+		const [side, x, y] = pick ?? ['reserved', Math.max(8, Math.min(innerWidth - w - 8, me.left)), collage.bottom + gap + 8];
+		bubble.dataset.side = side;
+		bubble.style.left = `${x - host.left}px`;
+		bubble.style.top = `${y - host.top}px`;
+		/* the tail aims at the explorer's head from wherever the bubble ended up */
+		bubble.style.setProperty('--tail-x', `${Math.min(w - 24, Math.max(16, me.left + me.width / 2 - x))}px`);
+	}
+	const setGreeting = (open: boolean) => {
+		if (!door) return;
+		bubble.hidden = !open;
+		door.setAttribute('aria-expanded', String(open));
+		if (open) placeBubble();
+	};
+	door?.addEventListener('click', () => {
+		fig?.classList.remove('is-waving');
+		requestAnimationFrame(() => fig?.classList.add('is-waving'));
+		setGreeting(bubble.hidden !== false);
+	});
+	bubble.querySelector('.c-bubble-close')!.addEventListener('click', () => {
+		setGreeting(false);
+		door?.focus();
+	});
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && !bubble.hidden) {
+			setGreeting(false);
+			door?.focus();
+		}
+	});
+	window.addEventListener('resize', () => !bubble.hidden && placeBubble());
+	/* the visitor's own name, once the studio has handed one out */
+	window.addEventListener('futile-name', (e) => {
+		const name = (e as CustomEvent).detail?.name;
+		if (name) bubble.querySelector('[data-hello]')!.textContent = `Hello. You arrived as ${name}.`;
+	});
+
+	if (fig && fine && !still()) {
+		window.addEventListener(
+			'pointermove',
+			(e) => {
+				const r = fig.getBoundingClientRect();
+				const dx = e.clientX - (r.left + r.width / 2);
+				const dy = e.clientY - (r.top + r.height * 0.25);
+				const d = Math.hypot(dx, dy) || 1;
+				fig.style.setProperty('--look-x', `${((dx / d) * 1.4).toFixed(2)}px`);
+				fig.style.setProperty('--look-y', `${((dy / d) * 1.1).toFixed(2)}px`);
+			},
+			{ passive: true },
+		);
+	}
+	window.addEventListener('futile-stamp', () => {
+		if (still()) return;
+		document.querySelectorAll('.door-explorer, .post-explorer .explorer').forEach((f) => {
+			f.classList.remove('is-hopping');
+			requestAnimationFrame(() => f.classList.add('is-hopping'));
+		});
+	});
+
+	/* ---------- the collage: a few pixels of depth on a fine pointer ---------- */
+	if (fine && !still()) {
+		const stage = document.querySelector<HTMLElement>('.collage');
+		const layers = [...(stage?.querySelectorAll<HTMLElement>('[data-depth]') ?? [])];
+		stage?.addEventListener('pointermove', (e) => {
+			const r = stage.getBoundingClientRect();
+			const nx = (e.clientX - r.left) / r.width - 0.5;
+			const ny = (e.clientY - r.top) / r.height - 0.5;
+			for (const l of layers) {
+				const d = parseFloat(l.dataset.depth!) * 7;
+				l.style.setProperty('--dx', `${(nx * d).toFixed(1)}px`);
+				l.style.setProperty('--dy', `${(ny * d).toFixed(1)}px`);
+			}
+		});
+		stage?.addEventListener('pointerleave', () =>
+			layers.forEach((l) => {
+				l.style.removeProperty('--dx');
+				l.style.removeProperty('--dy');
+			}),
+		);
+	}
+
+	/* ---------- the collage separates as you leave the door ----------
+	   Scrubbed by scroll, never driving it: the layers drift apart by their
+	   depth, so the pile reads as paper at different heights. Wide screens
+	   only, where the pile is a pile; the phone layout is a stack. */
+	if (!still()) {
+		gsap.matchMedia().add('(min-width: 901px)', () => {
+			document.querySelectorAll<HTMLElement>('.collage [data-depth]').forEach((el) => {
+				gsap.to(el, {
+					y: -parseFloat(el.dataset.depth!) * 26,
+					ease: 'none',
+					scrollTrigger: { trigger: '.door', start: 'top top', end: 'bottom top', scrub: 0.6 },
+				});
+			});
+		});
+	}
+
+	/* ---------- the rest of the walk: four scrubbed sequences ----------
+	   All of them follow the scroll and none of them drive it; text only
+	   ever moves within its own block, never across other text. */
+	if (!still()) {
+		const mm = gsap.matchMedia();
+		mm.add('(min-width: 901px)', () => {
+			/* the name shrinks back as you walk away from the door */
+			gsap.to('.wordmark', {
+				scale: 0.86,
+				y: -24,
+				transformOrigin: '0% 0%',
+				ease: 'none',
+				scrollTrigger: { trigger: '.door', start: 'top top', end: 'bottom 30%', scrub: 0.5 },
+			});
+			/* screenshots tilt a little as they pass, like prints lifted off a table */
+			gsap.utils.toArray<HTMLElement>('.spread-shot, .spread-phone, .spread-live-clip').forEach((el, i) => {
+				gsap.fromTo(
+					el,
+					{ rotation: i % 2 ? -1.6 : 1.6, y: 24 },
+					{ rotation: i % 2 ? 0.8 : -0.8, y: -12, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.6 } },
+				);
+			});
+		});
+		/* every scene title lands out of register and settles, the way a second
+		   ink pass catches up with the first */
+		gsap.utils.toArray<HTMLElement>('.sect-label').forEach((el) => {
+			gsap.fromTo(el, { '--reg': '7px' }, { '--reg': '0px', ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 55%', scrub: 0.4 } });
+		});
+		/* the post office: the envelope, the box and the desk tray arrive from
+		   wherever they were and come to rest together at the end */
+		gsap.utils.toArray<HTMLElement>('.post-scene > *').forEach((el, i) => {
+			gsap.from(el, {
+				x: [-60, 50, -30, 40][i % 4],
+				y: 40,
+				rotation: [-8, 6, -4, 5][i % 4],
+				opacity: 0.4,
+				ease: 'none',
+				scrollTrigger: { trigger: '.post', start: 'top 85%', end: 'top 35%', scrub: 0.6 },
+			});
+		});
+	}
+
+	/* ---------- currently tinkering with ---------- */
+	const items: string[] = (window as any).__futileTinkering;
+	let at = 0;
+	const tinkerText = document.getElementById('tinker-text')!;
+	document.getElementById('tinker-next')?.addEventListener('click', () => {
+		at = (at + 1) % items.length;
+		tinkerText.textContent = items[at];
+		if (!still()) animate(tinkerText, { opacity: [0, 1], x: [8, 0] }, { duration: 0.35 });
+	});
+
+	/* ---------- the post office: the envelope wears your latest stamp ---------- */
+	const envStamp = document.getElementById('env-stamp')!;
+	function stickLatest(fresh = false) {
+		const got = [...collected()];
+		const last = got[got.length - 1];
+		const art = last && document.querySelector(`.slot[data-stamp="${last}"] .slot-art`);
+		if (!art) return envStamp.replaceChildren(Object.assign(document.createElement('span'), { textContent: 'your stamp here' }));
+		envStamp.replaceChildren(art.cloneNode(true));
+		/* A new stamp is licked and pressed on, so the corner of the envelope
+		   answers the find even from the other end of the page. */
+		if (fresh && !still()) animate(envStamp, { scale: [1.5, 1], rotate: [-14, 4] }, { type: 'spring', stiffness: 420, damping: 16 });
+	}
+	stickLatest();
+	window.addEventListener('futile-stamp', () => stickLatest(true));
+
+</script>
+
 <style>
-	/* ============ hero ============ */
-	.cover {
+	.skip {
+		position: absolute;
+		left: 1rem;
+		top: -4rem;
+		z-index: 1000;
+		padding: 0.6rem 1rem;
+		background: var(--ink);
+		color: var(--paper);
+		border-radius: 4px;
+	}
+	.skip:focus {
+		top: 1rem;
+	}
+
+	/* ================= the door ================= */
+	.door {
 		position: relative;
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 3.2rem 2.2rem 3rem;
-	}
-
-	.cover-meta {
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: clamp(1.5rem, 4vw, 4rem);
 		align-items: center;
-		gap: 1rem;
-		flex-wrap: wrap;
-		margin-bottom: 1.5rem;
+		min-height: calc(100dvh - 4.5rem);
+		padding-block: clamp(1.5rem, 4vh, 3rem) clamp(4rem, 9vh, 6rem);
 	}
-	.cover-tag {
+	.door-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1.2rem;
+		color: var(--ink);
+	}
+	.door-status-dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		background: var(--stamp);
+		rotate: 45deg;
+	}
+
+	/* Sized against its own column, not the viewport, so it is as large as
+	   the column allows at every width and never runs past it. */
+	.door-copy {
+		container-type: inline-size;
+		min-width: 0;
+	}
+	.wordmark {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		--wm: min(8.2rem, 21.5cqi);
+		font-family: var(--hero-mark);
+		font-size: var(--wm);
+		font-weight: 400;
+		/* each scrap cut with room round it: the paper edges must not touch */
+		letter-spacing: 0.06em;
+		line-height: 1.04;
+		margin-bottom: clamp(1rem, 3vh, 1.8rem);
+		/* the paper the letters are cut from, showing round their edges */
+		--cut-edge: var(--card);
+	}
+	.wm-line {
+		white-space: nowrap;
+	}
+	.wm-line-2 {
+		/* indented, but never so far that the italic o runs off the column */
+		padding-left: 0.22em;
+	}
+	/* Papercut: every letter its own scrap, with a margin of card left round
+	   it by the scissors, lifted off the page and stuck down at a slight angle. */
+	.cut {
 		display: inline-block;
-		font-family: var(--hand);
-		font-weight: 700;
-		font-size: 0.82rem;
+		rotate: var(--r);
+		paint-order: stroke fill;
+		-webkit-text-stroke: 0.09em var(--cut-edge);
+		filter: drop-shadow(0 0.035em 0 rgba(27, 33, 50, 0.22)) drop-shadow(0 0.1em 0.08em rgba(27, 33, 50, 0.24));
+		animation: cut-in 0.55s var(--ease-out) both;
+		animation-delay: calc(var(--i) * 45ms + 80ms);
+	}
+	.wm-line-2 .cut {
+		color: var(--stamp);
+	}
+	.wm-line-2 .cut:nth-child(even) {
+		color: var(--airmail);
+	}
+	@keyframes cut-in {
+		from {
+			opacity: 0;
+			translate: 0 -0.25em;
+			rotate: calc(var(--r) * -3);
+			scale: 1.15;
+		}
+	}
+	/* The live site's mark, stuck on under the end of the word like a label on
+	   a crate: same face, red dot and tilt as the nav. */
+	.wm-sticker {
+		align-self: flex-end;
+		margin-top: 0.1rem;
+		padding: 0.25rem 0.7rem 0.35rem;
+		font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+		line-height: 1;
+		letter-spacing: 0;
 		background: var(--card);
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 8px;
-		padding: 0.3rem 0.8rem;
-		transform: rotate(-2deg);
-		box-shadow: 3px 3px 0 var(--shadow);
+		box-shadow: var(--lift);
+		rotate: -6deg;
 	}
 
-	.cover-title {
-		font-size: clamp(2.1rem, 6.6vw, 4.1rem);
-		max-width: 30ch;
-		margin-bottom: 1.6rem;
+	.manifesto {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: clamp(1.5rem, 2.8vw, 2.3rem);
+		font-variation-settings: 'wdth' 85;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		margin-bottom: 0.9rem;
 	}
-
-	.cover-sub {
-		max-width: 36rem;
-		font-size: 1.02rem;
-		font-weight: 600;
-		line-height: 1.75;
+	.manifesto-2 {
+		display: block;
+		font-family: var(--script);
+		font-weight: 700;
+		font-size: 1.2em;
+		color: var(--stamp);
+		letter-spacing: 0;
+		rotate: -2deg;
+		width: fit-content;
+	}
+	.door-sub {
+		max-width: 28rem;
 		color: var(--ink-soft);
+		font-size: 1.05rem;
 	}
-
-	.cover-actions {
+	.door-actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.7rem;
-		margin-top: 1.8rem;
-	}
-	.cover-actions .btn {
-		font-size: 0.9rem;
-		padding: 0.6rem 1.1rem;
+		margin-top: 1.6rem;
 	}
 
-	/* ============ about ============ */
-	.about {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 3.5rem 2.2rem 1rem;
+	/* ---------- the collage ---------- */
+	.collage {
 		position: relative;
+		aspect-ratio: 1 / 1.02;
+		max-width: 38rem;
+		width: 100%;
+		justify-self: end;
 	}
-
-	.about-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-		gap: 2.4rem;
-		align-items: start;
+	.collage > * {
+		position: absolute;
+		translate: var(--dx, 0) var(--dy, 0);
+		transition: translate 0.7s var(--ease-out);
 	}
-	@media (max-width: 880px) {
-		.about-grid {
-			grid-template-columns: 1fr;
-			gap: 2.8rem;
-		}
+	.c-photo {
+		left: 2%;
+		top: 6%;
+		width: 82%;
+		padding: 0.7rem 0.7rem 2.6rem;
+		background: var(--card);
+		box-shadow: var(--lift-high);
+		rotate: -3deg;
+		z-index: 1;
+		transition:
+			rotate 0.4s var(--ease-out),
+			translate 0.7s var(--ease-out);
 	}
-
-	/* An index card: ruled, with a red margin line down the left. */
-	.card-index {
-		padding: 1.6rem 1.8rem 1.6rem 2.6rem;
-		background-image:
-			linear-gradient(var(--ink-ghost) 1px, transparent 1px),
-			linear-gradient(
-				90deg,
-				transparent 1.9rem,
-				rgba(194, 69, 45, 0.3) 1.9rem,
-				transparent calc(1.9rem + 2px)
-			);
-		background-size:
-			100% 1.75rem,
-			100% 100%;
-		background-position:
-			0 1.2rem,
-			0 0;
+	.c-photo img {
+		display: block;
+		width: 100%;
+		height: auto;
 	}
-	.card-index p + p {
-		margin-top: 1.1rem;
+	.c-tape-a {
+		left: 12%;
+		rotate: -22deg;
 	}
-	.card-index p {
-		font-size: 0.93rem;
-		line-height: 1.75;
+	.c-caption {
+		position: absolute;
+		left: 1rem;
+		bottom: 0.4rem;
+		font-size: 1.35rem;
 		color: var(--ink-soft);
 	}
-
-	.card-spec {
-		padding: 1.5rem 1.4rem 1.4rem;
-		background: var(--card-2);
+	.c-phone {
+		right: 0;
+		top: 26%;
+		width: 30%;
+		z-index: 3;
+		border: 7px solid #1b1d22;
+		border-radius: 18px;
+		box-shadow: var(--lift-high);
+		rotate: 7deg;
 	}
-	.card-spec-head {
-		font-size: 1rem;
-		margin-bottom: 0.9rem;
-		padding-bottom: 0.5rem;
-		border-bottom: 2px dashed var(--ink-ghost);
+	.c-phone img {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 11px;
 	}
-
-	.spec-list {
+	.c-corner {
+		position: absolute;
+		width: 18px;
+		height: 18px;
+		background: var(--ink);
+		opacity: 0.85;
+		z-index: 1;
+	}
+	.c-corner-tl {
+		top: -10px;
+		left: -10px;
+		clip-path: polygon(0 0, 100% 0, 0 100%);
+	}
+	.c-corner-br {
+		bottom: -10px;
+		right: -10px;
+		clip-path: polygon(100% 100%, 100% 0, 0 100%);
+	}
+	/* ---------- the admit ticket ----------
+	   Noggin's own black and gold, on card with a printed grain. A tear line
+	   with two punched notches divides the stub, and the card turns over. */
+	.c-ticket {
+		left: 2%;
+		bottom: 7%;
+		z-index: 4;
+		width: min(19rem, 52%);
+		perspective: 900px;
+		rotate: 4deg;
+		--tk-ink: #f1e6c8;
+		--tk-gold: #d6a640;
+		--tk-stub: 26%;
+	}
+	.tk-card {
+		display: grid;
+		transform-style: preserve-3d;
+		transition: transform 0.6s var(--ease-out);
+	}
+	.is-flipped .tk-card {
+		transform: rotateY(180deg);
+	}
+	.tk-face {
+		grid-area: 1 / 1;
 		display: flex;
-		flex-direction: column;
+		min-height: 7.4rem;
+		backface-visibility: hidden;
+		filter: drop-shadow(0 12px 14px rgba(27, 33, 50, 0.28));
+		/* the two notches where the stub tears off, punched top and bottom */
+		mask:
+			radial-gradient(circle at calc(100% - var(--tk-stub)) 0, transparent 7px, #000 7.5px) top / 100% 51% no-repeat,
+			radial-gradient(circle at calc(100% - var(--tk-stub)) 100%, transparent 7px, #000 7.5px) bottom / 100% 51% no-repeat;
 	}
-	.spec-row {
+	.tk-front {
+		color: var(--tk-ink);
+		text-decoration: none;
+		background:
+			repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 4px),
+			#141416;
+		border-radius: 4px;
+	}
+	.tk-main {
+		flex: 1;
+		min-width: 0;
 		display: grid;
-		grid-template-columns: 5.4rem 1fr;
-		gap: 0.6rem;
-		padding: 0.5rem 0;
-		border-bottom: 1px solid var(--ink-ghost);
-		font-size: 0.84rem;
+		align-content: center;
+		gap: 0.15rem;
+		padding: 0.75rem 0.9rem 0.7rem 1rem;
+		/* a hairline frame inset from the edge, as on a printed ticket */
+		box-shadow: inset 0 0 0 5px #141416, inset 0 0 0 6px rgba(214, 166, 64, 0.45);
 	}
-	.spec-row:last-child {
-		border-bottom: none;
+	.tk-kicker,
+	.tk-sub,
+	.tk-meta {
+		font-family: var(--mono);
+		font-size: 0.6rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		line-height: 1.3;
 	}
-	.spec-row dt {
-		font-family: var(--bubble);
+	.tk-kicker {
+		color: rgba(241, 230, 200, 0.62);
+	}
+	.tk-name {
+		font-family: var(--letterpress);
 		font-weight: 800;
+		font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+		font-size: 2.1rem;
+		line-height: 0.95;
+		letter-spacing: 0.01em;
+		color: var(--tk-gold);
+	}
+	.tk-sub {
+		color: var(--tk-ink);
+	}
+	.tk-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 0.9rem;
+		margin-top: 0.35rem;
+		padding-top: 0.35rem;
+		border-top: 1px solid rgba(241, 230, 200, 0.18);
+		color: rgba(241, 230, 200, 0.62);
+	}
+	.tk-stub {
+		flex: none;
+		width: var(--tk-stub);
+		display: grid;
+		grid-template-rows: 1fr auto auto;
+		justify-items: center;
+		gap: 0.35rem;
+		padding: 0.6rem 0.3rem 0.55rem;
+		background: var(--tk-gold);
+		color: #141416;
+		/* the tear line */
+		border-left: 2px dashed #141416;
+		border-radius: 0 4px 4px 0;
+	}
+	.tk-admit {
+		writing-mode: vertical-rl;
+		rotate: 180deg;
+		font-family: var(--display);
+		font-weight: 800;
+		font-size: 0.8rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+	.tk-code {
+		width: 78%;
+		height: 1.1rem;
+		background: repeating-linear-gradient(90deg, #141416 0 1px, transparent 1px 3px, #141416 3px 5px, transparent 5px 6px, #141416 6px 7px, transparent 7px 10px);
+	}
+	.tk-no {
+		font-family: var(--mono);
+		font-size: 0.55rem;
+		letter-spacing: 0.06em;
+	}
+	.tk-back {
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.35rem;
+		padding: 0.8rem 1rem;
+		transform: rotateY(180deg);
+		background: #f1e6c8;
+		color: #1b2132;
+		border-radius: 4px;
 		font-size: 0.78rem;
+		line-height: 1.35;
+	}
+	.tk-back-head {
+		font-family: var(--mono);
+		font-size: 0.6rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(27, 33, 50, 0.65);
+	}
+	.tk-back-hint {
+		font-family: var(--script);
+		font-size: 1.05rem;
+		line-height: 1.15;
+		color: #a4321f;
+		padding-right: var(--tk-stub);
+	}
+	.tk-flip {
+		position: absolute;
+		top: -0.9rem;
+		right: -0.9rem;
+		display: grid;
+		place-items: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		padding: 0;
+		background: var(--card);
 		color: var(--ink);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 50%;
+		box-shadow: var(--lift);
+		cursor: pointer;
+		transition: rotate 0.4s var(--ease-out);
 	}
-	.spec-row dd {
+	/* a finger-sized target around a small control */
+	.tk-flip::after {
+		content: '';
+		position: absolute;
+		inset: -6px;
+	}
+	.tk-flip svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+	.tk-flip:hover {
+		rotate: 180deg;
+	}
+	.c-ticket:hover {
+		z-index: 6;
+	}
+	.c-photo:hover,
+	.c-phone:hover {
+		z-index: 6;
+	}
+	.c-photo:hover {
+		rotate: -1deg;
+	}
+	.c-postmark {
+		right: 10%;
+		top: 1%;
+		z-index: 5;
+		display: grid;
+		place-items: center;
+		align-content: center;
+		width: 6.4rem;
+		height: 6.4rem;
+		border: 2px solid var(--stamp);
+		border-radius: 50%;
+		box-shadow:
+			inset 0 0 0 4px var(--paper),
+			inset 0 0 0 5px var(--stamp);
+		color: var(--stamp);
+		text-align: center;
+		font-size: 0.6rem;
+		line-height: 1.3;
+		rotate: 14deg;
+		text-decoration: none;
+		transition:
+			rotate 0.3s var(--ease-out),
+			opacity 0.2s ease,
+			translate 0.7s var(--ease-out);
+	}
+	/* pressed like a rubber stamp: the way into the postcard desk */
+	.c-postmark:hover,
+	.c-postmark:focus-visible {
+		opacity: 1;
+		rotate: 4deg;
+	}
+	.c-postmark:active {
+		scale: 0.92;
+	}
+	.c-note {
+		right: 2%;
+		bottom: 1%;
+		z-index: 5;
+		width: clamp(8.5rem, 30%, 11rem);
+		min-height: 5.5rem;
+		padding: 0.8rem 0.9rem;
+		background: var(--marker);
+		color: #1b2132;
+		border: none;
+		box-shadow: var(--lift);
+		text-align: left;
+		cursor: pointer;
+		rotate: -4deg;
+		transition:
+			rotate 0.4s var(--ease-out),
+			translate 0.7s var(--ease-out);
+	}
+	.collage > .c-note {
+		touch-action: pan-y;
+		/* its own drag offset, on top of the shared depth drift */
+		translate: calc(var(--dx, 0px) + var(--mx, 0px)) calc(var(--dy, 0px) + var(--my, 0px));
+	}
+	.c-note:hover {
+		rotate: 0deg;
+	}
+	/* picked up: a little higher off the table, no lag behind the finger */
+	.c-note.is-lifted {
+		z-index: 7;
+		rotate: -1deg;
+		box-shadow: var(--lift-high);
+		transition: rotate 0.2s var(--ease-out);
+		cursor: grabbing;
+	}
+	.c-tidy {
+		right: 0;
+		bottom: -2.8rem;
+		min-height: 44px;
+		padding: 0 0.2rem;
+		background: none;
+		border: none;
+		font: 500 0.72rem var(--mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 		color: var(--ink-soft);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
 	}
-	.spec-cv {
-		margin-top: 1.1rem;
+	.c-tidy[hidden] {
+		display: none;
+	}
+	/* ink on yellow in either lamp: the note is the same paper at night */
+	.c-note-front,
+	.c-note-back {
+		color: #1b2132;
+	}
+	.c-note-front {
+		font-size: 1.4rem;
+	}
+	.c-note-back {
+		display: none;
+		font-size: 0.82rem;
+		line-height: 1.4;
+	}
+	.c-note[aria-expanded='true'] {
+		rotate: 2deg;
+		width: 14rem;
+	}
+	.c-note[aria-expanded='true'] .c-note-front {
+		display: none;
+	}
+	.c-note[aria-expanded='true'] .c-note-back {
+		display: block;
+	}
+	.c-arrow {
+		left: 40%;
+		top: -3%;
+		display: flex;
+		align-items: flex-end;
+		gap: 0.2rem;
+		font-size: 1.3rem;
+		color: var(--stamp);
+		rotate: -3deg;
+		z-index: 2;
+	}
+	/* drawn heading down-left: from the words onto the photo under them */
+	.c-arrow svg {
+		width: 4rem;
+		order: -1;
+	}
+	.c-explorer {
+		left: -9%;
+		bottom: -4%;
+		width: 6.4rem;
+		z-index: 6;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+	}
+	/* The speech bubble: solid paper, ink text, a tail at the explorer. It is
+	   placed by script against whatever is around it, so it has no fixed spot. */
+	.c-bubble {
+		position: absolute;
+		z-index: 30;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.3rem;
+		width: max-content;
+		max-width: min(17rem, calc(100vw - 2rem));
+		padding: 0.55rem 0.4rem 0.6rem 0.9rem;
+		background: #fbf9f4;
+		color: #1b2132;
+		border: 2px solid #1b2132;
+		border-radius: 14px;
+		box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.45);
+		--tail-x: 2rem;
+	}
+	.c-bubble[hidden] {
+		display: none;
+	}
+	.c-bubble-text {
+		font-size: 1.3rem;
+		line-height: 1.2;
+		color: #1b2132;
+		padding-top: 0.15rem;
+	}
+	.c-bubble-close {
+		flex: none;
+		width: 36px;
+		height: 36px;
+		margin: -0.2rem 0 -0.2rem 0.1rem;
+		background: none;
+		border: none;
+		border-radius: 50%;
+		font-size: 0.85rem;
+		color: #1b2132;
+		cursor: pointer;
+	}
+	/* the tail: a small triangle in the bubble's own ink and paper */
+	.c-bubble::before,
+	.c-bubble::after {
+		content: '';
+		position: absolute;
+		left: calc(var(--tail-x) - 9px);
+		border: 9px solid transparent;
+	}
+	.c-bubble[data-side='above']::before {
+		top: 100%;
+		border-top-color: #1b2132;
+	}
+	.c-bubble[data-side='above']::after {
+		top: calc(100% - 3px);
+		border-top-color: #fbf9f4;
+	}
+	.c-bubble:is([data-side='below'], [data-side='reserved'])::before {
+		bottom: 100%;
+		border-bottom-color: #1b2132;
+	}
+	.c-bubble:is([data-side='below'], [data-side='reserved'])::after {
+		bottom: calc(100% - 3px);
+		border-bottom-color: #fbf9f4;
+	}
+	.c-bubble[data-side='right']::before,
+	.c-bubble[data-side='right']::after {
+		left: auto;
+		right: 100%;
+		top: 0.9rem;
+		border-right-color: #1b2132;
+	}
+	.c-bubble[data-side='right']::after {
+		right: calc(100% - 3px);
+		border-right-color: #fbf9f4;
+	}
+	.c-bubble[data-side='left']::before,
+	.c-bubble[data-side='left']::after {
+		left: 100%;
+		top: 0.9rem;
+		border-left-color: #1b2132;
+	}
+	.c-bubble[data-side='left']::after {
+		left: calc(100% - 3px);
+		border-left-color: #fbf9f4;
 	}
 
-	/* ---- doodles down the page, one per section, kept sparse on purpose ---- */
-	.about,
-	.kit,
-	.board,
-	.jinx-card-wrap,
-	.foot {
-		position: relative;
-	}
-	.doodle-vinyl {
-		top: 1.6rem;
-		right: 2.5%;
-		width: 3.4rem;
-		height: 3.4rem;
-		transform: rotate(9deg);
-	}
-	.doodle-can {
-		top: 2.4rem;
-		right: 6%;
-		width: 2.5rem;
-		height: 2.5rem;
-		transform: rotate(-11deg);
-	}
-	.doodle-postcard {
-		top: 1.1rem;
-		right: 3%;
-		width: 3.8rem;
-		height: 2.8rem;
-		transform: rotate(5deg);
-	}
-	.bench {
-		position: relative;
-	}
-	.doodle-crate {
-		top: -0.4rem;
-		right: 1%;
-		width: 2.5rem;
-		height: 2.5rem;
-		transform: rotate(-8deg);
-	}
-	.doodle-plant {
-		bottom: 1.2rem;
-		left: 3%;
-		width: 2.6rem;
-		height: 2.6rem;
-		transform: rotate(-4deg);
-	}
-	.doodle-reel {
-		top: 0.6rem;
-		right: 8%;
-		width: 3.4rem;
-		height: 2.4rem;
-		transform: rotate(-7deg);
-	}
-	/* Below this the copy needs the room more than the decoration does. */
-	@media (max-width: 1000px) {
-		.doodle-can,
-		.doodle-postcard,
-		.bench {
-			position: relative;
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .tk-card {
+			transition: none;
 		}
-		.doodle-crate {
-			top: -0.4rem;
-			right: 1%;
-			width: 2.5rem;
-			height: 2.5rem;
-			transform: rotate(-8deg);
+	}
+	html[data-motion='off'] .tk-card {
+		transition: none;
+	}
+
+	@media (max-width: 900px) {
+		.door {
+			grid-template-columns: minmax(0, 1fr);
+			min-height: auto;
 		}
-		.doodle-plant {
+		.collage {
+			justify-self: center;
+			max-width: 34rem;
+			margin-top: 1rem;
+		}
+		.c-arrow {
 			display: none;
 		}
 	}
 
-	/* ============ the kit ============ */
-	.kit {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 3.5rem 2.2rem 1rem;
+	/* ---------- the collage on a phone ----------
+	   Not the desktop pile shrunk: a short, ordered stack. The photo and the
+	   phone keep one deliberate overlap; the ticket, the note and the explorer
+	   each get their own row, so nothing a finger needs sits under anything. */
+	@media (max-width: 640px) {
+		.collage {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			grid-template-areas:
+				'photo photo'
+				'ticket ticket'
+				'explorer note'
+				'. tidy';
+			gap: 1.6rem 0.8rem;
+			aspect-ratio: auto;
+			max-width: 26rem;
+			padding-top: 0.6rem;
+		}
+		.collage > * {
+			position: relative;
+			inset: auto;
+			translate: none;
+		}
+		.c-photo {
+			grid-area: photo;
+			width: 78%;
+			padding: 0.5rem 0.5rem 2rem;
+			rotate: -2.5deg;
+		}
+		.c-caption {
+			left: 0.7rem;
+			bottom: 0.25rem;
+			font-size: 1.15rem;
+		}
+		.c-tape-a {
+			width: 56px;
+			height: 18px;
+		}
+		/* the phone leans on the photo's right edge and hangs below it */
+		.c-phone {
+			grid-area: photo;
+			justify-self: end;
+			align-self: end;
+			width: 27%;
+			margin-bottom: -3.4rem;
+			border-width: 5px;
+			border-radius: 14px;
+			rotate: 6deg;
+		}
+		.c-phone img {
+			border-radius: 9px;
+		}
+		.c-postmark {
+			grid-area: photo;
+			justify-self: end;
+			align-self: start;
+			width: 4.2rem;
+			height: 4.2rem;
+			margin: -1.1rem 2% 0 0;
+			font-size: 0.5rem;
+		}
+		.c-ticket {
+			grid-area: ticket;
+			justify-self: start;
+			width: min(19rem, 86%);
+			margin-top: 3.4rem;
+			rotate: -2deg;
+		}
+		.c-note {
+			grid-area: note;
+			justify-self: end;
+			align-self: center;
+			width: 100%;
+			max-width: 11rem;
+			min-height: 4.4rem;
+			rotate: 3deg;
+		}
+		.c-note[aria-expanded='true'] {
+			width: 100%;
+			rotate: 1deg;
+		}
+		.collage > .c-note {
+			translate: var(--mx, 0px) var(--my, 0px);
+		}
+		.c-tidy {
+			grid-area: tidy;
+			justify-self: end;
+		}
+		.c-explorer {
+			grid-area: explorer;
+			justify-self: start;
+			width: 4.6rem;
+			margin-left: 0.6rem;
+		}
 	}
-	.kit-intro {
-		font-size: 0.92rem;
-		line-height: 1.7;
+
+	/* ================= the journal ================= */
+	.journal {
+		padding-block: clamp(5rem, 11vw, 8rem) 2rem;
+	}
+	.journal-book {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px 10px 10px 4px;
+		box-shadow: var(--lift-high);
+		rotate: -0.4deg;
+	}
+	.j-page {
+		padding: clamp(1.6rem, 4vw, 3rem);
+	}
+	/* ruled paper with a margin line: the left page of a notebook */
+	.j-left {
+		background:
+			linear-gradient(90deg, transparent 2.2rem, rgba(196, 64, 42, 0.35) 2.2rem, transparent calc(2.2rem + 1.5px)),
+			repeating-linear-gradient(to bottom, transparent 0 1.8rem, var(--ink-ghost) 1.8rem calc(1.8rem + 1px));
+		padding-left: clamp(3rem, 5vw, 4rem);
+		border-right: 1px solid var(--ink-ghost);
+	}
+	.j-title {
+		font-size: clamp(2.4rem, 4.6vw, 4rem);
+		font-weight: 800;
+		font-variation-settings: 'wdth' 76;
+		letter-spacing: -0.035em;
+		line-height: 0.92;
+		margin-bottom: 1rem;
+	}
+	.j-statement {
+		font-family: var(--script);
+		font-size: 1.7rem;
+		line-height: 1.15;
+		color: var(--stamp);
+		margin-bottom: 1rem;
+	}
+	.j-left p + p {
+		margin-top: 0.8rem;
+	}
+	.j-left > p:not(.j-statement) {
 		color: var(--ink-soft);
-		max-width: 38rem;
-		margin-bottom: 2rem;
+		max-width: 30rem;
+	}
+	.tinker {
+		margin-top: 2rem;
+		padding: 1rem 1.1rem;
+		background: color-mix(in srgb, var(--marker) 30%, var(--card));
+		rotate: 1deg;
+		box-shadow: var(--lift);
+		max-width: 26rem;
+	}
+	.tinker-text {
+		font-size: 1.3rem;
+		color: var(--ink);
+		margin: 0.3rem 0 0.4rem;
+		min-height: 3.2em;
+	}
+	.tinker-next {
+		min-height: 44px;
+		padding: 0;
+		background: none;
+		border: none;
+		font: 500 0.78rem var(--mono);
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+	}
+
+	.desk-diagram {
+		margin: 0 0 1.4rem;
+	}
+	.desk-diagram svg {
+		width: 100%;
+		height: auto;
+	}
+	.desk-notes text {
+		font-family: var(--script);
+		font-size: 19px;
+		fill: var(--stamp);
+	}
+	.j-spec {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem 1.4rem;
+	}
+	.j-spec dd {
+		font-size: 0.92rem;
+		margin-top: 0.1rem;
+	}
+	.j-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 1.6rem;
+	}
+
+	.kit {
+		margin-top: clamp(3.5rem, 8vw, 6rem);
+	}
+	.kit-title {
+		font-size: clamp(1.5rem, 2.6vw, 2rem);
+		font-variation-settings: 'wdth' 85;
+		margin-bottom: 1.4rem;
 	}
 	.kit-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-		gap: 2.4rem 1.6rem;
-		padding-top: 0.5rem;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 2rem;
 	}
-	.kit-card {
-		padding: 1.4rem 1.2rem 1.2rem;
-		background: var(--card-2);
+	.kit-col {
+		padding-top: 0.8rem;
+		border-top: 2px solid var(--ink);
 	}
 	.kit-group {
-		font-size: 0.95rem;
-		margin-bottom: 0.8rem;
-		padding-bottom: 0.45rem;
-		border-bottom: 2px dashed var(--ink-ghost);
+		margin-bottom: 0.6rem;
+		color: var(--ink);
 	}
 	.kit-items {
 		list-style: none;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.35rem;
-	}
-	/* Each one a little torn-off label rather than a progress bar: I am not
-	   going to pretend a percentage means anything here. */
-	.kit-item {
-		font-family: var(--hand);
-		font-weight: 700;
-		font-size: 0.78rem;
-		color: var(--ink);
-		background: var(--card);
-		border: 1.5px solid var(--ink-soft);
-		border-radius: 6px;
-		padding: 0.18rem 0.5rem;
-		box-shadow: 2px 2px 0 var(--shadow);
-	}
-
-	/* ============ the board ============ */
-	.board {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 3.5rem 2.2rem 1rem;
-	}
-	.board-head {
-		max-width: 44rem;
-		margin-bottom: 2.2rem;
-	}
-	.board-intro {
-		font-size: 0.92rem;
-		line-height: 1.7;
-		color: var(--ink-soft);
-		max-width: 38rem;
-	}
-
-	.board-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
-		gap: 2.8rem 1.7rem;
-		padding-top: 0.5rem;
-	}
-
-	.proj {
-		display: block;
-		padding: 1.5rem 1.2rem 1.3rem;
-		text-decoration: none;
-		color: var(--ink);
-		transition:
-			transform 0.15s ease,
-			box-shadow 0.15s ease;
-	}
-	/* Hover straightens the card and lifts it. Every card behaves the same
-	   on hover; only the resting tilt is random. (Guideline B) */
-	a.proj:hover {
-		transform: rotate(0deg) translateY(-5px);
-		box-shadow: 5px 8px 0 var(--shadow-deep);
-	}
-	.proj.is-pick {
-		background: var(--card);
-		border-color: var(--ink);
-	}
-
-	.proj-sketch {
-		display: block;
-		height: 3.2rem;
-		margin-bottom: 1rem;
+		gap: 0.2rem 0.9rem;
 		color: var(--ink-soft);
 	}
-	.proj-sketch :global(.proj-sketch-svg) {
-		height: 100%;
-		width: auto;
-		max-width: 100%;
-	}
-
-	.proj-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		font-size: 0.74rem;
-		font-weight: 700;
-		color: var(--ink-faint);
-		margin-bottom: 0.3rem;
-	}
-	.proj-year {
-		margin-left: auto;
-		font-variant-numeric: tabular-nums;
-	}
-	.proj-dot {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 50%;
-		background: var(--live);
-		flex-shrink: 0;
-	}
-	.proj-dot-off {
-		background: var(--ink-ghost);
-	}
-
-	.proj-name {
-		font-size: 1.25rem;
-		margin-bottom: 0.4rem;
-	}
-	.proj-pick {
-		margin-bottom: 0.6rem;
-	}
-	.proj-desc {
-		font-size: 0.84rem;
-		line-height: 1.65;
-		color: var(--ink-soft);
-	}
-	.proj-stack {
-		margin-top: 0.7rem;
-		font-size: 0.74rem;
-		font-style: italic;
-		color: var(--ink-faint);
-	}
-	.proj-cta {
-		display: block;
-		margin-top: 0.9rem;
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 0.84rem;
-		color: var(--stamp);
-	}
-
-	/* ---- workbench ---- */
-	.bench {
-		margin-top: 3.4rem;
-	}
-	.bench-head {
-		display: flex;
-		align-items: center;
-		gap: 0.9rem;
-		font-family: var(--bubble);
-		font-weight: 800;
-		font-size: 1.05rem;
-		color: var(--ink-soft);
-	}
-	.bench-rule {
-		flex: 1;
-		height: 0;
-		border-top: 2px dashed var(--ink-ghost);
-	}
-	.bench-note {
-		margin: 0.5rem 0 1.5rem;
-		max-width: 34rem;
-	}
-	.bench-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-		gap: 2.4rem 1.7rem;
-	}
-	.proj-bench {
-		background: transparent;
-		border-style: dashed;
-		box-shadow: none;
-	}
-	.proj-bench .proj-sketch,
-	.proj-bench .proj-name {
-		opacity: 0.75;
-	}
-
-	/* ============ jinx teaser ============ */
-	.jinx-card-wrap {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 2rem 2.2rem 3.5rem;
-	}
-	.jinx-card {
-		display: flex;
-		align-items: center;
-		gap: 1.6rem;
-		padding: 1.6rem 1.8rem;
-		text-decoration: none;
-		color: var(--ink);
-		background: var(--card);
-		transition:
-			transform 0.15s ease,
-			box-shadow 0.15s ease;
-	}
-	.jinx-card:hover {
-		transform: rotate(0deg) translateY(-4px);
-		box-shadow: 6px 8px 0 var(--shadow-deep);
-	}
-	.jinx-card-art {
-		flex: 0 0 auto;
-		width: 4.2rem;
-		height: 4.2rem;
-		color: var(--ink-soft);
-	}
-	.jinx-card-head {
-		font-size: 1.2rem;
-		margin-bottom: 0.4rem;
-	}
-	.jinx-card-copy p {
-		font-size: 0.88rem;
-		line-height: 1.65;
-		color: var(--ink-soft);
-		max-width: 44rem;
-	}
-	.jinx-card .proj-cta {
-		margin-top: 0.6rem;
-	}
-	@media (max-width: 640px) {
-		.jinx-card {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 1rem;
+	@media (max-width: 860px) {
+		.journal-book {
+			grid-template-columns: 1fr;
+			rotate: none;
+		}
+		.j-left {
+			border-right: none;
+			border-bottom: 1px solid var(--ink-ghost);
+		}
+		.kit-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
-	/* ============ footer ============ */
-	.foot {
-		max-width: 1140px;
-		margin: 0 auto;
-		padding: 2.6rem 2.2rem 4rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		gap: 1.6rem;
+	/* ================= the post office ================= */
+	.post {
+		position: relative;
+		padding-top: clamp(5rem, 11vw, 8rem);
+		overflow: hidden;
 	}
-	.foot-logo {
-		font-family: var(--bubble);
+	.post-inner {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: clamp(2rem, 6vw, 5rem);
+		align-items: center;
+	}
+	.post-title {
+		font-size: clamp(2.8rem, 6vw, 5.2rem);
 		font-weight: 800;
-		font-size: 1.15rem;
+		font-variation-settings: 'wdth' 76;
+		letter-spacing: -0.04em;
+		line-height: 0.92;
+		margin-bottom: 1rem;
 	}
-	.foot-copy {
-		font-size: 0.8rem;
+	.post-sub {
 		color: var(--ink-soft);
-		margin-top: 0.2rem;
+		font-size: 1.1rem;
+		max-width: 28rem;
 	}
-	.foot-wink {
-		margin-top: 0.5rem;
-	}
-	.nav-dot {
+	.post-mail {
+		display: inline-block;
+		margin-top: 1.4rem;
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: clamp(1.4rem, 2.6vw, 2rem);
 		color: var(--stamp);
+		text-decoration-thickness: 2px;
+		overflow-wrap: anywhere;
 	}
-
-	.foot-links {
+	.post-links {
 		list-style: none;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 0 1.4rem;
+		margin-top: 1rem;
+	}
+	.post-links a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: 0.82rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ink);
 	}
 
-	@media (max-width: 640px) {
-		.cover,
-		.about,
-		.kit,
-		.board,
-		.jinx-card-wrap,
-		.foot {
-			padding-left: 1.4rem;
-			padding-right: 1.4rem;
+	.post-scene {
+		position: relative;
+		display: grid;
+		justify-items: center;
+		gap: 1.2rem;
+		padding-bottom: 2rem;
+	}
+	.envelope {
+		position: relative;
+		width: min(100%, 25rem);
+		aspect-ratio: 1.6;
+		background:
+			linear-gradient(155deg, transparent 49.6%, rgba(27, 33, 50, 0.14) 50%, transparent 50.4%),
+			linear-gradient(25deg, transparent 49.6%, rgba(27, 33, 50, 0.14) 50%, transparent 50.4%),
+			#f6efdd;
+		color: #1b2132;
+		box-shadow: var(--lift-high);
+		rotate: -2deg;
+		/* the airmail border */
+		border: 8px solid transparent;
+		border-image: repeating-linear-gradient(45deg, #c4402a 0 12px, #f6efdd 12px 20px, #2f5d8a 20px 32px, #f6efdd 32px 40px) 8;
+	}
+	.env-stamp {
+		position: absolute;
+		top: 0.8rem;
+		right: 0.8rem;
+		width: 4.4rem;
+		min-height: 5.2rem;
+		display: grid;
+		place-items: center;
+		border: 1.5px dashed rgba(27, 33, 50, 0.45);
+		font-family: var(--mono);
+		font-size: 0.6rem;
+		text-align: center;
+		color: rgba(27, 33, 50, 0.7);
+		rotate: 4deg;
+	}
+	.env-stamp:has(svg) {
+		border: none;
+	}
+	.env-stamp :global(.slot-art) {
+		display: block;
+		width: 100%;
+	}
+	.env-to {
+		position: absolute;
+		left: 34%;
+		bottom: 16%;
+		font-size: 1.45rem;
+		line-height: 1.25;
+	}
+	.env-mark {
+		position: absolute;
+		left: 1rem;
+		top: 0.9rem;
+		color: #2f5d8a;
+	}
+	/* The explorer is the one posting it: stood at the box, letter in hand. */
+	.post-box {
+		display: flex;
+		align-items: flex-end;
+		gap: 0.6rem;
+	}
+	.post-hint {
+		max-width: 22rem;
+		min-height: 2.6em;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+		text-align: center;
+	}
+	.post-explorer {
+		width: 3.6rem;
+	}
+
+	.post-foot {
+		position: relative;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 3rem;
+		padding-bottom: 2rem;
+	}
+	/* The last thing on the page is the first thing on it: the mark, large. */
+	.post-brand {
+		font-size: clamp(2.6rem, 10.5vw, 10rem);
+		line-height: 0.9;
+		max-width: 100%;
+	}
+	.post-small {
+		display: grid;
+		gap: 0.3rem;
+		justify-items: end;
+		font-size: 0.82rem;
+		color: var(--ink-soft);
+		text-align: right;
+	}
+	.post-top {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--ink);
+	}
+	.post-wink {
+		min-height: 32px;
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		color: inherit;
+		cursor: help;
+		text-decoration: underline dotted;
+		text-underline-offset: 0.2em;
+	}
+	@media (max-width: 860px) {
+		.post-inner {
+			grid-template-columns: 1fr;
 		}
-		.cover {
-			padding-top: 2.2rem;
+		.post-small {
+			justify-items: start;
+			text-align: left;
 		}
 	}
 </style>

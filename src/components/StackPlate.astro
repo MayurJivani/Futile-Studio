@@ -1,0 +1,641 @@
+---
+/* Plate II: the box in cross-section.
+ *
+ * Drawn to the box as rebuilt on 2026-10-17 (FRC/DEPLOY.md): the request comes
+ * in at Cloudflare's edge, down a tunnel cloudflared dialled out to open,
+ * through Caddy, and from there either straight off disk (the static sites)
+ * or to an app's own systemd service on loopback. All of it runs on Debian 13
+ * straight on the hardware, no hypervisor and no Docker, on a disk that is
+ * failing and so is written to as little as possible.
+ *
+ * Sources: src/data/jinx.js (layers, which sites are files and which are
+ * services), deploy/deploy.sh (the API is the futile-api unit), the Caddy and
+ * systemd config on the box.
+ *
+ * Nothing is shown all at once. Press a part (in the drawing or in the list)
+ * to read about it; "the whole path, in words" is the same thing as text.
+ * Live figures are filled from the page's existing /api/jinx fetch and read
+ * as a waiting field until a number arrives.
+ */
+import { layers, SERVICES, STATIC } from '../data/jinx.js';
+
+const note = Object.fromEntries(layers.map((l) => [l.name, l.note]));
+const files = ['futile.studio', ...STATIC.map((s) => `${s}.futile.studio`), 'staging previews'];
+const units = [...SERVICES, 'the site’s API'];
+
+const parts = [
+	{ k: '1', name: 'Cloudflare edge', tag: 'public entry point', body: 'DNS for futile.studio and the certificate your browser checks. A request arrives here, never at the flat directly.' },
+	{ k: '2', name: 'Tunnel', tag: 'remote access', body: `${note['Cloudflare Tunnel']} cloudflared on the box opened the line; the request comes back down it.` },
+	{ k: '3', name: 'Caddy', tag: 'reverse proxy', body: 'Reads the hostname and either serves files itself or hands the request to an app’s service on loopback. Its config is validated before every reload.' },
+	{ k: '4', name: 'Off disk', tag: 'static files', body: `Built elsewhere, copied over, handed out by Caddy with no process behind them: ${files.join(', ')}.` },
+	{ k: '5', name: 'Services', tag: 'systemd, Node 22', body: `${note['Services']} ${units.join(', ')}.` },
+	{ k: '6', name: 'Debian 13', tag: 'the one OS', body: note['Debian 13'] },
+	{ k: '7', name: 'The disk', tag: 'the weak spot', body: note['The disk'] },
+	{ k: '8', name: 'Jinx', tag: 'the metal', body: 'One machine in a flat in Paderborn. The figure set into it is its uptime, read live.' },
+	{ k: '9', name: 'Copies off the box', tag: 'off the box', body: note['Copies off the box'] },
+];
+---
+
+<figure class="plate" aria-labelledby="plate-cap" data-reveal>
+	<div class="plate-head" aria-hidden="true">
+		<i></i><b>Plate II &middot; the box in section</b><i></i>
+	</div>
+
+	<div class="plate-body">
+		<svg
+			class="plate-svg"
+			viewBox="0 0 620 520"
+			role="img"
+			aria-label="Cross-section of Jinx. A request enters at Cloudflare's edge, comes down a tunnel the box opened from inside, reaches Caddy, and is either served from files on disk or passed to an app's own service. All of it runs on Debian 13 straight on the machine, on a failing disk. Copies of what matters leave the box to the side. The parts list beside the drawing explains each one."
+		>
+			<defs>
+				<pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+					<line x1="0" y1="0" x2="0" y2="7" stroke="currentColor" stroke-width="1" opacity=".45" />
+				</pattern>
+			</defs>
+
+			<g class="ink">
+				<!-- the line between the internet and the flat -->
+				<path d="M20 118h580" class="boundary" />
+				<text x="604" y="110" class="fig-lab" text-anchor="end">the internet</text>
+				<text x="604" y="134" class="fig-lab" text-anchor="end">the flat</text>
+
+				<!-- 1. Cloudflare's edge -->
+				<g data-k="1" class="part">
+					<path d="M274 92a19 19 0 0 1 3-37 25 25 0 0 1 46-8 20 20 0 0 1 20 22 17 17 0 0 1-7 23z" class="cloud" />
+				</g>
+
+				<!-- 6. Debian 13: one fence round everything that serves -->
+				<g data-k="6" class="part">
+					<rect x="70" y="140" width="480" height="250" rx="6" class="fence" />
+				</g>
+
+				<!-- 2. the tunnel: dialled out from inside, so its arrow points up -->
+				<g data-k="2" class="part">
+					<path d="M300 140V96" class="pipe" />
+					<path d="M320 140V96" class="pipe" />
+					<rect x="282" y="148" width="56" height="26" rx="3" class="boxed" />
+					<path d="M330 124l6-8 6 8" class="dial" />
+					<path d="M336 116v20" class="dial" />
+				</g>
+
+				<!-- 3. Caddy: a wall with two gates, one to the files, one to the services -->
+				<g data-k="3" class="part">
+					<path d="M96 240h428v-46H96z" class="slab" />
+					<path d="M150 240v-22a20 20 0 0 1 40 0v22" class="gate" />
+					<path d="M400 240v-22a20 20 0 0 1 40 0v22" class="gate" />
+					<path d="M220 206h24M260 206h24M300 206h24M340 206h24M470 206h24" class="hairline" />
+				</g>
+
+				<!-- 4. files on disk: a stack of sheets -->
+				<g data-k="4" class="part">
+					<g class="box">
+						<rect x="112" y="276" width="104" height="80" rx="2" />
+						<rect x="104" y="284" width="104" height="80" rx="2" />
+						<rect x="96" y="292" width="104" height="80" rx="2" />
+						<path d="M108 312h64M108 324h76M108 336h50M108 348h70" class="hairline" />
+					</g>
+				</g>
+
+				<!-- 5. services: one box per app, with window chrome -->
+				<g data-k="5" class="part">
+					<g class="box">
+						<rect x="296" y="268" width="68" height="56" rx="2" />
+						<path d="M296 282h68" class="fine" />
+						<rect x="376" y="268" width="68" height="56" rx="2" />
+						<path d="M376 282h68" class="fine" />
+						<rect x="456" y="268" width="68" height="56" rx="2" />
+						<path d="M456 282h68" class="fine" />
+						<path d="M306 296h40M306 306h48M466 296h44M466 306h30" class="hairline" />
+					</g>
+				</g>
+
+				<!-- 7. the disk: the slab it all stands on, and the weak spot -->
+				<g data-k="7" class="part">
+					<path d="M58 424h504v-24H58z" class="slab" />
+					<path d="M80 412h460" class="hairline" />
+				</g>
+
+				<!-- 8. the metal: a rack unit with bays, vents and a fan -->
+				<g data-k="8" class="part">
+					<path d="M30 500h560" />
+					<rect x="30" y="500" width="560" height="14" fill="url(#hatch)" stroke="none" />
+					<path d="M58 500v-66h504v66" class="slab" />
+					<path d="M68 446h12M68 460h12M68 474h12M540 446h12M540 460h12M540 474h12" class="fine" />
+					<rect x="100" y="444" width="92" height="20" rx="1" class="fine" />
+					<rect x="100" y="470" width="92" height="20" rx="1" class="fine" />
+					<path d="M214 444v46M228 444v46M242 444v46" class="fine" />
+					<circle cx="90" cy="448" r="3.5" class="led" />
+					<circle cx="470" cy="467" r="23" class="fine" />
+					<circle cx="470" cy="467" r="4.5" class="fine" />
+				</g>
+
+				<!-- 9. copies of what matters leave the box sideways -->
+				<g data-k="9" class="part">
+					<path class="route route-slow" d="M550 330h26" />
+					<g class="box">
+						<ellipse cx="594" cy="316" rx="14" ry="5" />
+						<path d="M580 316v30a14 5 0 0 0 28 0v-30" />
+						<path d="M580 328a14 5 0 0 0 28 0" class="hairline" />
+					</g>
+				</g>
+
+				<!-- The way in, as one line so the pulse can run it: down through
+				     the edge and the tunnel to Caddy, then into a service. The
+				     second line is the other branch, straight off disk. -->
+				<path class="route" id="plate-route" d="M310 18V218H420V264" />
+				<path class="route route-files" d="M310 218H170V288" />
+				<path class="arrow" d="M414 258l6 7 6-7" />
+				<path class="arrow arrow-files" d="M164 282l6 7 6-7" />
+				<circle class="route-pulse" id="plate-pulse" r="5" cx="310" cy="18" />
+
+				<!-- part numbers, matching the list -->
+				<g class="badges">
+					<g data-k="1"><circle cx="248" cy="70" r="14" /><text x="248" y="75">1</text></g>
+					<g data-k="2"><circle cx="356" cy="161" r="14" /><text x="356" y="166">2</text></g>
+					<g data-k="3"><circle cx="82" cy="217" r="14" /><text x="82" y="222">3</text></g>
+					<g data-k="4"><circle cx="84" cy="300" r="14" /><text x="84" y="305">4</text></g>
+					<g data-k="5"><circle cx="536" cy="258" r="14" /><text x="536" y="263">5</text></g>
+					<g data-k="6"><circle cx="548" cy="388" r="14" /><text x="548" y="393">6</text></g>
+					<g data-k="7"><circle cx="40" cy="412" r="14" /><text x="40" y="417">7</text></g>
+					<g data-k="8"><circle cx="40" cy="467" r="14" /><text x="40" y="472">8</text></g>
+					<g data-k="9"><circle cx="594" cy="368" r="14" /><text x="594" y="373">9</text></g>
+				</g>
+			</g>
+
+			<g class="pin-figs">
+				<text x="410" y="348" class="fig-lab" text-anchor="middle">memory</text>
+				<text x="410" y="368" class="fig" id="plate-mem" text-anchor="middle">—</text>
+				<text x="340" y="460" class="fig-lab" text-anchor="middle">awake</text>
+				<text x="340" y="482" class="fig" id="plate-up" text-anchor="middle">—</text>
+			</g>
+		</svg>
+
+		<div class="parts">
+			<p class="parts-label">Press a part</p>
+			<ol class="parts-list" role="list">
+				{
+					parts.map((p) => (
+						<li>
+							<button type="button" class="part-btn" data-part={p.k} aria-pressed="false" aria-controls="part-card">
+								<span class="part-n" aria-hidden="true">{p.k}</span>
+								{p.name}
+							</button>
+						</li>
+					))
+				}
+			</ol>
+			<div class="part-card" id="part-card" aria-live="polite">
+				<p class="part-card-hint">The red line is a request. Pick any part to see what it does there.</p>
+			</div>
+		</div>
+	</div>
+
+	<details class="plate-text">
+		<summary>The whole path, in words</summary>
+		<ol>
+			{
+				parts.map((p) => (
+					<li>
+						<b>{p.name}</b> ({p.tag}). {p.body}
+					</li>
+				))
+			}
+		</ol>
+	</details>
+
+	<figcaption class="plate-cap" id="plate-cap">
+		Drawn from the box's configuration, not from memory. The two figures set into the drawing are read live when you
+		open the page.
+	</figcaption>
+</figure>
+
+<script define:vars={{ plateParts: parts }} is:inline>
+	window.__plateParts = plateParts;
+</script>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	type Part = { k: string; name: string; tag: string; body: string };
+	const partsData: Part[] = (window as any).__plateParts;
+
+	/* The two figures set into the drawing, from the page's own /api/jinx read. */
+	const mem = document.getElementById('plate-mem');
+	const up = document.getElementById('plate-up');
+	const gb = (n: number) => (n / 1024 ** 3).toFixed(1) + ' GB';
+	const days = (s: number) => {
+		const d = Math.floor(s / 86400);
+		if (d >= 1) return d + (d === 1 ? ' day' : ' days');
+		const h = Math.floor(s / 3600);
+		return h + (h === 1 ? ' hour' : ' hours');
+	};
+	window.addEventListener('jinx:vitals', ((e: CustomEvent) => {
+		const v = e.detail;
+		if (!v) return;
+		if (mem && v.memory) mem.textContent = `${gb(v.memory.used)} / ${gb(v.memory.total)}`;
+		if (up && typeof v.hostUptime === 'number') up.textContent = days(v.hostUptime);
+	}) as EventListener);
+
+	const plate = document.querySelector<HTMLElement>('.plate');
+	if (plate) {
+		const card = plate.querySelector<HTMLElement>('#part-card')!;
+		const btns = [...plate.querySelectorAll<HTMLButtonElement>('[data-part]')];
+		const groups = (k: string) => [...plate.querySelectorAll(`.ink [data-k="${k}"]`)];
+		let lit: string | null = null;
+
+		/* One highlight, driven by a press, the scroll pulse, or a hover. */
+		const light = (k: string | null) => {
+			if (k === lit) return;
+			if (lit) groups(lit).forEach((g) => g.classList.remove('is-lit'));
+			lit = k;
+			plate.classList.toggle('is-dimmed', k !== null);
+			if (k) groups(k).forEach((g) => g.classList.add('is-lit'));
+		};
+		let picked: string | null = null;
+		const pick = (k: string) => {
+			picked = picked === k ? null : k;
+			btns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.part === picked)));
+			light(picked);
+			const p = partsData.find((x) => x.k === picked);
+			card.innerHTML = '';
+			if (!p) {
+				card.innerHTML = '<p class="part-card-hint">The red line is a request. Pick any part to see what it does there.</p>';
+				return;
+			}
+			const h = Object.assign(document.createElement('h3'), { className: 'part-card-name', textContent: `${p.k}. ${p.name}` });
+			const t = Object.assign(document.createElement('p'), { className: 'part-card-tag', textContent: p.tag });
+			const b = Object.assign(document.createElement('p'), { className: 'part-card-body', textContent: p.body });
+			card.append(h, t, b);
+		};
+		btns.forEach((b) => b.addEventListener('click', () => pick(b.dataset.part!)));
+		/* the drawing is pressable too, for a pointer; the list is the keyboard way in */
+		plate.querySelectorAll<SVGGElement>('.ink .part').forEach((g) => g.addEventListener('click', () => pick(g.dataset.k!)));
+		plate.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && picked) pick(picked);
+		});
+
+		const route = document.getElementById('plate-route') as SVGPathElement | null;
+		const pulse = document.getElementById('plate-pulse') as SVGCircleElement | null;
+		const reduce =
+			document.documentElement.dataset.motion === 'off' ||
+			(document.documentElement.dataset.motion !== 'on' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+		/* The request walks the plate as you scroll: tied to scroll position,
+		   not a clock, and it never takes over once a part has been picked. */
+		if (!reduce && route && pulse && typeof route.getTotalLength === 'function') {
+			const total = route.getTotalLength();
+			gsap.registerPlugin(ScrollTrigger);
+			ScrollTrigger.create({
+				trigger: plate,
+				start: 'top 75%',
+				end: 'bottom 60%',
+				scrub: true,
+				onUpdate: (self) => {
+					const p = route.getPointAtLength(self.progress * total);
+					pulse.setAttribute('cx', String(p.x));
+					pulse.setAttribute('cy', String(p.y));
+					pulse.style.opacity = String(Math.min(1, Math.max(0, Math.min(self.progress, 1 - self.progress) * 6)));
+					/* read off the drawing's own geometry: edge above y110,
+					   tunnel to y185, Caddy to y245, then the services */
+					if (!picked) light(p.y < 110 ? '1' : p.y < 185 ? '2' : p.y < 245 ? '3' : '5');
+				},
+				onLeave: () => !picked && light(null),
+				onLeaveBack: () => !picked && light(null),
+			});
+		}
+	}
+</script>
+
+<style>
+	.plate {
+		--pl-page: #fbf6e9;
+		--pl-age: rgba(176, 134, 83, 0.13);
+		--pl-edge: rgba(110, 76, 50, 0.38);
+		--pl-rule: rgba(110, 76, 50, 0.75);
+		--pl-ink: #1b2132;
+		--pl-ink-soft: rgba(27, 33, 50, 0.72);
+		--pl-slab: rgba(27, 33, 50, 0.045);
+		--pl-fill: rgba(255, 255, 255, 0.55);
+		--pl-shadow: rgba(27, 33, 50, 0.14);
+		--pl-route: #c4402a;
+		--pl-route-2: #2f7d3a;
+	}
+	/* Lamp off turns the plate into a blueprint. */
+	:global([data-lamp='off']) .plate {
+		--pl-page: #14314f;
+		--pl-age: rgba(120, 170, 220, 0.1);
+		--pl-edge: rgba(176, 208, 240, 0.4);
+		--pl-rule: rgba(190, 219, 247, 0.78);
+		--pl-ink: #eaf2fb;
+		--pl-ink-soft: rgba(234, 242, 251, 0.78);
+		--pl-slab: rgba(190, 219, 247, 0.08);
+		--pl-fill: rgba(190, 219, 247, 0.1);
+		--pl-shadow: rgba(0, 0, 0, 0.45);
+		--pl-route: #ff9b8c;
+		--pl-route-2: #7ad8a6;
+	}
+
+	.plate {
+		position: relative;
+		margin: 0 auto;
+		max-width: 1080px;
+		background:
+			radial-gradient(60% 45% at 14% 10%, var(--pl-age), transparent 70%),
+			radial-gradient(45% 40% at 88% 88%, var(--pl-age), transparent 70%),
+			var(--pl-page);
+		color: var(--pl-ink);
+		border: 1px solid var(--pl-edge);
+		border-radius: 3px;
+		box-shadow: 5px 6px 0 var(--pl-shadow), 0 18px 42px var(--pl-shadow);
+		padding: clamp(1rem, 2.6vw, 2rem) clamp(0.9rem, 2.6vw, 2.2rem) clamp(1.1rem, 2.6vw, 1.8rem);
+	}
+	.plate-head {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		color: var(--pl-rule);
+		margin-bottom: 1rem;
+	}
+	.plate-head i {
+		flex: 1;
+		height: 3px;
+		border-top: 1px solid currentColor;
+		border-bottom: 1px solid currentColor;
+		opacity: 0.5;
+	}
+	.plate-head b {
+		font-family: var(--brand);
+		font-weight: 800;
+		font-size: 0.74rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+	.plate-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+		gap: clamp(1rem, 2.5vw, 2.2rem);
+		align-items: start;
+	}
+	.plate-svg {
+		width: 100%;
+		height: auto;
+		color: var(--pl-ink);
+		overflow: visible;
+	}
+
+	/* stroke work, as a plate should be */
+	.ink path,
+	.ink rect,
+	.ink ellipse,
+	.ink circle {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.ink .slab {
+		fill: var(--pl-slab);
+	}
+	.ink .box rect,
+	.ink .box ellipse,
+	.ink .box path,
+	.ink .boxed,
+	.ink .cloud {
+		fill: var(--pl-fill);
+	}
+	.ink .fine {
+		stroke-width: 1.2;
+		opacity: 0.6;
+	}
+	.ink .hairline {
+		stroke-width: 0.9;
+		opacity: 0.35;
+	}
+	.ink .pipe {
+		stroke-dasharray: 1 7;
+		opacity: 0.6;
+	}
+	.ink .fence {
+		stroke-width: 1.4;
+		stroke-dasharray: 6 5;
+		fill: rgba(127, 127, 127, 0.03);
+	}
+	.ink .boundary {
+		stroke-width: 1.2;
+		stroke-dasharray: 2 6;
+		opacity: 0.7;
+	}
+	.ink .dial {
+		stroke: var(--pl-route-2);
+		stroke-width: 1.8;
+	}
+	.ink .gate {
+		fill: var(--pl-page);
+	}
+	.ink .led {
+		fill: var(--pl-route-2);
+		stroke: none;
+	}
+	.ink .part {
+		cursor: pointer;
+	}
+	.ink .badges circle {
+		fill: var(--pl-page);
+		stroke-width: 1.5;
+	}
+	.ink .badges text {
+		font-family: var(--brand);
+		font-weight: 800;
+		font-size: 15px;
+		fill: var(--pl-ink);
+		stroke: none;
+		text-anchor: middle;
+	}
+	.ink .route {
+		stroke: var(--pl-route);
+		stroke-width: 2.4;
+		stroke-dasharray: 9 7;
+		opacity: 0.9;
+		animation: trace 2.6s linear infinite;
+	}
+	.ink .route-files,
+	.ink .arrow-files {
+		stroke: var(--pl-route-2);
+	}
+	.ink .route-slow {
+		stroke: var(--pl-route-2);
+		animation-duration: 5.2s;
+	}
+	.ink .arrow {
+		stroke: var(--pl-route);
+		stroke-width: 2.4;
+	}
+	.ink .route-pulse {
+		fill: var(--pl-route);
+		stroke: none;
+		opacity: 0;
+	}
+	@keyframes trace {
+		to {
+			stroke-dashoffset: -32;
+		}
+	}
+
+	/* one part lit, the rest dimmed */
+	.ink .part,
+	.ink .badges g {
+		transition: opacity 0.25s ease;
+	}
+	.plate.is-dimmed .ink .part,
+	.plate.is-dimmed .ink .badges g {
+		opacity: 0.25;
+	}
+	.plate.is-dimmed .ink .is-lit {
+		opacity: 1;
+	}
+
+	.fig {
+		font-family: var(--mono);
+		font-size: 17px;
+		font-weight: 500;
+		fill: var(--pl-ink);
+		font-variant-numeric: tabular-nums;
+	}
+	.fig-lab {
+		font-family: var(--mono);
+		font-size: 12px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		fill: var(--pl-ink-soft);
+	}
+
+	/* ---------- the parts: a list to press, and the card it opens ---------- */
+	.parts-label {
+		margin-bottom: 0.5rem;
+		font-family: var(--mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--pl-ink-soft);
+	}
+	.parts-list {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+		gap: 0.35rem;
+	}
+	.part-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		min-height: 44px;
+		padding: 0.3rem 0.6rem;
+		text-align: left;
+		font: 500 0.88rem var(--body);
+		color: var(--pl-ink);
+		background: var(--pl-fill);
+		border: 1px dashed var(--pl-edge);
+		border-radius: 3px;
+		cursor: pointer;
+	}
+	.part-btn[aria-pressed='true'] {
+		border-style: solid;
+		border-color: var(--pl-route);
+		box-shadow: inset 3px 0 0 var(--pl-route);
+	}
+	.part-btn:focus-visible {
+		outline: 2px solid var(--pl-route);
+		outline-offset: 2px;
+	}
+	.part-n {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 1.3rem;
+		height: 1.3rem;
+		border: 1.5px solid currentColor;
+		border-radius: 50%;
+		font: 800 0.66rem var(--brand);
+	}
+	.part-card {
+		min-height: 9rem;
+		margin-top: 0.8rem;
+		padding: 0.9rem 1rem;
+		background: var(--pl-fill);
+		border: 1px solid var(--pl-edge);
+		border-radius: 3px;
+	}
+	.part-card :global(.part-card-name) {
+		font-size: 1.15rem;
+		color: var(--pl-ink);
+	}
+	.part-card :global(.part-card-tag) {
+		font-family: var(--mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--pl-route);
+		margin: 0.1rem 0 0.4rem;
+	}
+	.part-card :global(.part-card-body),
+	.part-card :global(.part-card-hint) {
+		font-size: 0.9rem;
+		line-height: 1.55;
+		color: var(--pl-ink-soft);
+	}
+
+	.plate-text {
+		margin-top: 1rem;
+		font-size: 0.9rem;
+		color: var(--pl-ink-soft);
+	}
+	.plate-text summary {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 600;
+		color: var(--pl-ink);
+		cursor: pointer;
+	}
+	.plate-text ol {
+		display: grid;
+		gap: 0.4rem;
+		padding-left: 1.4rem;
+	}
+	.plate-text b {
+		color: var(--pl-ink);
+	}
+	.plate-cap {
+		margin-top: 0.8rem;
+		padding-top: 0.75rem;
+		border-top: 1px dashed var(--pl-edge);
+		font-size: 0.82rem;
+		color: var(--pl-ink-soft);
+		max-width: 62ch;
+	}
+
+	@media (max-width: 60rem) {
+		.plate-body {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	/* on a phone the drawing takes the full width of the plate's paper */
+	@media (max-width: 560px) {
+		.plate {
+			margin-inline: calc(-1 * var(--gutter, 1rem) + 0.4rem);
+			padding-inline: 0.5rem;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.ink .route {
+			animation: none;
+		}
+	}
+	:global(:root[data-motion='off']) .ink .route {
+		animation: none;
+	}
+</style>

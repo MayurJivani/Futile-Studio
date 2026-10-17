@@ -1,0 +1,101 @@
+---
+/**
+ * A stamp tucked into the page, half under whatever it is stuck to.
+ *
+ * It is a real button (focusable, labelled, works by touch and keyboard), so
+ * "hidden" means small and partly covered, never unreachable. Pressing it
+ * earns the stamp through the same `data-clue` route as every other clue; once
+ * collected it peels off and leaves a faint cancellation mark where it was,
+ * which takes no clicks and no tab stop.
+ */
+import StampArt from './StampArt.astro';
+import { stampById } from '../data/stamps.js';
+
+interface Props {
+	id: string;
+	class?: string;
+	style?: string;
+}
+const { id, class: cls = '', style } = Astro.props;
+const stamp = stampById[id];
+const label = `A ${stamp?.title ?? ''} stamp is tucked in here. Peel it off.`;
+---
+
+{
+	stamp && (
+		<button type="button" class:list={['hidden-stamp', cls]} style={style} data-clue={id} data-label={label} aria-label={label}>
+			<StampArt stamp={stamp} />
+		</button>
+	)
+}
+
+<style is:global>
+	.hidden-stamp {
+		position: absolute;
+		z-index: 4;
+		width: 3.2rem;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		rotate: var(--peek-tilt, 12deg);
+		transition:
+			rotate 0.35s var(--ease-out),
+			translate 0.35s var(--ease-out),
+			opacity 0.4s ease;
+	}
+	.hidden-stamp:hover,
+	.hidden-stamp:focus-visible {
+		rotate: calc(var(--peek-tilt, 12deg) - 8deg);
+		translate: 0 -4px;
+	}
+	/* What is left behind once it is in the album: the cancellation, as if
+	   the stamp had been franked where it stood and lifted off. A ring and a
+	   few wavy lines in the page's red, faint, and inert: it no longer takes
+	   a click, a tab stop or a place in the reading order. */
+	.hidden-stamp::before,
+	.hidden-stamp::after {
+		content: '';
+		position: absolute;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.5s ease 0.25s;
+	}
+	.hidden-stamp::before {
+		left: 18%;
+		top: 14%;
+		width: 64%;
+		aspect-ratio: 1;
+		border: 1.5px solid var(--stamp);
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 3px transparent, inset 0 0 0 4px var(--stamp);
+	}
+	.hidden-stamp::after {
+		left: -22%;
+		top: 30%;
+		width: 80%;
+		height: 34%;
+		background: var(--stamp);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 16'%3E%3Cpath d='M0 2q5-3 10 0t10 0t10 0t10 0M0 8q5-3 10 0t10 0t10 0t10 0M0 14q5-3 10 0t10 0t10 0t10 0' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+	}
+	.hidden-stamp.is-peeled {
+		pointer-events: none;
+		rotate: var(--peek-tilt, 12deg);
+		translate: none;
+	}
+	.hidden-stamp.is-peeled .stamp-art {
+		opacity: 0;
+		translate: 6px -14px;
+		rotate: 22deg;
+		transition:
+			opacity 0.35s ease,
+			translate 0.45s var(--ease-out),
+			rotate 0.45s var(--ease-out);
+	}
+	.hidden-stamp.is-peeled::before {
+		opacity: 0.5;
+	}
+	.hidden-stamp.is-peeled::after {
+		opacity: 0.4;
+	}
+</style>

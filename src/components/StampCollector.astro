@@ -1,0 +1,148 @@
+---
+import { url } from '../lib/url.js';
+/**
+ * The Field Guide's ears. Mounted once by the layout on every scrapbook page,
+ * so a clue on /jinx counts as much as one on the homepage.
+ *
+ * Anything carrying `data-clue="id"` earns that stamp when clicked. Two clues
+ * are not clicks: visiting /jinx, and the lamp actually changing state (the
+ * cord can be dragged as well as clicked, so the lamp is watched instead).
+ * A small paper slip confirms each new stamp, read out politely.
+ */
+import { stamps } from '../data/stamps.js';
+
+const names = Object.fromEntries(stamps.map((s) => [s.id, s.title]));
+const total = stamps.length;
+---
+
+<div class="slip" id="stamp-slip" role="status" aria-live="polite" hidden>
+	<span class="slip-art" id="stamp-slip-art" aria-hidden="true"><span class="slip-ring"></span></span>
+	<span class="slip-copy">
+		<span class="slip-head">Stamp collected</span>
+		<span class="slip-name" id="stamp-slip-name"></span>
+	</span>
+	<a class="slip-link" href={url('#guide')} id="stamp-slip-count"></a>
+</div>
+
+<script define:vars={{ names, total }} is:inline>
+	window.__futileStampNames = names;
+	window.__futileStampTotal = total;
+</script>
+
+<script>
+	import { animate } from 'motion';
+	import { collect, collected } from '../lib/guide.js';
+
+	const names: Record<string, string> = (window as any).__futileStampNames || {};
+	const total: number = (window as any).__futileStampTotal || 0;
+	const slip = document.getElementById('stamp-slip')!;
+	const nameEl = document.getElementById('stamp-slip-name')!;
+	const countEl = document.getElementById('stamp-slip-count')!;
+	const artEl = document.getElementById('stamp-slip-art')!;
+
+	/* A stamp hidden in the page peels away once it is in the album, leaving
+	   its cancellation mark where it was stuck. */
+	const peel = () => {
+		const got = collected();
+		document.querySelectorAll<HTMLElement>('.hidden-stamp[data-clue]').forEach((el) => {
+			const on = got.has(el.dataset.clue!);
+			el.classList.toggle('is-peeled', on);
+			/* Collected: the mark left behind is decoration, not a control. */
+			el.tabIndex = on ? -1 : 0;
+			el.toggleAttribute('aria-hidden', on);
+		});
+	};
+	peel();
+	window.addEventListener('futile-stamp', peel);
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	let hideTimer = 0;
+	window.addEventListener('futile-stamp', (e) => {
+		const id = (e as CustomEvent).detail?.id;
+		if (!id || !names[id]) return;
+		nameEl.textContent = names[id];
+		/* Show the actual stamp when this page has its artwork to copy. */
+		const art = document.querySelector(`[data-stamp-art="${id}"]`);
+		artEl.replaceChildren(art ? art.cloneNode(true) : Object.assign(document.createElement('span'), { className: 'slip-ring' }));
+		countEl.textContent = `${collected().size} of ${total} in the guide`;
+		slip.hidden = false;
+		if (!still()) {
+			animate(slip, { y: [-16, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 380, damping: 26 });
+			animate(
+				artEl,
+				{ scale: [1.6, 1], rotate: [-30, -8] },
+				{ type: 'spring', stiffness: 500, damping: 18 },
+			);
+		}
+		clearTimeout(hideTimer);
+		hideTimer = window.setTimeout(() => (slip.hidden = true), 4200);
+	});
+
+	document.addEventListener('click', (e) => {
+		const el = (e.target as HTMLElement).closest<HTMLElement>('[data-clue]');
+		if (el?.dataset.clue) collect(el.dataset.clue);
+	});
+
+	if (location.pathname.replace(/\/$/, '').endsWith('/jinx')) collect('jinx');
+
+	new MutationObserver(() => collect('lamp')).observe(root, { attributes: true, attributeFilter: ['data-lamp'] });
+</script>
+
+<style is:global>
+	.slip {
+		/* top right, under the nav: well away from whatever was just pressed */
+		position: fixed;
+		right: max(1rem, env(safe-area-inset-right, 0px));
+		top: 4.8rem;
+		z-index: 950;
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		max-width: calc(100vw - 2rem);
+		padding: 0.7rem 1rem 0.7rem 0.8rem;
+		background: var(--card);
+		color: var(--ink);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 6px;
+		box-shadow: var(--lift-high);
+	}
+	.slip[hidden] {
+		display: none;
+	}
+	.slip-art {
+		flex: none;
+		width: 2.8rem;
+		rotate: -8deg;
+	}
+	.slip-ring {
+		display: block;
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 50%;
+		border: 2px solid var(--stamp);
+		box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4.5px var(--stamp);
+	}
+	.slip-copy {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.2;
+	}
+	.slip-head {
+		font-size: 0.75rem;
+		color: var(--ink-soft);
+	}
+	.slip-name {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 1.05rem;
+	}
+	.slip-link {
+		margin-left: 0.4rem;
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+		white-space: nowrap;
+	}
+</style>

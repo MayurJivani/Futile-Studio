@@ -9,6 +9,7 @@
  *
  * Writes one key, `futile-desk`. Layout.astro reads it inline before first paint
  * so a chosen setting never flashes the default first.
+
  */
 ---
 
@@ -52,8 +53,12 @@
 			<input type="checkbox" id="desk-cursors" />
 			<span>Show other people's cursors</span>
 		</label>
+		<label class="desk-check">
+			<input type="checkbox" id="desk-studio" />
+			<span>Appear in the shared studio</span>
+		</label>
 		<p class="desk-hint">
-			Anonymous, and only while somebody else is actually on the same page. Off unless you say so.
+			Anonymous, and only while somebody is actually there. Cursors are off unless you say so; the studio is on unless you say otherwise.
 		</p>
 	</fieldset>
 
@@ -74,10 +79,10 @@
 </aside>
 
 <script>
-	type Desk = { lamp: string; scale: string; contrast: boolean; motion: string; cursors: boolean };
+	type Desk = { lamp: string; scale: string; contrast: boolean; motion: string; cursors: boolean; studio: boolean };
 
 	const KEY = 'futile-desk';
-	const DEFAULTS: Desk = { lamp: 'on', scale: '1', contrast: false, motion: 'system', cursors: false };
+	const DEFAULTS: Desk = { lamp: 'on', scale: '1', contrast: false, motion: 'system', cursors: false, studio: true };
 	const root = document.documentElement;
 
 	const panel = document.getElementById('desk-panel')!;
@@ -87,6 +92,7 @@
 	const lampBtn = document.getElementById('lamp-toggle');
 	const contrastBox = document.getElementById('desk-contrast') as HTMLInputElement | null;
 	const cursorBox = document.getElementById('desk-cursors') as HTMLInputElement | null;
+	const studioBox = document.getElementById('desk-studio') as HTMLInputElement | null;
 
 	function read(): Desk {
 		try {
@@ -127,6 +133,7 @@
 		});
 		if (contrastBox) contrastBox.checked = desk.contrast;
 		if (cursorBox) cursorBox.checked = desk.cursors;
+		if (studioBox) studioBox.checked = desk.studio;
 		/* The cursor layer is its own component; tell it the switch moved. */
 		window.dispatchEvent(new CustomEvent('futile-desk-change'));
 		lampBtn?.setAttribute('aria-pressed', desk.lamp === 'on' ? 'true' : 'false');
@@ -183,6 +190,15 @@
 
 	contrastBox?.addEventListener('change', () => set({ contrast: !!contrastBox.checked }));
 	cursorBox?.addEventListener('change', () => set({ cursors: !!cursorBox.checked }));
+	studioBox?.addEventListener('change', () => set({ studio: !!studioBox.checked }));
+	/* The studio section has its own switch; keep this one in step with it. */
+	window.addEventListener('futile-desk-change', () => {
+		const stored = read();
+		if (stored.studio !== desk.studio) {
+			desk = stored;
+			if (studioBox) studioBox.checked = desk.studio;
+		}
+	});
 
 	/* The lamp in the tab strip is the same setting, reachable without the drawer. */
 	lampBtn?.addEventListener('click', () => set({ lamp: desk.lamp === 'off' ? 'on' : 'off' }));

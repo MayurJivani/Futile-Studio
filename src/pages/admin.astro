@@ -1,0 +1,689 @@
+---
+/* The desk at the back of the shop.
+ *
+ * Everything on the board is editable here: the copy, the links, the dates,
+ * which shelf a thing sits on and what its stamp says. It writes to SQLite
+ * through /api/projects, behind the session and the CSRF token the existing
+ * login already issues.
+ *
+ * noindex, and deliberately not linked from anywhere on the site. Hiding it is
+ * not the security (the routes are what refuse), it just has no business in a
+ * search result.
+ */
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="The back office · Futile Studio" noindex={true}>
+	<main class="admin">
+		<header class="ad-head">
+			<h1>The back office</h1>
+			<p class="ad-sub">
+				What the board says. Changes are saved to the box straight away and appear on the site the next time
+				it is built.
+			</p>
+		</header>
+
+		<!-- signed out -->
+		<section class="ad-gate" id="ad-gate" hidden>
+			<h2>Sign in</h2>
+			<form id="ad-login" class="ad-form">
+				<label for="ad-user">Username</label>
+				<input id="ad-user" name="username" autocomplete="username" required />
+				<label for="ad-pass">Password</label>
+				<input id="ad-pass" name="password" type="password" autocomplete="current-password" required />
+				<button class="btn" type="submit">Sign in</button>
+			</form>
+			<p class="ad-err" id="ad-login-err" role="alert"></p>
+		</section>
+
+		<!-- signed in -->
+		<section class="ad-work" id="ad-work" hidden>
+			<div class="ad-bar">
+				<span id="ad-who"></span>
+				<span class="ad-bar-sp"></span>
+				<button class="btn" id="ad-new" type="button">New project</button>
+				<button class="btn" id="ad-logout" type="button">Sign out</button>
+			</div>
+
+			<p class="ad-status" id="ad-status" role="status"></p>
+
+			<div class="ad-cols">
+				<section>
+					<h2 class="ad-shelf">On the board</h2>
+					<ul class="ad-list" id="ad-open"></ul>
+				</section>
+				<section>
+					<h2 class="ad-shelf">On the workbench</h2>
+					<ul class="ad-list" id="ad-bench"></ul>
+				</section>
+			</div>
+
+			<!-- the Lab's tape deck: src/lib/adminMixtapes.ts -->
+			<section class="mx" aria-labelledby="mx-title">
+				<div class="ad-bar">
+					<h2 class="ad-shelf" id="mx-title">Mixtapes for the Lab deck</h2>
+					<span class="ad-bar-sp"></span>
+					<button class="btn" id="mx-new-track" type="button">New track</button>
+					<button class="btn" id="mx-new-tape" type="button">New mixtape</button>
+				</div>
+				<p class="ad-sub">
+					Published mixtapes play on lab.futile.studio as soon as they are saved; drafts and switched-off tracks
+					stay here. The top published tape is the one the deck loads first, unless one is marked default. Only
+					upload music you have the right to share.
+				</p>
+				<div class="mx-preview">
+					<span id="mx-now">Preview: nothing loaded</span>
+					<audio id="mx-audio" controls preload="none"></audio>
+				</div>
+				<div class="ad-cols">
+					<section>
+						<h3 class="ad-shelf">Mixtapes, in shelf order</h3>
+						<ul class="ad-list" id="mx-tapes"></ul>
+					</section>
+					<section>
+						<h3 class="ad-shelf">Track library</h3>
+						<ul class="ad-list" id="mx-tracks"></ul>
+					</section>
+				</div>
+			</section>
+
+			<!-- the postbox and the studio board: read and moderate -->
+			<section class="pb" aria-labelledby="pb-title">
+				<div class="ad-bar">
+					<h2 class="ad-shelf" id="pb-title">Postbox</h2>
+					<span class="ad-bar-sp"></span>
+					<button class="btn" id="pb-refresh" type="button">Refresh</button>
+					<button class="btn" id="pb-clear-marks" type="button">Clear the studio's marks board</button>
+				</div>
+				<p class="ad-sub" id="pb-status" role="status">Postcards sent from /post land here, newest first.</p>
+				<ol class="pb-list" id="pb-list"></ol>
+			</section>
+		</section>
+
+		<dialog class="ad-dlg" id="mx-track-dlg">
+			<form method="dialog" class="ad-form" id="mx-track-form">
+				<h2 id="mx-track-head">Track</h2>
+				<label for="mt-title">Title</label>
+				<input id="mt-title" required maxlength="120" />
+				<label for="mt-artist">Artist</label>
+				<input id="mt-artist" maxlength="120" />
+				<label for="mt-lib">From the collection</label>
+				<select id="mt-lib"><option value="">Loading the /collection library...</option></select>
+				<small>Fills in the title, artist and audio. The cover comes from the album unless artwork is set.</small>
+				<label for="mt-src">Audio</label>
+				<input id="mt-src" required maxlength="500" placeholder="library:..., /media/... or https://" />
+				<input id="mt-src-file" type="file" accept="audio/*" aria-label="Upload an audio file" />
+				<small>mp3, m4a, ogg, opus, wav, flac or aac. External links only from hosts in MIXTAPE_AUDIO_HOSTS.</small>
+				<label for="mt-artwork">Artwork</label>
+				<input id="mt-artwork" maxlength="500" placeholder="optional" />
+				<input id="mt-artwork-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="Upload artwork" />
+				<label for="mt-desc">Description</label>
+				<textarea id="mt-desc" rows="2" maxlength="500"></textarea>
+				<label class="ad-check"><input type="checkbox" id="mt-enabled" checked /> <span>Enabled (plays on the Lab)</span></label>
+				<p class="ad-err" id="mx-track-err" role="alert"></p>
+				<div class="ad-actions">
+					<button class="btn" type="button" id="mt-preview">Preview</button>
+					<button class="btn" value="cancel" type="submit" formnovalidate>Cancel</button>
+					<button class="btn btn-go" id="mt-save" type="button">Save</button>
+				</div>
+			</form>
+		</dialog>
+
+		<dialog class="ad-dlg" id="mx-tape-dlg">
+			<form method="dialog" class="ad-form" id="mx-tape-form">
+				<h2 id="mx-tape-head">Mixtape</h2>
+				<label for="mp-name">Name</label>
+				<input id="mp-name" required maxlength="80" />
+				<label for="mp-desc">Description</label>
+				<textarea id="mp-desc" rows="2" maxlength="500"></textarea>
+				<label class="ad-check"><input type="checkbox" id="mp-published" /> <span>Published (visible on the Lab)</span></label>
+				<label class="ad-check"><input type="checkbox" id="mp-default" /> <span>Default tape</span></label>
+				<label for="mp-add">Tracks, in play order</label>
+				<ol class="ad-list mx-order" id="mp-tracks"></ol>
+				<select id="mp-add" aria-label="Add a track to this tape"></select>
+				<select id="mp-album" aria-label="Add a whole album from the collection"><option value="">Add a whole album from the collection...</option></select>
+				<p class="ad-err" id="mx-tape-err" role="alert"></p>
+				<div class="ad-actions">
+					<button class="btn" value="cancel" type="submit" formnovalidate>Cancel</button>
+					<button class="btn btn-go" id="mp-save" type="button">Save</button>
+				</div>
+			</form>
+		</dialog>
+
+		<!-- the editor -->
+		<dialog class="ad-dlg" id="ad-dlg">
+			<form method="dialog" class="ad-form" id="ad-edit">
+				<h2 id="ad-dlg-title">Edit</h2>
+
+				<label for="f-id">id</label>
+				<input id="f-id" name="id" required pattern="[a-z0-9][a-z0-9-]*" />
+				<small>lowercase, numbers and hyphens. Cannot be changed later.</small>
+
+				<label for="f-name">Name</label>
+				<input id="f-name" name="name" required maxlength="80" />
+
+				<label for="f-desc">Description</label>
+				<textarea id="f-desc" name="desc" rows="4" maxlength="600"></textarea>
+
+				<label for="f-kind">Kind</label>
+				<input id="f-kind" name="kind" maxlength="40" placeholder="daily game" />
+
+				<label for="f-stack">Stack</label>
+				<input id="f-stack" name="stack" maxlength="200" placeholder="Astro, Node" />
+
+				<label for="f-href">Link</label>
+				<input id="f-href" name="href" type="url" maxlength="300" placeholder="https://" />
+
+				<label for="f-cta">Link wording</label>
+				<input id="f-cta" name="cta" maxlength="40" placeholder="Open" />
+
+				<label for="f-shipped">Shipped</label>
+				<input id="f-shipped" name="shipped" maxlength="7" placeholder="2026-04" pattern="\d{4}(-\d{2})?" />
+
+				<label for="f-shelf">Shelf</label>
+				<select id="f-shelf" name="shelf">
+					<option value="open">On the board</option>
+					<option value="workbench">On the workbench</option>
+				</select>
+
+				<label for="f-status">Stamp (workbench only)</label>
+				<select id="f-status" name="status">
+					<option value="">none</option>
+					<option value="running">answering</option>
+					<option value="bench">on the bench</option>
+					<option value="homeless">wants a home</option>
+					<option value="monster">out with a monster</option>
+					<option value="retired">retired</option>
+				</select>
+
+				<label for="f-mount">Mount</label>
+				<select id="f-mount" name="mount">
+					<option value="tape">tape</option>
+					<option value="pin">pin</option>
+					<option value="clip">clip</option>
+					<option value="corner">corner</option>
+				</select>
+
+				<label for="f-art">Sketch</label>
+				<input id="f-art" name="art" maxlength="40" placeholder="window" />
+
+				<label for="f-origin">Origin note</label>
+				<textarea id="f-origin" name="origin" rows="2" maxlength="400"></textarea>
+				<small>Only where the log book records an earlier attempt. Not a backstory.</small>
+
+				<label class="ad-check"><input type="checkbox" id="f-pick" name="pick" /> <span>Start here</span></label>
+
+				<p class="ad-err" id="ad-form-err" role="alert"></p>
+
+				<div class="ad-actions">
+					<button class="btn" value="cancel" type="submit" formnovalidate>Cancel</button>
+					<button class="btn btn-go" id="ad-save" type="button">Save</button>
+				</div>
+			</form>
+		</dialog>
+	</main>
+</Layout>
+
+<script>
+	import { apiFetch } from '../lib/api.js';
+
+	/* Loads once the signed-in view is showing; every value is set as text,
+	   since every value came from a stranger. */
+	const work = document.getElementById('ad-work')!;
+	const list = document.getElementById('pb-list')!;
+	const status = document.getElementById('pb-status')!;
+	type Card = { id: number; kind: string; message: string; signed: string; reply: string; visitor: string; created_at: string };
+
+	async function loadPostbox() {
+		const res = await apiFetch('/api/postcards');
+		if (!res.ok) return void (status.textContent = 'Could not read the postbox.');
+		const { postcards } = (await res.json()) as { postcards: Card[] };
+		status.textContent = postcards.length ? `${postcards.length} in the postbox.` : 'The postbox is empty.';
+		list.replaceChildren(
+			...postcards.map((c) => {
+				const li = document.createElement('li');
+				const meta = document.createElement('p');
+				meta.className = 'pb-meta';
+				for (const t of [`FP-${String(c.id).padStart(6, '0')}`, c.kind, `${c.created_at} UTC`, c.visitor && `as ${c.visitor}`, c.signed && `signed ${c.signed}`, c.reply && `reply ${c.reply}`]) {
+					if (!t) continue;
+					meta.append(Object.assign(document.createElement('span'), { textContent: t }));
+				}
+				const msg = Object.assign(document.createElement('p'), { className: 'pb-msg', textContent: c.message });
+				const del = Object.assign(document.createElement('button'), { className: 'btn', type: 'button', textContent: 'Delete' });
+				del.addEventListener('click', async () => {
+					if (!confirm(`Delete postcard FP-${String(c.id).padStart(6, '0')}?`)) return;
+					const r = await apiFetch(`/api/postcards/${c.id}`, { method: 'DELETE' });
+					if (r.ok) li.remove();
+					else status.textContent = 'Could not delete that one.';
+				});
+				li.append(meta, msg, del);
+				return li;
+			}),
+		);
+	}
+	document.getElementById('pb-refresh')!.addEventListener('click', loadPostbox);
+	document.getElementById('pb-clear-marks')!.addEventListener('click', async () => {
+		if (!confirm('Empty the shared studio’s marks board for everyone?')) return;
+		const r = await apiFetch('/api/studio/marks/clear', { method: 'POST' });
+		status.textContent = r.ok ? 'Marks board cleared.' : 'Could not clear the board.';
+	});
+	new MutationObserver(() => !work.hidden && loadPostbox()).observe(work, { attributes: true, attributeFilter: ['hidden'] });
+</script>
+
+<script>
+	import { apiFetch, setCsrfToken, esc } from '../lib/api.js';
+	import { loadMixtapes } from '../lib/adminMixtapes';
+
+	const $ = (id: string) => document.getElementById(id)!;
+	const gate = $('ad-gate');
+	const work = $('ad-work');
+	const dlg = $('ad-dlg') as HTMLDialogElement;
+	const status = $('ad-status');
+
+	let editing: string | null = null; // the id being edited, null when creating
+
+	const say = (msg: string) => {
+		status.textContent = msg;
+		if (msg) setTimeout(() => (status.textContent = ''), 4000);
+	};
+
+	/* ---------------- session ---------------- */
+
+	async function whoami() {
+		const res = await apiFetch('/api/auth/me');
+		if (!res.ok) return null;
+		const me = await res.json();
+		setCsrfToken(me.csrfToken);
+		return me;
+	}
+
+	function show(signedIn: boolean, username = '') {
+		gate.hidden = signedIn;
+		work.hidden = !signedIn;
+		if (signedIn) $('ad-who').textContent = `Signed in as ${username}`;
+	}
+
+	($('ad-login') as HTMLFormElement).addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const err = $('ad-login-err');
+		err.textContent = '';
+		const res = await apiFetch('/api/auth/login', {
+			method: 'POST',
+			body: JSON.stringify({
+				username: ($('ad-user') as HTMLInputElement).value,
+				password: ($('ad-pass') as HTMLInputElement).value,
+			}),
+		});
+		const body = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			err.textContent = body.error || 'Could not sign in.';
+			return;
+		}
+		setCsrfToken(body.csrfToken);
+		($('ad-pass') as HTMLInputElement).value = '';
+		show(true, body.username);
+		load();
+	});
+
+	$('ad-logout').addEventListener('click', async () => {
+		await apiFetch('/api/auth/logout', { method: 'POST' });
+		setCsrfToken(null);
+		show(false);
+	});
+
+	/* ---------------- the board ---------------- */
+
+	type Project = Record<string, any>;
+	let board: { open: Project[]; workbench: Project[] } = { open: [], workbench: [] };
+
+	async function load() {
+		const res = await apiFetch('/api/projects');
+		if (!res.ok) return say('Could not read the board.');
+		board = await res.json();
+		paint('ad-open', board.open);
+		paint('ad-bench', board.workbench);
+		loadMixtapes(say);
+	}
+
+	function paint(id: string, list: Project[]) {
+		$(id).innerHTML = list
+			.map(
+				(p) => `
+				<li class="ad-row">
+					<span class="ad-row-main">
+						<b>${esc(p.name)}</b>
+						<i>${esc(p.kind)}${p.shipped ? ' · ' + esc(p.shipped) : ''}</i>
+						<span>${esc(String(p.desc ?? '').slice(0, 110))}</span>
+					</span>
+					<span class="ad-row-act">
+						<button class="btn" data-edit="${esc(p.id)}" type="button">Edit</button>
+						<button class="btn btn-del" data-del="${esc(p.id)}" type="button">Delete</button>
+					</span>
+				</li>`,
+			)
+			.join('');
+	}
+
+	/* The rows are rebuilt on every load, so the listener lives on the list. */
+	for (const listId of ['ad-open', 'ad-bench']) {
+		$(listId).addEventListener('click', (e) => {
+			const t = (e.target as HTMLElement).closest('button');
+			if (!t) return;
+			if (t.dataset.edit) openEditor(find(t.dataset.edit));
+			if (t.dataset.del) remove(t.dataset.del);
+		});
+	}
+
+	const find = (id: string) => [...board.open, ...board.workbench].find((p) => p.id === id);
+
+	/* ---------------- the editor ---------------- */
+
+	const fields = ['id', 'name', 'desc', 'kind', 'stack', 'href', 'cta', 'shipped', 'shelf', 'status', 'mount', 'art', 'origin'];
+
+	function openEditor(p?: Project) {
+		editing = p?.id ?? null;
+		$('ad-dlg-title').textContent = p ? `Edit ${p.name}` : 'New project';
+		for (const f of fields) {
+			($(`f-${f}`) as HTMLInputElement).value = p?.[f] ?? '';
+		}
+		($('f-pick') as HTMLInputElement).checked = Boolean(p?.pick);
+		/* The id is the primary key: changing it on an existing row would be a
+		   different project, so it is only writable while creating one. */
+		($('f-id') as HTMLInputElement).readOnly = Boolean(p);
+		if (!p) ($('f-shelf') as HTMLSelectElement).value = 'open';
+		$('ad-form-err').textContent = '';
+		dlg.showModal();
+	}
+
+	$('ad-new').addEventListener('click', () => openEditor());
+
+	$('ad-save').addEventListener('click', async () => {
+		const body: Project = { pick: ($('f-pick') as HTMLInputElement).checked };
+		for (const f of fields) body[f] = ($(`f-${f}`) as HTMLInputElement).value.trim();
+
+		const err = $('ad-form-err');
+		err.textContent = '';
+		if (!body.name) return void (err.textContent = 'A name is required.');
+		if (!editing && !/^[a-z0-9][a-z0-9-]*$/.test(body.id)) {
+			return void (err.textContent = 'id must be lowercase letters, numbers and hyphens.');
+		}
+
+		const res = await apiFetch(editing ? `/api/projects/${encodeURIComponent(editing)}` : '/api/projects', {
+			method: editing ? 'PUT' : 'POST',
+			body: JSON.stringify(body),
+		});
+		const out = await res.json().catch(() => ({}));
+		if (!res.ok) return void (err.textContent = out.error || 'Could not save.');
+
+		dlg.close();
+		say(editing ? 'Saved.' : 'Added.');
+		load();
+	});
+
+	async function remove(id: string) {
+		const p = find(id);
+		if (!confirm(`Delete ${p?.name ?? id}? This cannot be undone.`)) return;
+		const res = await apiFetch(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
+		if (!res.ok) return say('Could not delete.');
+		say('Deleted.');
+		load();
+	}
+
+	/* ---------------- boot ---------------- */
+
+	whoami().then((me) => {
+		show(Boolean(me), me?.username);
+		if (me) load();
+	});
+</script>
+
+<style>
+	.admin {
+		max-width: 64rem;
+		margin: 0 auto;
+		padding: 2.6rem 2.2rem 4rem;
+	}
+	.ad-head h1 {
+		font-size: clamp(1.8rem, 5vw, 2.8rem);
+	}
+	.ad-sub {
+		margin-top: 0.6rem;
+		max-width: 46rem;
+		font-size: 0.92rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+	}
+
+	.ad-gate,
+	.ad-work {
+		margin-top: 2rem;
+	}
+	.ad-gate[hidden],
+	.ad-work[hidden] {
+		display: none;
+	}
+
+	.ad-form {
+		display: grid;
+		gap: 0.35rem;
+		max-width: 32rem;
+		margin-top: 1rem;
+	}
+	.ad-form label {
+		font-family: var(--bubble);
+		font-weight: 800;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--ink-faint);
+		margin-top: 0.6rem;
+	}
+	.ad-form small {
+		font-size: 0.72rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+	.ad-form input,
+	.ad-form textarea,
+	.ad-form select {
+		font: inherit;
+		font-size: 0.92rem;
+		padding: 0.45rem 0.6rem;
+		background: var(--card);
+		border: 2px solid var(--ink-ghost);
+		border-radius: 3px;
+		color: var(--ink);
+	}
+	.ad-form input:focus-visible,
+	.ad-form textarea:focus-visible,
+	.ad-form select:focus-visible {
+		outline: 2.5px solid var(--ink);
+		outline-offset: 1px;
+	}
+	.ad-form input[readonly] {
+		opacity: 0.6;
+	}
+	/* The form is a grid, so a button left to its own devices stretches the
+	   whole column and stops reading as a button. */
+	.ad-form > button {
+		justify-self: start;
+		margin-top: 1rem;
+	}
+	.ad-check {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.9rem;
+	}
+	.ad-check input {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.ad-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+		padding-bottom: 1rem;
+		border-bottom: 2px dashed var(--ink-ghost);
+		font-size: 0.86rem;
+		color: var(--ink-soft);
+	}
+	.ad-bar-sp {
+		flex: 1;
+	}
+
+	.ad-status {
+		min-height: 1.4rem;
+		margin-top: 0.8rem;
+		font-size: 0.84rem;
+		font-style: italic;
+		color: var(--live);
+	}
+	.ad-err {
+		min-height: 1.2rem;
+		font-size: 0.84rem;
+		color: var(--stamp);
+	}
+
+	.ad-cols {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+		gap: 1.6rem 2rem;
+		margin-top: 0.6rem;
+	}
+	.ad-shelf {
+		font-size: 1rem;
+		margin-bottom: 0.7rem;
+	}
+	.ad-list {
+		list-style: none;
+		display: grid;
+		gap: 0.6rem;
+	}
+
+	/* The rows are written with innerHTML when the board loads, so they never
+	   carry Astro's scoping attribute and a scoped rule never reaches them.
+	   Marked global on purpose; these names exist only on this page. */
+	.ad-list :global(.ad-row) {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.8rem;
+		padding: 0.7rem 0.8rem;
+		background: var(--card-2);
+		border-radius: 3px;
+	}
+	.ad-list :global(.ad-row-main) {
+		flex: 1;
+		display: grid;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+	.ad-list :global(.ad-row-main b) {
+		font-family: var(--bubble);
+		font-size: 0.95rem;
+	}
+	.ad-list :global(.ad-row-main i) {
+		font-size: 0.72rem;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+	.ad-list :global(.ad-row-main span) {
+		font-size: 0.78rem;
+		line-height: 1.5;
+		color: var(--ink-soft);
+	}
+	.ad-list :global(.ad-row-act) {
+		display: flex;
+		gap: 0.35rem;
+		flex-shrink: 0;
+	}
+	.ad-list :global(.btn-del) {
+		color: var(--stamp);
+	}
+	.btn-go {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	.ad-dlg {
+		border: 2px solid var(--ink);
+		border-radius: 5px;
+		background: var(--paper);
+		color: var(--ink);
+		padding: 1.4rem 1.6rem 1.6rem;
+		max-width: min(34rem, 92vw);
+		max-height: 88vh;
+		overflow-y: auto;
+	}
+	.ad-dlg::backdrop {
+		background: rgba(20, 16, 10, 0.5);
+	}
+	.ad-actions {
+		display: flex;
+		gap: 0.6rem;
+		justify-content: flex-end;
+		margin-top: 1.2rem;
+	}
+
+	.mx {
+		margin-top: 3rem;
+	}
+	.mx .ad-bar .ad-shelf {
+		margin: 0;
+	}
+	.mx-preview {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem 1rem;
+		margin: 1rem 0;
+		font-size: 0.84rem;
+		color: var(--ink-soft);
+	}
+	.mx-preview audio {
+		max-width: 100%;
+	}
+	.mx-order {
+		padding: 0;
+	}
+
+	@media (max-width: 40rem) {
+		.admin {
+			padding-left: 1.4rem;
+			padding-right: 1.4rem;
+		}
+		.ad-row {
+			flex-direction: column;
+		}
+	}
+	.pb {
+		margin-top: 3rem;
+	}
+	.pb-list {
+		list-style: none;
+		display: grid;
+		gap: 0.8rem;
+		margin-top: 1rem;
+	}
+	.pb-list li {
+		padding: 0.9rem 1rem;
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+	}
+	.pb-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem 1rem;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		color: var(--ink-soft);
+	}
+	.pb-msg {
+		margin: 0.5rem 0;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+</style>

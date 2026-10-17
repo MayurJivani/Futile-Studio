@@ -1,0 +1,163 @@
+---
+/**
+ * The studio's explorer: a small figure with a big pack and a lantern, drawn
+ * in the same ink as everything else. One drawing, three jobs: greeting at the
+ * door, walking the workbench as you scroll, and standing in for each visitor
+ * in the shared studio (where the pack takes that visitor's colour).
+ *
+ * Limbs are their own groups so CSS can swing them: `.is-walking` swings the
+ * legs, `.is-waving` lifts the free arm. Both stop under reduced motion.
+ */
+interface Props {
+	class?: string;
+	label?: string;
+}
+const { class: cls = '', label } = Astro.props;
+---
+
+<svg
+	class:list={['explorer', cls]}
+	viewBox="0 0 80 120"
+	role={label ? 'img' : undefined}
+	aria-label={label}
+	aria-hidden={label ? undefined : 'true'}
+	fill="none"
+	stroke="currentColor"
+	stroke-width="2.4"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+>
+	<ellipse class="ex-shadow" cx="40" cy="113" rx="20" ry="3.2" fill="currentColor" stroke="none" opacity="0.12"></ellipse>
+	<g class="ex-leg ex-leg-l"><path d="M35 84 L33 106 h-6"></path></g>
+	<g class="ex-leg ex-leg-r"><path d="M45 84 L47 106 h6"></path></g>
+	<g class="ex-bob">
+		<!-- the pack, carried behind -->
+		<rect class="ex-pack" x="13" y="44" width="22" height="32" rx="6" fill="var(--pack, var(--stamp))"></rect>
+		<path d="M17 52 h14" opacity="0.5"></path>
+		<rect x="18" y="38" width="14" height="8" rx="3" fill="var(--card)"></rect>
+		<!-- coat -->
+		<path class="ex-coat" d="M28 46 Q40 41 52 46 L56 86 Q40 90 24 86 Z" fill="var(--card)"></path>
+		<path d="M40 50 V84" opacity="0.35"></path>
+		<!-- arm with the lantern -->
+		<g class="ex-arm ex-arm-lantern">
+			<path d="M52 50 L60 66"></path>
+			<path d="M60 66 v4"></path>
+			<rect x="55.5" y="70" width="9" height="11" rx="2" fill="var(--marker)"></rect>
+			<path d="M57 70 h6 M57 81 h6" stroke-width="2"></path>
+		</g>
+		<!-- free arm, the one that waves -->
+		<g class="ex-arm ex-arm-wave"><path d="M28 50 L20 66"></path><circle cx="19.5" cy="67.5" r="2.4" fill="var(--card)"></circle></g>
+		<!-- head -->
+		<circle cx="40" cy="28" r="13" fill="var(--card)"></circle>
+		<g class="ex-eyes">
+			<circle cx="35.5" cy="29.5" r="1.3" fill="currentColor" stroke="none"></circle>
+			<circle cx="44.5" cy="29.5" r="1.3" fill="currentColor" stroke="none"></circle>
+		</g>
+		<path d="M37.5 34.5 q2.5 2 5 0" stroke-width="1.8"></path>
+		<!-- woolly hat -->
+		<path d="M27 25 Q29 11 40 11 Q51 11 53 25 Z" fill="var(--ink)"></path>
+		<path d="M26 25 H54" stroke-width="3"></path>
+		<circle cx="40" cy="9" r="3.2" fill="var(--card)"></circle>
+	</g>
+</svg>
+
+<style is:global>
+	.explorer {
+		display: block;
+		overflow: visible;
+		color: var(--ink);
+	}
+	.explorer .ex-leg,
+	.explorer .ex-arm,
+	.explorer .ex-bob {
+		transform-box: view-box;
+	}
+	.explorer .ex-leg-l {
+		transform-origin: 35px 84px;
+	}
+	.explorer .ex-leg-r {
+		transform-origin: 45px 84px;
+	}
+	.explorer .ex-arm-wave {
+		transform-origin: 28px 50px;
+		transition: transform 0.5s var(--ease-out, ease);
+	}
+	.explorer .ex-arm-lantern {
+		transform-origin: 52px 50px;
+	}
+
+	.explorer.is-walking .ex-leg-l {
+		animation: ex-step 0.62s ease-in-out infinite alternate;
+	}
+	.explorer.is-walking .ex-leg-r {
+		animation: ex-step 0.62s ease-in-out infinite alternate-reverse;
+	}
+	.explorer.is-walking .ex-bob {
+		animation: ex-bob 0.31s ease-in-out infinite alternate;
+	}
+	.explorer.is-walking .ex-arm-lantern {
+		animation: ex-swing 0.62s ease-in-out infinite alternate;
+	}
+	.explorer.is-waving .ex-arm-wave {
+		animation: ex-wave 0.5s ease-in-out 3 alternate;
+	}
+	.explorer .ex-eyes {
+		transform: translate(var(--look-x, 0px), var(--look-y, 0px));
+		transition: transform 0.25s ease-out;
+	}
+	.explorer.is-hopping {
+		animation: ex-hop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	@keyframes ex-hop {
+		40% {
+			transform: translateY(-14%);
+		}
+	}
+	.explorer.is-idle .ex-bob {
+		animation: ex-breathe 3.6s ease-in-out infinite;
+	}
+
+	@keyframes ex-step {
+		from {
+			transform: rotate(-16deg);
+		}
+		to {
+			transform: rotate(16deg);
+		}
+	}
+	@keyframes ex-bob {
+		to {
+			transform: translateY(-1.6px);
+		}
+	}
+	@keyframes ex-swing {
+		from {
+			transform: rotate(-9deg);
+		}
+		to {
+			transform: rotate(9deg);
+		}
+	}
+	@keyframes ex-wave {
+		from {
+			transform: rotate(60deg);
+		}
+		to {
+			transform: rotate(120deg);
+		}
+	}
+	@keyframes ex-breathe {
+		50% {
+			transform: translateY(-1.2px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .explorer * {
+			animation: none !important;
+		}
+	}
+	html[data-motion='off'] .explorer * {
+		animation: none !important;
+	}
+</style>
