@@ -21,10 +21,12 @@ export const shelfOf = {
 	noggin: 'Games',
 	qno: 'Games',
 	chorusify: 'Games',
+	hunch: 'Games',
 	patina: 'Experiments',
 	knock: 'Experiments',
 	murmur: 'Experiments',
 	mosaic: 'Tools',
+	atlas: 'Tools',
 	cubby: 'Systems',
 	uauth: 'Systems',
 };
