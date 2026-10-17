@@ -135,5 +135,8 @@ export const featured = [
 /** @type {Record<string, string>} */
 export const thumbOf = {
 	borderline: 'shots/borderline-d.webp',
+	atlas: 'shots/atlas-d.webp',
+	hunch: 'shots/hunch-d.webp',
+	cubby: 'shots/cubby-d.webp',
 	...Object.fromEntries(featured.map((f) => [f.id, f.shot.src])),
 };
