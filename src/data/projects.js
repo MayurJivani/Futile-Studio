@@ -136,6 +136,30 @@ export const open = [
 		desc: 'A drop box between your own devices. Encrypted in the browser before it leaves, so the thing in the middle only ever holds ciphertext.',
 		stack: 'Web Crypto, Node',
 	},
+	{
+		id: 'atlas',
+		shipped: '2026-10',
+		name: 'Atlas',
+		kind: 'archive',
+		href: 'https://atlas.futile.studio',
+		cta: 'Open it',
+		mount: 'pin',
+		art: 'archive',
+		desc: "A library for NASA's public image archive, set like a 1962 World's Fair pavilion. It opens on Artemis II, filters by subject, centre and year, and opens any frame at its original resolution. Nothing is mirrored: the images come live from NASA.",
+		stack: 'React, Vite, Motion, NASA APIs',
+	},
+	{
+		id: 'hunch',
+		shipped: '2026-10',
+		name: 'Hunch',
+		kind: 'party game',
+		href: 'https://hunch.futile.studio',
+		cta: 'Play it',
+		mount: 'tape',
+		art: 'door',
+		desc: 'A 3D deduction game for three to five players. Read your clue, question the others, find the habitat.',
+		stack: 'React, three.js, Socket.IO',
+	},
 ];
 
 /** Half-built. On the board so the page is not only the flattering half. */

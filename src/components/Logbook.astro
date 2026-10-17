@@ -33,6 +33,8 @@ const ID: Record<string, string> = {
 	Murmur: 'murmur',
 	Cubby: 'cubby',
 	Borderline: 'borderline',
+	Atlas: 'atlas',
+	Hunch: 'hunch',
 };
 const board = Object.fromEntries([...open, ...workbench].map((p: any) => [p.id, p]));
 const featured = new Set(['patina', 'orbitle', 'noggin', 'chorusify', 'qno', 'knock', 'mosaic']);
@@ -455,6 +457,7 @@ const legend = [
 		grid-area: tags;
 		display: flex;
 		flex-wrap: wrap;
+		align-items: start;
 		gap: 0.35rem;
 	}
 	.cal-feature-tags :global(span) {
@@ -497,7 +500,8 @@ const legend = [
 	.cal-feature-photo[hidden] {
 		display: none;
 	}
-	.cal-feature-photo img {
+	/* the img is made by the script below, so it carries no scope attribute */
+	.cal-feature-photo :global(img) {
 		display: block;
 		width: 100%;
 		height: auto;
