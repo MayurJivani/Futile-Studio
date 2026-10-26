@@ -425,6 +425,8 @@ const titleId = `spread-${p.id}`;
 		z-index: 4;
 		left: 2%;
 		bottom: -1.4rem;
+		/* as wide as the ticket, so the stamp stays on it at every width */
+		width: max-content;
 	}
 	.v-poster .spread-ticket {
 		position: relative;
@@ -433,9 +435,6 @@ const titleId = `spread-${p.id}`;
 		background: #f1e6c8;
 		color: #121214;
 		rotate: -6deg;
-		/* lies over the stamp it is hiding; clicks fall through to the stamp */
-		z-index: 5;
-		pointer-events: none;
 		/* a torn ticket stub: notched ends */
 		clip-path: polygon(0 0, 100% 0, 100% 35%, 96% 50%, 100% 65%, 100% 100%, 0 100%, 0 65%, 4% 50%, 0 35%);
 	}
@@ -444,9 +443,11 @@ const titleId = `spread-${p.id}`;
 		top: -3.4rem;
 		color: #d6a640;
 	}
+	/* stuck over the stub's torn end, so it reads as tucked in, not buried */
 	.v-poster :global(.spread-stamp) {
-		left: 18%;
-		bottom: 0.9rem;
+		right: -1.6rem;
+		bottom: 0.5rem;
+		z-index: 1;
 		--peek-tilt: -18deg;
 	}
 
