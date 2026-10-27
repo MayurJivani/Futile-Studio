@@ -3,7 +3,7 @@
 # copy of this file must stay identical; the script only reloads when it differs.
 http://staging.futile.studio {
 	root * /opt/apps/staging
-	encode zstd gzip
+	import common
 
 	# Previews are for looking at, not for finding.
 	header X-Robots-Tag "noindex, nofollow"

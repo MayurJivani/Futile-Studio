@@ -3,7 +3,6 @@ Description=futile-api (futile.studio API and presence socket)
 After=network-online.target
 
 [Service]
-User=icarusfalls
 WorkingDirectory=/opt/apps/Futile-Studio/server
 EnvironmentFile=/etc/apps/futile-api.env
 Environment=NODE_ENV=production PORT=4000
@@ -11,11 +10,41 @@ ExecStart=/usr/bin/node index.js
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=15
-MemoryMax=384M
-NoNewPrivileges=yes
-ProtectSystem=full
+MemoryMax=512M
+# The server writes next to its code (server/data: studio.db, server/uploads); those two
+# paths are bind-mounted from the state directory, the rest of the tree stays read-only.
+StateDirectory=futile-api/data futile-api/uploads
+BindPaths=/var/lib/futile-api/data:/opt/apps/Futile-Studio/server/data /var/lib/futile-api/uploads:/opt/apps/Futile-Studio/server/uploads
+# --- least privilege: a throwaway user per start, no capabilities, read-only code ---
+DynamicUser=yes
+ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
+PrivateDevices=yes
+PrivateIPC=yes
+NoNewPrivileges=yes
+ProtectProc=invisible
+# No ProcSubset=pid: CPU stats come from /proc/stat and /proc/cpuinfo.
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+# A blocked call fails with EPERM instead of killing the process.
+SystemCallErrorNumber=EPERM
+UMask=0077
+# No MemoryDenyWriteExecute: V8's JIT needs writable+executable pages.
 
 [Install]
 WantedBy=multi-user.target
