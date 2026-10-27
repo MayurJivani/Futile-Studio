@@ -1,5 +1,13 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import crypto from 'node:crypto';
+import { clientIp } from './presence.js';
+
+/* The visitor each limit counts against. `req.ip` under `trust proxy 1` is the
+   hop before Caddy, which on Jinx is loopback for everyone, so every limit was
+   one bucket for the whole site: ten wrong passwords from anyone locked the
+   owner out of /admin. Same rule the presence socket uses. */
+export const keyGenerator = (req) =>
+	ipKeyGenerator(clientIp(req, process.env.NODE_ENV === 'production'));
 
 // Brute-force protection on the login endpoint specifically — far stricter
 // than the general API limit, and keyed so it can't be used to lock out an
@@ -8,6 +16,7 @@ export const loginLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	limit: 10,
 	standardHeaders: true,
+	keyGenerator,
 	legacyHeaders: false,
 	message: { error: 'Too many login attempts. Try again later.' },
 });
@@ -17,6 +26,7 @@ export const apiLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	limit: 120,
 	standardHeaders: true,
+	keyGenerator,
 	legacyHeaders: false,
 	message: { error: 'Too many requests. Slow down.' },
 });
@@ -27,6 +37,7 @@ export const uploadLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	limit: 30,
 	standardHeaders: true,
+	keyGenerator,
 	legacyHeaders: false,
 	message: { error: 'Too many uploads. Try again later.' },
 });

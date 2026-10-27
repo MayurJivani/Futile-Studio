@@ -4,13 +4,14 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { requireAuth } from '../middleware.js';
-import { requireCsrf } from '../lib/security.js';
+import { requireCsrf, keyGenerator } from '../lib/security.js';
 import { validatePostcard } from '../lib/postcards.js';
 
 const sendLimiter = rateLimit({
 	windowMs: 60 * 60 * 1000,
 	limit: 6,
 	standardHeaders: true,
+	keyGenerator,
 	legacyHeaders: false,
 	message: { error: 'That is a lot of post for one hour. Try again later.' },
 });
