@@ -61,11 +61,16 @@ function socketsOf(wss, vkey) {
 	return [...wss.clients].filter((c) => c.vkey && c.vkey === vkey);
 }
 
-/* Behind the reverse proxy every socket arrives from the proxy's address, which
-   made the per-IP cap a cap on the whole site. The proxy appends the real
-   client last, so the last entry is the one nobody upstream could forge. */
-function clientIp(req, trustProxy) {
+/* Behind Cloudflare, cloudflared and Caddy every socket arrives from loopback,
+   and Caddy, not trusting that hop, rewrites X-Forwarded-For to say loopback
+   too. Read either and the whole site is one visitor: one shared vote, six
+   sockets between everyone. CF-Connecting-IP is Cloudflare's, and nobody can
+   forge it while the box is only reachable through the tunnel. The last
+   X-Forwarded-For entry stays as the fallback for any other proxy. */
+export function clientIp(req, trustProxy) {
 	if (trustProxy) {
+		const cf = String(req.headers['cf-connecting-ip'] || '').trim();
+		if (cf) return cf;
 		const fwd = String(req.headers['x-forwarded-for'] || '')
 			.split(',')
 			.map((s) => s.trim())

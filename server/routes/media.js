@@ -10,7 +10,7 @@ import { requireAuth } from '../middleware.js';
 import { requireCsrf, uploadLimiter } from '../lib/security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '..', 'uploads');
+const uploadDir = process.env.STUDIO_UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
 
 // Deliberately excludes image/svg+xml — SVG is XML and can carry an
 // embedded <script>, making it a stored-XSS vector if ever rendered inline.

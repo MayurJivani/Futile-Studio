@@ -33,3 +33,5 @@ server/uploads/*
 .codegraph/
 .impeccable/
 PRODUCT.md
+
+HANDOFF.md

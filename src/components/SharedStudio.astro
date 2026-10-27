@@ -266,7 +266,6 @@ import { ideas } from '../data/studio.js';
 		ws = sock;
 
 		sock.addEventListener('open', () => {
-			retry = 0;
 			sock.send(JSON.stringify(hello('/studio')));
 		});
 		sock.addEventListener('message', (ev) => {
@@ -277,6 +276,9 @@ import { ideas } from '../data/studio.js';
 				return;
 			}
 			if (m.t === 'welcome') {
+				/* only a welcome counts as getting in: a relay that opens and then
+				   refuses ("too many") must still back off */
+				retry = 0;
 				me = m.id;
 				people.clear();
 				if (m.name) {
@@ -329,9 +331,14 @@ import { ideas } from '../data/studio.js';
 			board.dataset.offline = 'true';
 			if (!wanted()) return;
 			offline();
-			/* Back off and try again: a restart on the box should not need a reload. */
-			retry = Math.min(retry + 1, 5);
+			/* Back off and try again, about a minute in all: enough for a restart
+			   on the box, then stop asking. Coming back to the tab or scrolling
+			   back to the studio tries afresh. */
 			clearTimeout(retryTimer);
+			if (++retry > 5) {
+				retry = 0;
+				return;
+			}
 			retryTimer = window.setTimeout(connect, 1000 * 2 ** retry);
 		};
 		sock.addEventListener('close', closed);

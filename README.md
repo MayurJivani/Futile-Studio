@@ -75,7 +75,7 @@ the homepage's shared studio as the `/studio` room: one explorer per connected
 visitor, plus a tally of votes on what to build next. Votes are toggles on a
 fixed list (`src/data/studio.js`), stored in SQLite against an HMAC of the
 client address, never as free text (`node server/lib/votes.selfcheck.js`).
-Behind the proxy the relay reads the client address from `X-Forwarded-For`.
+Behind Cloudflare the relay reads the client address from `CF-Connecting-IP`, since Caddy rewrites `X-Forwarded-For` to loopback (`node server/lib/presence.selfcheck.js`).
 
 **Field Guide:** stamps for opening projects and finding clues, kept in
 `localStorage` under `futile-guide` and never sent anywhere. Any element with
