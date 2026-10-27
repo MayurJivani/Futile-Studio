@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, 'data');
+const dataDir = process.env.STUDIO_DATA_DIR || path.join(__dirname, 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
 export const db = new DatabaseSync(path.join(dataDir, 'studio.db'));

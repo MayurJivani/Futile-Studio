@@ -14,7 +14,8 @@ MemoryMax=512M
 # The server writes next to its code (server/data: studio.db, server/uploads); those two
 # paths are bind-mounted from the state directory, the rest of the tree stays read-only.
 StateDirectory=futile-api/data futile-api/uploads
-BindPaths=/var/lib/futile-api/data:/opt/apps/Futile-Studio/server/data /var/lib/futile-api/uploads:/opt/apps/Futile-Studio/server/uploads
+# DynamicUser state dirs are only writable at their own /var/lib path, so the app is pointed there.
+Environment=STUDIO_DATA_DIR=/var/lib/futile-api/data STUDIO_UPLOAD_DIR=/var/lib/futile-api/uploads
 # --- least privilege: a throwaway user per start, no capabilities, read-only code ---
 DynamicUser=yes
 ProtectSystem=strict

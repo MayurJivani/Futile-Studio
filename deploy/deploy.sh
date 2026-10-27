@@ -47,8 +47,6 @@ npm prune --omit=dev
 # The box npm may rewrite the lockfile in its own dialect; put it back so the next pull fast-forwards.
 git checkout -- package-lock.json
 (cd server && HUSKY=0 npm ci --omit=dev --no-audit --no-fund --loglevel=error)
-# Mount points for the unit's BindPaths (server/data, server/uploads live in /var/lib/futile-api).
-mkdir -p server/data server/uploads
 sudo -n systemctl restart "$NAME"
 
 # Come back and check through Caddy, rather than trusting that a restart meant "serving".

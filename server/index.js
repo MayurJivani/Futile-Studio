@@ -110,7 +110,7 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use('/media', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny', index: false }));
+app.use('/media', express.static(process.env.STUDIO_UPLOAD_DIR || path.join(__dirname, 'uploads'), { dotfiles: 'deny', index: false }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
