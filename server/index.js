@@ -22,7 +22,7 @@ import { attachPresence } from './lib/presence.js';
 import { makeVisitors } from './lib/visitors.js';
 import { makeMarks } from './lib/marks.js';
 import { makePostcards } from './lib/postcards.js';
-import postcardRoutes from './routes/postcards.js';
+import postcardRoutes, { mailboxRoutes } from './routes/postcards.js';
 import studioRoutes from './routes/studio.js';
 import { makeVotes } from './lib/votes.js';
 
@@ -124,7 +124,9 @@ app.use('/api/mixtapes', mixtapeRoutes);
    instance each between the HTTP routes and the presence relay. */
 const visitors = makeVisitors(db);
 const marks = makeMarks();
-app.use('/api/postcards', postcardRoutes({ postcards: makePostcards(db), visitors }));
+const postcards = makePostcards(db);
+app.use('/api/postcards', postcardRoutes({ postcards, visitors }));
+app.use('/api/mailbox', mailboxRoutes({ postcards }));
 app.use('/api/studio', studioRoutes({ marks }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));

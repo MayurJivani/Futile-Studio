@@ -1,0 +1,133 @@
+---
+/* The owner's mailbox: every postcard sent from /post, newest first.
+ *
+ * Cloudflare Access is the login (the "App admin" Access app covers
+ * futile.studio/mailbox and /api/mailbox), and the API checks the Access token
+ * again at the origin through Lab, so the page itself holds nothing: without
+ * the token /api/mailbox answers 401 and the page says so.
+ */
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/url.js';
+---
+
+<Layout title="Mailbox · Futile Studio" noindex={true}>
+	<main id="main" class="mb wrap">
+		<header class="mb-head">
+			<p class="label"><a href={url('post')}>← The postcard desk</a></p>
+			<h1 class="mb-title">Mailbox</h1>
+			<p class="mb-status" id="mb-status" role="status">Opening the box…</p>
+			<button class="btn" id="mb-refresh" type="button">Refresh</button>
+		</header>
+		<ol class="mb-list" id="mb-list"></ol>
+	</main>
+</Layout>
+
+<script>
+	import { apiFetch } from '../lib/api.js';
+
+	type Card = { id: number; kind: string; message: string; signed: string; reply: string; visitor: string; created_at: string };
+	const list = document.getElementById('mb-list')!;
+	const status = document.getElementById('mb-status')!;
+	const no = (id: number) => `FP-${String(id).padStart(6, '0')}`;
+	const el = (tag: string, className: string, textContent = '') => Object.assign(document.createElement(tag), { className, textContent });
+
+	/* Every value came from a stranger, so it is set as text, never as HTML. */
+	function card(c: Card) {
+		const li = el('li', 'mb-card');
+		const meta = el('p', 'mb-meta');
+		const when = new Date(`${c.created_at.replace(' ', 'T')}Z`).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+		for (const t of [no(c.id), c.kind, when, c.visitor && `as ${c.visitor}`]) if (t) meta.append(el('span', '', t));
+		const from = el('p', 'mb-from', c.signed ? `from ${c.signed}` : 'unsigned');
+		if (c.reply) {
+			const a = el('a', '', c.reply) as HTMLAnchorElement;
+			a.href = `mailto:${encodeURIComponent(c.reply).replace('%40', '@')}?subject=${encodeURIComponent(`Re: your postcard ${no(c.id)}`)}`;
+			from.append(' · reply to ', a);
+		}
+		const del = el('button', 'btn', 'Delete') as HTMLButtonElement;
+		del.type = 'button';
+		del.setAttribute('aria-label', `Delete postcard ${no(c.id)}`);
+		del.addEventListener('click', async () => {
+			if (!confirm(`Delete postcard ${no(c.id)}?`)) return;
+			const r = await apiFetch(`/api/mailbox/${c.id}`, { method: 'DELETE' });
+			if (r.ok) {
+				li.remove();
+				count();
+			} else status.textContent = 'Could not delete that one.';
+		});
+		li.append(meta, el('p', 'mb-msg', c.message), from, del);
+		return li;
+	}
+	const count = () => {
+		const n = list.children.length;
+		status.textContent = n ? `${n} postcard${n === 1 ? '' : 's'}.` : 'The mailbox is empty.';
+	};
+
+	async function load() {
+		status.textContent = 'Opening the box…';
+		const res = await apiFetch('/api/mailbox').catch(() => null);
+		if (!res?.ok) {
+			list.replaceChildren();
+			status.textContent = res?.status === 401 ? 'This box is only for its owner. Sign in through Cloudflare Access.' : 'Could not reach the mailbox.';
+			return;
+		}
+		const { postcards } = (await res.json()) as { postcards: Card[] };
+		list.replaceChildren(...postcards.map(card));
+		count();
+	}
+	document.getElementById('mb-refresh')!.addEventListener('click', load);
+	load();
+</script>
+
+<style>
+	.mb {
+		padding-block: 3rem 5rem;
+		max-width: 46rem;
+	}
+	.mb-head {
+		display: grid;
+		gap: 0.6rem;
+		justify-items: start;
+	}
+	.mb-title {
+		font-family: var(--display);
+		font-size: clamp(2.2rem, 7vw, 3.6rem);
+		line-height: 1;
+		color: var(--ink);
+	}
+	.mb-status {
+		color: var(--ink-soft);
+	}
+	.mb-list {
+		list-style: none;
+		display: grid;
+		gap: 1rem;
+		margin-top: 2rem;
+		padding: 0;
+	}
+	.mb-list :global(.mb-card) {
+		padding: 1rem 1.1rem;
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+	}
+	.mb-list :global(.mb-meta) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem 1rem;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		color: var(--ink-soft);
+	}
+	.mb-list :global(.mb-msg) {
+		margin: 0.6rem 0;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.mb-list :global(.mb-from) {
+		margin-bottom: 0.7rem;
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+		overflow-wrap: anywhere;
+	}
+</style>
