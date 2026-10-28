@@ -16,7 +16,7 @@ services:
       STUDIO_DATA_DIR: "/data/data"
       STUDIO_UPLOAD_DIR: "/data/uploads"
     volumes:
-      - /var/lib/futile-api:/data
+      - /var/lib/private/futile-api:/data
     mem_limit: 512m
     read_only: true
     tmpfs:
