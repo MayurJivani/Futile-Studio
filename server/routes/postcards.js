@@ -1,9 +1,10 @@
 /* Postcards from /post. Sending is public and rate-limited; reading and
-   deleting are for the signed-in owner only, through /admin. */
+   deleting are for the owner only: through /admin's session, or through
+   /mailbox behind Cloudflare Access. */
 
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { requireAuth } from '../middleware.js';
+import { requireAuth, requireAccess } from '../middleware.js';
 import { requireCsrf, keyGenerator } from '../lib/security.js';
 import { validatePostcard } from '../lib/postcards.js';
 
@@ -34,5 +35,18 @@ export default function postcardRoutes({ postcards, visitors }) {
 		res.json({ deleted: postcards.remove(id) });
 	});
 
+	return router;
+}
+
+/** /api/mailbox: the same box, for /mailbox, behind Cloudflare Access instead of a password. */
+export function mailboxRoutes({ postcards }) {
+	const router = Router();
+	router.use(requireAccess);
+	router.get('/', (req, res) => res.json({ postcards: postcards.list() }));
+	router.delete('/:id', (req, res) => {
+		const id = Number(req.params.id);
+		if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Bad id.' });
+		res.json({ deleted: postcards.remove(id) });
+	});
 	return router;
 }

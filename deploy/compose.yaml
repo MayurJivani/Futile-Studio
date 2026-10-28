@@ -1,0 +1,25 @@
+# Coolify on Jinx (FRC/DEPLOY.md). Host network: the app listens on 4000 like
+# its old systemd unit did, so its Caddy block, Postgres URL and env file are unchanged.
+services:
+  futile-api:
+    image: ghcr.io/mayurjivani/futile-api:latest
+    network_mode: host
+    restart: unless-stopped
+    user: "1000:1000"
+    command: ["node", "index.js"]
+    env_file:
+      - path: /etc/apps/futile-api.env
+        required: false
+    environment:
+      NODE_ENV: "production"
+      PORT: "4000"
+      STUDIO_DATA_DIR: "/data/data"
+      STUDIO_UPLOAD_DIR: "/data/uploads"
+    volumes:
+      - /var/lib/futile-api:/data
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
