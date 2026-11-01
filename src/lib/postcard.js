@@ -15,7 +15,7 @@ export const addressOf = (card) => (card.direction === 'out' ? [card.addressee |
 /** A stored card as paint() wants it. `media` is where the API serves photos from. */
 export const fromStored = (card, media) => ({
 	...card,
-	image: /^[a-f0-9]{32}\.(jpg|png|webp)$/.test(card.image) ? `${media}/media/postcards/${card.image}` : '',
+	image: /^[a-f0-9]{32}\.(jpg|png|webp)$/.test(card.image) ? `${media}/api/postcards/photos/${card.image}` : '',
 	date: postmarkDate(`${card.created_at.replace(' ', 'T')}Z`),
 	to: addressOf(card),
 });
