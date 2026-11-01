@@ -1,0 +1,382 @@
+---
+/**
+ * One postcard, both sides. The desk at /post draws the card being written
+ * with it, and /mailbox and /track clone it from a <template> and paint a
+ * stored card onto it with paint() from src/lib/postcard.js, so a card looks
+ * the same wherever it is read. Every size is in container units, so the
+ * card scales like a picture instead of reflowing.
+ */
+import PixelArt from './PixelArt.astro';
+import StampArt from './StampArt.astro';
+import { postcardSprites, postcardPalette } from '../data/pixelArt.js';
+import { kinds, inks, postmarks } from '../data/postcards.js';
+
+interface Props {
+	id?: string;
+}
+const { id } = Astro.props;
+const first = kinds[0];
+---
+
+<div class="card-wrap" id={id} data-postcard data-paper="cream" data-design="classic" data-kind={first.id} style={`--ink:${inks[0].color}`}>
+	<div class="card">
+		<!-- front: the picture side -->
+		<section class="face front" data-face="front" aria-label="Postcard, picture side">
+			<p class="front-greeting" data-greeting>{first.greeting}</p>
+			<div class="front-art">
+				<p class="front-big" aria-hidden="true">Futile</p>
+				{
+					kinds.map((k) => (
+						<div class="sprite" data-for={k.id} hidden={k.id !== first.id}>
+							<PixelArt rows={postcardSprites[k.id as keyof typeof postcardSprites]} palette={postcardPalette} />
+						</div>
+					))
+				}
+				<img class="front-photo" data-photo alt="The sender's photo" hidden />
+			</div>
+			<p class="front-mark brandmark">futile<b>.</b>studio</p>
+		</section>
+
+		<!-- back: the writing side -->
+		<section class="face back" data-face="back" aria-label="Postcard, writing side" inert>
+			<div class="back-msg">
+				<p class="back-prompt" data-prompt>{first.prompts[0]}</p>
+				<p class="back-text" data-text data-empty="true">Your message appears here as you write.</p>
+				<p class="back-from" data-from></p>
+			</div>
+			<div class="back-side">
+				<div class="back-top">
+					<button class="pm" type="button" data-postmark aria-label="Press the postmark again">
+						<span class="pm-1">{postmarks[0][0]}</span>
+						<span class="pm-2">{postmarks[0][1]}</span>
+					</button>
+					<button class="stamp-box" type="button" data-stamp aria-expanded="false">
+						{
+							kinds.map((k) => (
+								<span class="stamp-for" data-for={k.id} hidden={k.id !== first.id}>
+									<StampArt stamp={k.stamp} />
+								</span>
+							))
+						}
+						<span class="visually-hidden">Read about this stamp</span>
+					</button>
+				</div>
+				<p class="back-to script" data-to>Mayur Jivani<br />futile.studio<br />Paderborn, DE</p>
+			</div>
+		</section>
+	</div>
+</div>
+
+<style>
+	.card-wrap {
+		position: relative;
+		container-type: inline-size;
+		perspective: 1400px;
+		--paper: #fbf7ec;
+		--paper-edge: #fbf7ec;
+	}
+	.card-wrap[data-paper='kraft'] {
+		--paper: #d9c19a;
+		--paper-edge: #d9c19a;
+	}
+	.card-wrap[data-paper='airmail'] {
+		--paper: #f6efdd;
+		--paper-edge: repeating-linear-gradient(45deg, #c4402a 0 12px, #f6efdd 12px 20px, #2f5d8a 20px 32px, #f6efdd 32px 40px);
+	}
+	.card-wrap[data-paper='graph'] {
+		--paper: #f7f6ef;
+		--paper-edge: #f7f6ef;
+	}
+	.card {
+		position: relative;
+		display: grid;
+		aspect-ratio: 3 / 2;
+		transform-style: preserve-3d;
+		transition: transform 0.7s var(--ease-out);
+		rotate: -1.5deg;
+	}
+	.card.is-back {
+		transform: rotateY(180deg);
+	}
+	.face {
+		grid-area: 1 / 1;
+		backface-visibility: hidden;
+		color: #1b2132;
+		background: var(--paper);
+		border: 9px solid transparent;
+		border-image: var(--paper-edge) 9;
+		box-shadow: var(--lift-high);
+		overflow: hidden;
+	}
+	.card-wrap:not([data-paper='airmail']) .face {
+		border: none;
+		border-radius: 3px;
+	}
+
+	/* ---------- the picture side, and its designs ---------- */
+	.front {
+		position: relative;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		justify-items: center;
+		padding: 4cqi;
+		background:
+			radial-gradient(circle at 50% 60%, rgba(240, 211, 107, 0.35), transparent 60%),
+			var(--paper);
+	}
+	.front-greeting {
+		position: relative;
+		z-index: 1;
+		font-family: var(--wordmark);
+		font-size: 5.6cqi;
+		letter-spacing: 0.04em;
+		line-height: 1.1;
+		text-align: center;
+		color: var(--ink);
+	}
+	.front-art {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 100%;
+		min-height: 0;
+	}
+	.front-art > * {
+		grid-area: 1 / 1;
+	}
+	.sprite {
+		width: 27cqi;
+	}
+	.sprite[hidden],
+	.front-photo[hidden] {
+		display: none;
+	}
+	.front-big {
+		display: none;
+	}
+	.front-mark {
+		position: relative;
+		z-index: 1;
+		font-size: 3cqi;
+	}
+	/* a photo on any design is a snapshot taped to the card */
+	.front-photo {
+		max-width: 62%;
+		max-height: 100%;
+		min-height: 0;
+		object-fit: contain;
+		background: #fff;
+		padding: 1.2cqi 1.2cqi 4cqi;
+		box-shadow: 0 1cqi 2.5cqi rgba(27, 33, 50, 0.25);
+		rotate: 2deg;
+	}
+	.card-wrap[data-photo] .sprite {
+		display: none;
+	}
+
+	.card-wrap[data-design='letters'] .front-big {
+		display: block;
+		font-family: var(--wordmark);
+		font-size: 19cqi;
+		line-height: 1;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: #c4402a;
+		-webkit-text-stroke: 0.5cqi var(--ink);
+		text-shadow: 1.2cqi 1.2cqi 0 #f0d36b;
+	}
+	.card-wrap[data-design='letters'] .sprite {
+		width: 13cqi;
+		align-self: end;
+		justify-self: end;
+		translate: 0 2cqi;
+	}
+	.card-wrap[data-design='letters'] .front-greeting {
+		font-family: var(--script);
+		font-size: 4.6cqi;
+	}
+
+	.card-wrap[data-design='night'] .front {
+		background:
+			radial-gradient(circle at 18% 22%, #fbf7ec 0 0.25cqi, transparent 0.35cqi),
+			radial-gradient(circle at 74% 14%, #fbf7ec 0 0.3cqi, transparent 0.4cqi),
+			radial-gradient(circle at 86% 46%, #fbf7ec 0 0.2cqi, transparent 0.3cqi),
+			radial-gradient(circle at 30% 70%, #fbf7ec 0 0.2cqi, transparent 0.3cqi),
+			radial-gradient(circle at 60% 84%, #fbf7ec 0 0.25cqi, transparent 0.35cqi),
+			radial-gradient(circle at 50% 58%, rgba(198, 232, 74, 0.28), transparent 55%),
+			#1b2132;
+	}
+	.card-wrap[data-design='night'] .front-greeting {
+		color: #c6e84a;
+	}
+	.card-wrap[data-design='night'] .front-mark {
+		color: #fbf7ec;
+	}
+
+	.card-wrap[data-design='blueprint'] .front {
+		background:
+			linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px) 0 0 / 5cqi 5cqi,
+			linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px) 0 0 / 5cqi 5cqi,
+			#2f5d8a;
+	}
+	.card-wrap[data-design='blueprint'] .front-greeting {
+		font-family: var(--mono);
+		font-size: 4cqi;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: #fbf7ec;
+	}
+	.card-wrap[data-design='blueprint'] .sprite {
+		padding: 2cqi;
+		border: 0.3cqi dashed rgba(255, 255, 255, 0.7);
+	}
+	.card-wrap[data-design='blueprint'] .front-mark {
+		color: #fbf7ec;
+	}
+
+	.card-wrap[data-design='photo'] .front {
+		background: repeating-linear-gradient(-45deg, #c4402a 0 3cqi, #fbf7ec 3cqi 6cqi, #2f5d8a 6cqi 9cqi, #fbf7ec 9cqi 12cqi);
+	}
+	.card-wrap[data-design='photo'] .front-photo {
+		position: absolute;
+		grid-area: auto;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		max-width: none;
+		object-fit: cover;
+		padding: 0;
+		rotate: none;
+		box-shadow: none;
+	}
+	.card-wrap[data-design='photo'][data-photo] .front-art {
+		position: static;
+	}
+	.card-wrap[data-design='photo'] .front-greeting {
+		align-self: start;
+		padding: 0.6cqi 2.4cqi;
+		background: rgba(251, 247, 236, 0.9);
+		rotate: -2deg;
+		font-size: 4.4cqi;
+	}
+	.card-wrap[data-design='photo'] .front-mark {
+		align-self: end;
+		padding: 0.4cqi 1.6cqi;
+		background: rgba(251, 247, 236, 0.9);
+	}
+
+	/* ---------- the writing side: message left, address right, a line between ---------- */
+	.back {
+		display: grid;
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+		gap: 3cqi;
+		padding: 3.2cqi;
+		transform: rotateY(180deg);
+	}
+	.card-wrap[data-paper='graph'] .back {
+		background:
+			linear-gradient(rgba(47, 93, 138, 0.18) 1px, transparent 1px) 0 0 / 3cqi 3cqi,
+			linear-gradient(90deg, rgba(47, 93, 138, 0.18) 1px, transparent 1px) 0 0 / 3cqi 3cqi,
+			var(--paper);
+	}
+	.back-msg {
+		position: relative;
+		min-width: 0;
+		padding-right: 3cqi;
+		border-right: 1px solid rgba(27, 33, 50, 0.3);
+		overflow: hidden;
+	}
+	.back-prompt {
+		margin-bottom: 0.8cqi;
+		font-family: var(--mono);
+		font-size: 1.8cqi;
+		letter-spacing: 0.06em;
+		color: rgba(27, 33, 50, 0.6);
+	}
+	.back-text {
+		font-family: var(--script);
+		font-size: 3.4cqi;
+		line-height: 1.25;
+		color: var(--ink);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.back-text[data-empty='true'] {
+		opacity: 0.45;
+	}
+	.back-from {
+		margin-top: 1cqi;
+		font-family: var(--script);
+		font-size: 2.8cqi;
+		color: var(--ink);
+	}
+	.back-side {
+		display: grid;
+		grid-template-rows: auto 1fr;
+		min-width: 0;
+	}
+	.back-top {
+		display: flex;
+		justify-content: flex-end;
+		align-items: flex-start;
+		gap: 1cqi;
+	}
+	.stamp-box {
+		width: 11.5cqi;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		rotate: 3deg;
+		transition: rotate 0.3s var(--ease-out);
+	}
+	.stamp-box:hover:not(:disabled) {
+		rotate: -2deg;
+	}
+	.stamp-for[hidden] {
+		display: none;
+	}
+	/* the cancellation: press it for another */
+	.pm {
+		display: grid;
+		place-items: center;
+		align-content: center;
+		width: 12cqi;
+		aspect-ratio: 1;
+		margin-right: -4cqi;
+		margin-top: 2cqi;
+		z-index: 1;
+		background: none;
+		border: 2px solid rgba(177, 58, 37, 0.75);
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px rgba(177, 58, 37, 0.75);
+		color: rgba(177, 58, 37, 0.9);
+		font: 500 1.4cqi / 1.25 var(--mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		text-align: center;
+		rotate: var(--pm-rot, -12deg);
+		cursor: pointer;
+	}
+	.pm:disabled,
+	.stamp-box:disabled {
+		cursor: default;
+	}
+	.back-to {
+		align-self: end;
+		font-size: 3.2cqi;
+		line-height: 1.6;
+		color: var(--ink);
+		overflow-wrap: anywhere;
+		background: repeating-linear-gradient(to bottom, transparent 0 1.55em, rgba(27, 33, 50, 0.3) 1.55em calc(1.55em + 1px));
+	}
+
+	html[data-motion='off'] .card {
+		transition: none;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .card {
+			transition: none;
+		}
+	}
+</style>
