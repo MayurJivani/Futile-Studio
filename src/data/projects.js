@@ -22,19 +22,6 @@
 /** @type {Array<{id:string,name:string,kind:string,href?:string,cta:string,shipped?:string,mount:string,art:string,pick?:boolean,desc:string,stack:string}>} */
 export const open = [
 	{
-		id: 'borderline',
-		name: 'Borderline',
-		kind: 'daily game',
-		href: 'https://borderline.futile.studio',
-		cta: 'Play today',
-		shipped: '2026-01',
-		mount: 'tape',
-		art: 'postcard',
-		pick: true,
-		desc: 'Five geography rounds a day that ask you to draw, not to name. Two neighbouring countries arrive as one landmass with the border missing and you draw where you think it runs, or a city is named and you click where it sits. The reveal lays the real answer over your guess and scores it in kilometres.',
-		stack: 'Astro, React, static, 29 tests',
-	},
-	{
 		id: 'patina',
 		name: 'Patina',
 		kind: 'canvas',
