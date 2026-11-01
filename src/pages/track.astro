@@ -1,0 +1,267 @@
+---
+/* Tracking for one card: /track?c=<tracking code>. The code comes from the
+ * sender's receipt (or the studio's reply), the API hands back the card, and
+ * the route, the scans and the position on the map are worked out here from
+ * the same postal model the server uses. Nothing polls the server for
+ * progress: the page just recomputes "now" every half minute. */
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Postcard from '../components/Postcard.astro';
+import WorldMap from '../components/WorldMap.astro';
+import { url } from '../lib/url.js';
+---
+
+<Layout title="Tracking · Futile Studio" description="Where a postcard to or from Futile Studio is right now." noindex={true}>
+	<Nav />
+	<main id="main" class="tr wrap">
+		<header class="tr-head">
+			<p class="label"><a href={url('post')}>← The postcard desk</a></p>
+			<h1 class="tr-title">Tracking <span data-no></span></h1>
+			<p class="tr-status" id="tr-status" role="status">Looking for your card…</p>
+			<p class="tr-eta" data-eta></p>
+		</header>
+
+		<div class="tr-body" id="tr-body" hidden>
+			<section class="tr-map" aria-labelledby="tr-map-title">
+				<h2 class="label" id="tr-map-title">Where it is</h2>
+				<WorldMap />
+				<p class="tr-route" data-route></p>
+			</section>
+
+			<section class="tr-card" aria-labelledby="tr-card-title">
+				<h2 class="label" id="tr-card-title">The card</h2>
+				<div data-card-slot><Postcard id="tr-postcard" /></div>
+				<p class="tr-sealed" data-sealed hidden>
+					Sealed until it arrives. The studio wrote something on it; you get to read it the moment it is delivered.
+				</p>
+				<button class="btn" type="button" id="tr-flip" aria-pressed="false" aria-controls="tr-postcard">Turn it over</button>
+				<div class="tr-replies" data-replies hidden></div>
+			</section>
+
+			<section class="tr-scans" aria-labelledby="tr-scans-title">
+				<h2 class="label" id="tr-scans-title">Scans</h2>
+				<ol class="tr-list" data-scans></ol>
+				<p class="tr-note">Times are in your time zone. The route and the timings follow how letter post really travels; the card itself is in the studio's database the whole time.</p>
+			</section>
+		</div>
+	</main>
+</Layout>
+
+<script>
+	import { API_BASE } from '../lib/api.js';
+	import { paint, turn, cardNo, fromStored } from '../lib/postcard.js';
+	import { route, countryName } from '../data/postal.js';
+	import { drawRoute } from '../lib/track.js';
+
+	const $ = (s: string) => document.querySelector(s) as HTMLElement;
+	const status = $('#tr-status');
+	const code = new URLSearchParams(location.search).get('c') ?? '';
+	const when = (t: number) => new Date(t).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+	const day = (t: number | string) => new Date(t).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+
+	async function load() {
+		if (!/^[a-f0-9]{24}$/.test(code)) {
+			status.textContent = 'That is not a tracking code. It is the long one in the link on your receipt.';
+			return;
+		}
+		const res = await fetch(`${API_BASE}/api/postcards/track/${code}`).catch(() => null);
+		if (!res?.ok) {
+			status.textContent = res?.status === 404 ? 'No card with that tracking code. It may have been taken out of the box.' : 'Could not reach the post office. Try again in a moment.';
+			return;
+		}
+		const { card } = await res.json();
+		const r = route(card);
+		const wrap = $('#tr-postcard');
+		const out = card.direction === 'out';
+		$('[data-no]').textContent = cardNo(card.id);
+		$('[data-route]').textContent = `${r.from.name} to ${r.to.name}, ${Math.round(r.days)} day service.`;
+		$('#tr-body').hidden = false;
+
+		paint(wrap, fromStored(card, API_BASE), { still: true });
+		$('[data-sealed]').hidden = !card.sealed;
+		$('#tr-flip').hidden = Boolean(card.sealed);
+		if (card.sealed) wrap.classList.add('is-sealed');
+		const flip = $('#tr-flip');
+		flip.addEventListener('click', () => {
+			const back = !wrap.querySelector('.card')!.classList.contains('is-back');
+			turn(wrap, back);
+			flip.setAttribute('aria-pressed', String(back));
+			flip.textContent = back ? 'Turn to the picture' : 'Turn it over';
+		});
+
+		if (card.replies?.length) {
+			const box = $('[data-replies]');
+			box.hidden = false;
+			box.replaceChildren(
+				...card.replies.map((rep: { id: number; track: string; delivered: boolean; deliveredAt: string }) => {
+					const p = document.createElement('p');
+					const a = Object.assign(document.createElement('a'), { href: `?c=${rep.track}`, textContent: rep.delivered ? 'Read it' : `Track ${cardNo(rep.id)}` });
+					p.append(rep.delivered ? 'The studio wrote back, and it has arrived. ' : `The studio wrote back. It is on its way to you, due ${day(rep.deliveredAt)}. `, a);
+					return p;
+				}),
+			);
+		}
+
+		const svg = document.querySelector('.world') as SVGSVGElement;
+		const tick = () => {
+			const p = drawRoute(svg, r);
+			status.textContent = p.delivered ? `Delivered, ${when(r.deliveredAt)}.` : `${p.last.text}. ${p.last.place}.`;
+			$('[data-eta]').textContent = p.delivered
+				? out ? `Sent from Paderborn, delivered in ${countryName(card.country) || 'its country'}.` : 'It is in the studio’s mailbox.'
+				: `Expected ${day(r.deliveredAt)}.`;
+			$('[data-scans]').replaceChildren(
+				...[...p.seen].reverse().map((e) => {
+					const li = document.createElement('li');
+					const t = Object.assign(document.createElement('time'), { dateTime: new Date(e.at).toISOString(), textContent: when(e.at) });
+					li.append(t, Object.assign(document.createElement('b'), { textContent: e.text }), Object.assign(document.createElement('span'), { textContent: e.place }));
+					return li;
+				}),
+			);
+			return p.delivered;
+		};
+		if (!tick()) {
+			const timer = setInterval(() => {
+				if (!tick()) return;
+				clearInterval(timer);
+				/* a sealed reply opens once it arrives: fetch it again, now with the writing */
+				if (card.sealed) location.reload();
+			}, 30_000);
+		}
+	}
+	load();
+</script>
+
+<style>
+	.tr {
+		padding-block: clamp(2rem, 5vw, 3.5rem) clamp(4rem, 8vw, 6rem);
+	}
+	.tr-head {
+		display: grid;
+		gap: 0.5rem;
+		margin-bottom: 2rem;
+	}
+	.tr-head .label a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		color: var(--ink);
+	}
+	.tr-title {
+		font-family: var(--wordmark);
+		font-weight: 400;
+		font-size: clamp(2.2rem, 6vw, 3.8rem);
+		letter-spacing: 0.03em;
+		line-height: 1;
+	}
+	.tr-title span {
+		font-family: var(--mono);
+		font-size: 0.4em;
+		letter-spacing: 0.08em;
+		color: var(--ink-soft);
+		vertical-align: middle;
+	}
+	.tr-status {
+		font-size: 1.15rem;
+		color: var(--ink);
+	}
+	.tr-eta {
+		color: var(--ink-soft);
+	}
+	.tr-body {
+		display: grid;
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+		grid-template-areas: 'map card' 'scans card';
+		gap: clamp(1.4rem, 4vw, 3rem);
+		align-items: start;
+	}
+	.tr-body[hidden] {
+		display: none;
+	}
+	.tr-body h2 {
+		margin-bottom: 0.6rem;
+	}
+	.tr-map {
+		grid-area: map;
+	}
+	.tr-route {
+		margin-top: 0.5rem;
+		font-family: var(--mono);
+		font-size: 0.75rem;
+		color: var(--ink-soft);
+	}
+	.tr-card {
+		grid-area: card;
+		display: grid;
+		gap: 1.2rem;
+		justify-items: center;
+	}
+	.tr-card [data-card-slot] {
+		width: 100%;
+	}
+	.tr-card :global(.is-sealed .back) {
+		visibility: hidden;
+	}
+	.tr-sealed,
+	.tr-replies {
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+		text-align: center;
+	}
+	.tr-sealed[hidden],
+	.tr-replies[hidden],
+	#tr-flip[hidden] {
+		display: none;
+	}
+	.tr-replies :global(a) {
+		color: var(--ink);
+	}
+	.tr-scans {
+		grid-area: scans;
+	}
+	.tr-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		border-left: 2px solid var(--ink-ghost);
+	}
+	.tr-list :global(li) {
+		position: relative;
+		display: grid;
+		gap: 0.1rem;
+		padding: 0 0 1rem 1.1rem;
+	}
+	.tr-list :global(li)::before {
+		content: '';
+		position: absolute;
+		left: -6px;
+		top: 0.35rem;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--paper);
+		border: 2px solid var(--ink-soft);
+	}
+	.tr-list :global(li:first-child)::before {
+		background: var(--stamp);
+		border-color: var(--stamp);
+	}
+	.tr-list :global(time) {
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		color: var(--ink-soft);
+	}
+	.tr-list :global(span) {
+		font-size: 0.88rem;
+		color: var(--ink-soft);
+	}
+	.tr-note {
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+	}
+	@media (max-width: 900px) {
+		.tr-body {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'map' 'card' 'scans';
+		}
+	}
+</style>

@@ -1,0 +1,97 @@
+---
+/**
+ * The world as dots, one per 3 degree cell of land, in a plain
+ * longitude/latitude projection: x = lon + 180, y = 84 - lat. The tracking
+ * page draws a card's route and its current position on top, in the same
+ * coordinates (see src/lib/track.js).
+ */
+import { LAND } from '../data/geo.js';
+
+const r = 0.85;
+const half = LAND.step / 2;
+let d = '';
+LAND.rows.forEach((row: string, y: number) => {
+	[...row].forEach((ch, x) => {
+		if (ch === 'x') d += `M${x * LAND.step + half - r} ${y * LAND.step + half}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+	});
+});
+const height = LAND.rows.length * LAND.step;
+---
+
+<svg class="world" viewBox={`0 0 360 ${height}`} role="img" aria-label="World map with the card's route">
+	<path class="land" d={d}></path>
+	<path class="route-plan" data-route-plan d=""></path>
+	<path class="route-done" data-route-done d=""></path>
+	<g data-stops></g>
+	<g class="marker" data-marker transform="translate(-20 -20)">
+		<circle class="marker-ring" r="4.5"></circle>
+		<rect x="-2.6" y="-1.8" width="5.2" height="3.6" rx="0.4"></rect>
+	</g>
+</svg>
+
+<style>
+	.world {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: #1b2132;
+		border-radius: 4px;
+	}
+	.land {
+		fill: rgba(239, 230, 207, 0.32);
+	}
+	.route-plan,
+	.route-done {
+		fill: none;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.route-plan {
+		stroke: rgba(239, 230, 207, 0.55);
+		stroke-width: 0.6;
+		stroke-dasharray: 1.4 1.6;
+	}
+	.route-done {
+		stroke: #c6e84a;
+		stroke-width: 1;
+	}
+	.world :global(.stop) {
+		fill: #1b2132;
+		stroke: rgba(239, 230, 207, 0.8);
+		stroke-width: 0.5;
+	}
+	.world :global(.stop[data-passed]) {
+		stroke: #c6e84a;
+	}
+	.marker rect {
+		fill: #fbf7ec;
+		stroke: #c4402a;
+		stroke-width: 0.6;
+	}
+	.marker-ring {
+		fill: rgba(198, 232, 74, 0.25);
+		stroke: #c6e84a;
+		stroke-width: 0.4;
+		animation: ping 2.4s ease-out infinite;
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+	@keyframes ping {
+		from {
+			scale: 0.6;
+			opacity: 1;
+		}
+		to {
+			scale: 1.6;
+			opacity: 0;
+		}
+	}
+	html[data-motion='off'] .marker-ring {
+		animation: none;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .marker-ring {
+			animation: none;
+		}
+	}
+</style>

@@ -2,26 +2,24 @@
 /**
  * The postcard desk. The footer's Post it button comes here.
  *
- * A postcard is written on the page and leaves through the visitor's own mail
- * app: SEND opens a mailto: addressed to the studio with the card filled in.
- * There is no mail server behind this site, so the page never claims to have
- * sent anything; the receipt says the card was handed over, and offers the
- * text to copy if no mail app answered.
+ * A postcard is written on the page and posted to the studio's API, which
+ * keeps it as drawn (design, paper, ink, postmark, photo) and works out a
+ * real-world journey for it: the receipt names the day it should arrive and
+ * links to /track. With no API behind the page (a static preview) the desk
+ * says so and offers the visitor's own mail app instead.
  */
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import DeskPanel from '../components/DeskPanel.astro';
 import Cursors from '../components/Cursors.astro';
-import PixelArt from '../components/PixelArt.astro';
-import StampArt from '../components/StampArt.astro';
+import Postcard from '../components/Postcard.astro';
 import { url } from '../lib/url.js';
-import { postcardSprites, postcardPalette } from '../data/pixelArt.js';
-import { kinds, papers, inks, postmarks, STUDIO_EMAIL, MAX_CHARS } from '../data/postcards.js';
+import { kinds, designs, papers, inks, STUDIO_EMAIL, MAX_CHARS, MAX_IMAGE_BYTES } from '../data/postcards.js';
 
 const first = kinds[0];
 ---
 
-<Layout title="Postcard desk · Futile Studio" description="Write a postcard to Futile Studio. It leaves through your own mail app.">
+<Layout title="Postcard desk · Futile Studio" description="Write a postcard to Futile Studio and follow it across the map.">
 	<Nav />
 	<DeskPanel />
 	<Cursors />
@@ -40,60 +38,12 @@ const first = kinds[0];
 			<!-- ================= the card ================= -->
 			<div class="stage">
 				<div class="paper-stack">
-				<div class="envelope" aria-hidden="true"><span class="env-flap"></span></div>
-				<div class="card-wrap" id="card-wrap" data-paper="cream" data-kind={first.id} style={`--ink:${inks[0].color}`}>
-					<div class="card" id="card">
-						<!-- front: the picture side -->
-						<section class="face front" id="face-front" aria-label="Postcard, picture side">
-							<p class="front-greeting" data-greeting>{first.greeting}</p>
-							<div class="front-art">
-								{
-									kinds.map((k) => (
-										<div class="sprite" data-for={k.id} hidden={k.id !== first.id}>
-											<PixelArt rows={postcardSprites[k.id as keyof typeof postcardSprites]} palette={postcardPalette} />
-										</div>
-									))
-								}
-							</div>
-							<p class="front-mark brandmark">futile<b>.</b>studio</p>
-						</section>
-
-						<!-- back: the writing side -->
-						<section class="face back" id="face-back" aria-label="Postcard, writing side" inert>
-							<div class="back-msg">
-								<p class="back-prompt label" data-prompt>{first.prompts[0]}</p>
-								<p class="back-text" id="preview-text" data-empty="true">Your message appears here as you write.</p>
-								<p class="back-from" id="preview-from"></p>
-							</div>
-							<div class="back-side">
-								<div class="back-top">
-									<button class="pm" type="button" id="postmark" aria-label="Press the postmark again">
-										<span class="pm-1">{postmarks[0][0]}</span>
-										<span class="pm-2" data-pm-date>{postmarks[0][1]}</span>
-									</button>
-									<button class="stamp-box" type="button" id="stamp-btn" aria-expanded="false" aria-controls="stamp-notes">
-										{
-											kinds.map((k) => (
-												<span class="stamp-for" data-for={k.id} hidden={k.id !== first.id}>
-													<StampArt stamp={k.stamp} />
-												</span>
-											))
-										}
-										<span class="visually-hidden">Read about this stamp</span>
-									</button>
-								</div>
-								<p class="back-to script">
-									Mayur Jivani<br />futile.studio<br />Paderborn, DE
-								</p>
-							</div>
-						</section>
-					</div>
-				</div>
-
+					<div class="envelope" aria-hidden="true"><span class="env-flap"></span></div>
+					<div class="card-in" id="card-in"><Postcard id="card-wrap" /></div>
 				</div>
 
 				<div class="stage-actions">
-					<button class="btn" type="button" id="flip" aria-pressed="false" aria-controls="card">Turn it over</button>
+					<button class="btn" type="button" id="flip" aria-pressed="false" aria-controls="card-wrap">Turn it over</button>
 				</div>
 
 				<aside class="stamp-notes" id="stamp-notes" hidden>
@@ -154,6 +104,29 @@ const first = kinds[0];
 					</div>
 				</div>
 
+				<fieldset class="pick">
+					<legend class="label">Picture side</legend>
+					<div class="pick-row">
+						{
+							designs.map((d, i) => (
+								<label class="chip">
+									<input type="radio" name="design" value={d.id} checked={i === 0} />
+									<span>{d.label}</span>
+								</label>
+							))
+						}
+					</div>
+				</fieldset>
+
+				<div class="photo-field">
+					<label class="label" for="photo">Photo (optional)</label>
+					<input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-note" />
+					<p class="photo-note" id="photo-note">
+						JPEG, PNG or WebP, up to {MAX_IMAGE_BYTES / 1024 / 1024} MB. Location and camera details are removed before it is kept.
+						<button class="link" type="button" id="photo-clear" hidden>Take it off</button>
+					</p>
+				</div>
+
 				<div class="two">
 					<fieldset class="pick">
 						<legend class="label">Paper</legend>
@@ -188,6 +161,7 @@ const first = kinds[0];
 					<button class="btn" type="button" id="surprise">Surprise me</button>
 					<button class="link" type="button" id="rts">Return to sender</button>
 				</div>
+				<p class="mine" id="mine" hidden>Your post: <span data-mine></span></p>
 				<p class="how" id="how">
 					The card is stored in the studio's postbox and read by a person. Your reply address, if you give one, is
 					used to reply and for nothing else.
@@ -208,11 +182,11 @@ const first = kinds[0];
 					<div><dt>Received</dt><dd data-rc-time></dd></div>
 					<div><dt>Kind</dt><dd data-rc-kind></dd></div>
 					<div><dt>Class</dt><dd data-rc-class></dd></div>
-					<div><dt>To</dt><dd>{STUDIO_EMAIL}</dd></div>
+					<div><dt>To</dt><dd>Paderborn, DE</dd></div>
 				</dl>
 				<p class="rc-note">
-					In the postbox. The studio's server accepted it and filed it under the number above; it gets read in
-					/admin.
+					In the postbox. It travels like real post now: it should reach Paderborn by <b data-rc-eta></b>.
+					<a data-rc-track href="#">Track it on the map</a>. Keep that link: it is the only way back to this card.
 				</p>
 				<p class="rc-msg" role="status"></p>
 				<div class="form-actions">
@@ -225,8 +199,8 @@ const first = kinds[0];
 	</main>
 </Layout>
 
-<script define:vars={{ kinds, postmarks, email: STUDIO_EMAIL, max: MAX_CHARS }} is:inline>
-	window.__postcard = { kinds, postmarks, email, max };
+<script define:vars={{ email: STUDIO_EMAIL, max: MAX_CHARS, maxImage: MAX_IMAGE_BYTES, trackUrl: url('track') }} is:inline>
+	window.__postcard = { email, max, maxImage, trackUrl };
 </script>
 
 <script>
@@ -234,110 +208,128 @@ const first = kinds[0];
 	import { collect } from '../lib/guide.js';
 	import { API_BASE } from '../lib/api.js';
 	import { visitor } from '../lib/visitor.js';
+	import { paint, turn as turnCard, cardNo, postmarkDate } from '../lib/postcard.js';
+	import { kinds, postmarks } from '../data/postcards.js';
 
-	type Kind = { id: string; label: string; greeting: string; klass: string; prompts: string[] };
-	const { kinds, postmarks, email, max } = (window as any).__postcard as { kinds: Kind[]; postmarks: string[][]; email: string; max: number };
+	const { email, max, maxImage, trackUrl } = (window as any).__postcard as { email: string; max: number; maxImage: number; trackUrl: string };
 	const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 	const root = document.documentElement;
 	const still = () => root.dataset.motion === 'off' || (root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 	const form = $<HTMLFormElement>('postcard-form');
 	const wrap = $('card-wrap');
-	const card = $('card');
+	/* Motion leaves an inline transform behind on whatever it animates; on the flipping
+	   .card that beat .is-back and the card would never turn over again. Wiggle the holder instead. */
+	const holder = $('card-in');
 	const msg = $<HTMLTextAreaElement>('msg');
 	const from = $<HTMLInputElement>('from');
 	const reply = $<HTMLInputElement>('reply');
-	const preview = $('preview-text');
-	const previewFrom = $('preview-from');
+	const photo = $<HTMLInputElement>('photo');
 	const count = $('msg-count');
 	const err = $('msg-err');
 	const flip = $<HTMLButtonElement>('flip');
-	const front = $('face-front');
-	const back = $('face-back');
-	const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-	document.querySelector('[data-pm-date]')!.textContent = today;
+	const today = postmarkDate(Date.now());
 
-	const kind = () => kinds.find((k) => k.id === (form.elements.namedItem('kind') as RadioNodeList).value) ?? kinds[0];
+	const value = (name: string) => (form.elements.namedItem(name) as RadioNodeList).value;
+	const kind = () => kinds.find((k) => k.id === value('kind')) ?? kinds[0];
 	let promptAt = 0;
+	let pmAt = 0;
+	let photoUrl = '';
 
-	/* ---------- the card follows the form ---------- */
-	function showKind() {
-		const k = kind();
-		wrap.dataset.kind = k.id;
-		document.querySelectorAll<HTMLElement>('[data-for]').forEach((el) => (el.hidden = el.dataset.for !== k.id));
-		document.querySelector('[data-greeting]')!.textContent = k.greeting;
-		promptAt = 0;
-		setPrompt(k.prompts[0]);
-	}
-	function setPrompt(p: string) {
-		document.querySelector('[data-prompt]')!.textContent = p;
-		msg.placeholder = p;
-	}
-	function showText() {
-		const t = msg.value.trim();
-		preview.textContent = t || 'Your message appears here as you write.';
-		preview.dataset.empty = String(!t);
-		previewFrom.textContent = from.value.trim() ? `from ${from.value.trim()}` : '';
+	/* ---------- the card follows the form: one paint, the same one /mailbox and /track use ---------- */
+	const look = () => ({
+		kind: kind().id,
+		design: value('design'),
+		paper: value('paper'),
+		ink: value('ink'),
+		postmark: pmAt,
+		prompt: promptAt,
+		message: msg.value,
+		signed: from.value.trim(),
+		image: photoUrl,
+		date: today,
+	});
+	function show() {
+		paint(wrap, look());
+		document.querySelectorAll<HTMLElement>('#stamp-notes [data-for]').forEach((el) => (el.hidden = el.dataset.for !== kind().id));
+		msg.placeholder = kind().prompts[promptAt];
 		count.textContent = `${msg.value.length} / ${max}`;
-		if (t) err.textContent = '';
-	}
-	function showStyle() {
-		wrap.dataset.paper = (form.elements.namedItem('paper') as RadioNodeList).value;
-		const ink = form.querySelector<HTMLInputElement>('input[name="ink"]:checked');
-		wrap.style.setProperty('--ink', ink?.dataset.color ?? '#1b2a4a');
+		if (msg.value.trim()) err.textContent = '';
 	}
 	form.addEventListener('change', (e) => {
-		const n = (e.target as HTMLInputElement).name;
-		if (n === 'kind') showKind();
-		if (n === 'paper' || n === 'ink') showStyle();
+		if ((e.target as HTMLInputElement).name === 'kind') promptAt = 0;
+		show();
 	});
-	msg.addEventListener('input', showText);
-	from.addEventListener('input', showText);
+	msg.addEventListener('input', show);
+	from.addEventListener('input', show);
+
+	/* ---------- the photo: previewed from the visitor's own disk, checked again by the server ---------- */
+	const clearPhoto = () => {
+		if (photoUrl) URL.revokeObjectURL(photoUrl);
+		photoUrl = '';
+		photo.value = '';
+		$('photo-clear').hidden = true;
+	};
+	photo.addEventListener('change', () => {
+		const f = photo.files?.[0];
+		if (photoUrl) URL.revokeObjectURL(photoUrl);
+		photoUrl = '';
+		if (f && !['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) {
+			err.textContent = 'Photos can be JPEG, PNG or WebP.';
+			clearPhoto();
+		} else if (f && f.size > maxImage) {
+			err.textContent = `That photo is over ${maxImage / 1024 / 1024} MB. Try a smaller one.`;
+			clearPhoto();
+		} else if (f) {
+			photoUrl = URL.createObjectURL(f);
+			$('photo-clear').hidden = false;
+			err.textContent = '';
+			turn(false);
+		}
+		show();
+	});
+	$('photo-clear').addEventListener('click', () => {
+		clearPhoto();
+		show();
+	});
 
 	/* ---------- turning it over ---------- */
 	function turn(toBack: boolean) {
-		card.classList.toggle('is-back', toBack);
+		turnCard(wrap, toBack);
 		flip.setAttribute('aria-pressed', String(toBack));
 		flip.textContent = toBack ? 'Turn to the picture' : 'Turn it over';
-		front.inert = toBack;
-		back.inert = !toBack;
 	}
-	flip.addEventListener('click', () => turn(!card.classList.contains('is-back')));
+	flip.addEventListener('click', () => turn(!wrap.querySelector('.card')!.classList.contains('is-back')));
 	/* writing turns the card to the side you are writing on */
 	msg.addEventListener('focus', () => turn(true));
 
 	/* ---------- prompts, surprises, the postmark, the stamp ---------- */
 	$('prompt-btn').addEventListener('click', () => {
-		const k = kind();
-		promptAt = (promptAt + 1) % k.prompts.length;
-		setPrompt(k.prompts[promptAt]);
+		promptAt = (promptAt + 1) % kind().prompts.length;
+		show();
 	});
-	const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+	const pickIndex = (n: number) => Math.floor(Math.random() * n);
 	$('surprise').addEventListener('click', () => {
-		for (const name of ['kind', 'paper', 'ink']) {
+		for (const name of ['kind', 'design', 'paper', 'ink']) {
 			const radios = [...form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)];
-			pick(radios).checked = true;
+			radios[pickIndex(radios.length)].checked = true;
 		}
-		showKind();
-		showStyle();
-		setPrompt(pick(kind().prompts));
+		promptAt = pickIndex(kind().prompts.length);
+		show();
 		turn(false);
-		if (!still()) animate(card, { rotate: [-3, 0], scale: [0.97, 1] }, { type: 'spring', stiffness: 300, damping: 14 });
+		if (!still()) animate(holder, { rotate: [-3, 0], scale: [0.97, 1] }, { type: 'spring', stiffness: 300, damping: 14 });
 	});
 
-	let pmAt = 0;
-	const pm = $<HTMLButtonElement>('postmark');
+	const pm = wrap.querySelector<HTMLButtonElement>('[data-postmark]')!;
 	pm.addEventListener('click', () => {
 		pmAt = (pmAt + 1) % postmarks.length;
-		const [a, b] = postmarks[pmAt];
-		pm.querySelector('.pm-1')!.textContent = a;
-		pm.querySelector('.pm-2')!.textContent = b === 'today' ? today : b;
-		pm.style.setProperty('--pm-rot', `${Math.round(Math.random() * 30 - 15)}deg`);
+		show();
 		if (!still()) animate(pm, { scale: [1.35, 1], opacity: [0.3, 1] }, { type: 'spring', stiffness: 520, damping: 16 });
 	});
 
-	const stampBtn = $<HTMLButtonElement>('stamp-btn');
+	const stampBtn = wrap.querySelector<HTMLButtonElement>('[data-stamp]')!;
 	const notes = $('stamp-notes');
+	stampBtn.setAttribute('aria-controls', 'stamp-notes');
 	stampBtn.addEventListener('click', () => {
 		notes.hidden = !notes.hidden;
 		stampBtn.setAttribute('aria-expanded', String(!notes.hidden));
@@ -346,16 +338,42 @@ const first = kinds[0];
 	/* ---------- return to sender ---------- */
 	function reset() {
 		form.reset();
-		showKind();
-		showStyle();
-		showText();
+		promptAt = 0;
+		pmAt = 0;
+		clearPhoto();
+		show();
 		turn(false);
 		err.textContent = '';
 	}
 	$('rts').addEventListener('click', () => {
 		reset();
-		if (!still()) animate(card, { x: [0, -24, 0], rotate: [0, -4, 0] }, { duration: 0.45 });
+		if (!still()) animate(holder, { x: [0, -24, 0], rotate: [0, -4, 0] }, { duration: 0.45 });
 	});
+
+	/* ---------- the visitor's own post: tracking links kept in this browser only ---------- */
+	type Mine = { id: number; track: string };
+	const MINE = 'futile-post-sent';
+	const mine = (): Mine[] => {
+		try {
+			return JSON.parse(localStorage.getItem(MINE) || '[]').filter((m: Mine) => Number.isInteger(m.id) && /^[a-f0-9]{24}$/.test(m.track));
+		} catch {
+			return [];
+		}
+	};
+	const trackLink = (m: Mine) => `${trackUrl}?c=${m.track}`;
+	function showMine() {
+		const list = mine();
+		$('mine').hidden = !list.length;
+		$('mine')
+			.querySelector('[data-mine]')!
+			.replaceChildren(
+				...list.slice(-6).flatMap((m, i) => {
+					const a = Object.assign(document.createElement('a'), { href: trackLink(m), textContent: cardNo(m.id) });
+					return i ? [', ', a] : [a];
+				}),
+			);
+	}
+	showMine();
 
 	/* ---------- sending: into the studio's postbox ----------
 	   A receipt is only ever shown for a card the server answered 201 for.
@@ -378,7 +396,7 @@ const first = kinds[0];
 		}
 		office.dataset.state = open ? 'open' : 'preview';
 		office.textContent = open
-			? 'The post office is open. Cards go straight into the studio’s postbox.'
+			? 'The post office is open. Cards go into the studio’s postbox and travel like real post.'
 			: 'Preview mode: the post office is closed on this copy of the site, so nothing written here will be sent.';
 	})();
 	const showSender = () => {
@@ -419,30 +437,31 @@ const first = kinds[0];
 		sendBtn.disabled = true;
 		sendBtn.textContent = 'Posting…';
 		try {
-			const res = await fetch(`${API_BASE}/api/postcards`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					kind: k.id,
-					message: msg.value,
-					signed,
-					reply: reply.value,
-					token: visitor().token,
-					website: ($('website') as HTMLInputElement).value,
-					elapsed: Date.now() - opened,
-				}),
-			});
-			const body = await res.json().catch(() => ({}));
+			const l = look();
+			const body = new FormData();
+			for (const [key, v] of Object.entries({ ...l, message: msg.value, reply: reply.value, token: visitor().token, website: ($('website') as HTMLInputElement).value, elapsed: Date.now() - opened }))
+				if (key !== 'image' && key !== 'date') body.append(key, String(v ?? ''));
+			if (photo.files?.[0] && photoUrl) body.append('image', photo.files[0]);
+			const res = await fetch(`${API_BASE}/api/postcards`, { method: 'POST', body });
+			const out = await res.json().catch(() => ({}));
 			if (res.status !== 201) {
-				err.textContent = body.error || 'The post office refused that one. Try again in a moment.';
+				err.textContent = out.error || 'The post office refused that one. Try again in a moment.';
 				return;
 			}
 			collect('post');
-			receipt.querySelector('[data-rc-no]')!.textContent = `FP-${String(body.id).padStart(6, '0')}`;
-			receipt.querySelector('[data-rc-time]')!.textContent = new Date(body.receivedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+			try {
+				localStorage.setItem(MINE, JSON.stringify([...mine(), { id: out.id, track: out.track }].slice(-30)));
+			} catch {
+				/* private window: the receipt link still works, it just is not remembered here */
+			}
+			showMine();
+			receipt.querySelector('[data-rc-no]')!.textContent = cardNo(out.id);
+			receipt.querySelector('[data-rc-time]')!.textContent = new Date(out.receivedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 			receipt.querySelector('[data-rc-kind]')!.textContent = k.label;
 			receipt.querySelector('[data-rc-class]')!.textContent = k.klass;
 			receipt.querySelector('[data-rc-date]')!.textContent = today;
+			receipt.querySelector('[data-rc-eta]')!.textContent = new Date(out.deliveredAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+			receipt.querySelector<HTMLAnchorElement>('[data-rc-track]')!.href = trackLink(out);
 			form.hidden = true;
 			receipt.hidden = false;
 			$('receipt-title').focus();
@@ -479,9 +498,7 @@ const first = kinds[0];
 		msg.focus();
 	});
 
-	showKind();
-	showStyle();
-	showText();
+	show();
 </script>
 
 <style>
@@ -543,178 +560,15 @@ const first = kinds[0];
 		background: #d8c7a2;
 		clip-path: polygon(0 0, 100% 0, 50% 100%);
 	}
-	.card-wrap {
+	.card-in {
 		position: relative;
-		perspective: 1400px;
 		animation: slide-out 0.9s var(--ease-out) 0.15s both;
-		--paper: #fbf7ec;
-		--paper-edge: #fbf7ec;
 	}
 	@keyframes slide-out {
 		from {
 			translate: 0 38%;
 			rotate: 3deg;
 		}
-	}
-	.card-wrap[data-paper='kraft'] {
-		--paper: #d9c19a;
-		--paper-edge: #d9c19a;
-	}
-	.card-wrap[data-paper='airmail'] {
-		--paper: #f6efdd;
-		--paper-edge: repeating-linear-gradient(45deg, #c4402a 0 12px, #f6efdd 12px 20px, #2f5d8a 20px 32px, #f6efdd 32px 40px);
-	}
-	.card {
-		position: relative;
-		display: grid;
-		aspect-ratio: 3 / 2;
-		transform-style: preserve-3d;
-		transition: transform 0.7s var(--ease-out);
-		rotate: -1.5deg;
-	}
-	.card.is-back {
-		transform: rotateY(180deg);
-	}
-	.face {
-		grid-area: 1 / 1;
-		backface-visibility: hidden;
-		color: #1b2132;
-		background: var(--paper);
-		border: 9px solid transparent;
-		border-image: var(--paper-edge) 9;
-		box-shadow: var(--lift-high);
-		overflow: hidden;
-	}
-	.card-wrap:not([data-paper='airmail']) .face {
-		border: none;
-		border-radius: 3px;
-	}
-
-	/* the picture side */
-	.front {
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-		justify-items: center;
-		padding: clamp(0.8rem, 3vw, 1.6rem);
-		background:
-			radial-gradient(circle at 50% 60%, rgba(240, 211, 107, 0.35), transparent 60%),
-			var(--paper);
-	}
-	.front-greeting {
-		font-family: var(--wordmark);
-		font-size: clamp(1.3rem, 4vw, 2.3rem);
-		letter-spacing: 0.04em;
-		line-height: 1.1;
-		text-align: center;
-		color: var(--ink);
-	}
-	.front-art {
-		display: grid;
-		place-items: center;
-		width: 100%;
-		min-height: 0;
-	}
-	.sprite {
-		width: min(42%, 11rem);
-	}
-	.sprite[hidden] {
-		display: none;
-	}
-	.front-mark {
-		font-size: clamp(0.9rem, 2.4vw, 1.2rem);
-	}
-
-	/* the writing side: message left, address right, a line between */
-	.back {
-		display: grid;
-		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-		gap: clamp(0.6rem, 2vw, 1.2rem);
-		padding: clamp(0.8rem, 2.4vw, 1.3rem);
-		transform: rotateY(180deg);
-	}
-	.back-msg {
-		position: relative;
-		min-width: 0;
-		padding-right: clamp(0.6rem, 2vw, 1.2rem);
-		border-right: 1px solid rgba(27, 33, 50, 0.3);
-		overflow: hidden;
-	}
-	.back-prompt {
-		margin-bottom: 0.3rem;
-		color: rgba(27, 33, 50, 0.6);
-		text-transform: none;
-	}
-	.back-text {
-		font-family: var(--script);
-		font-size: clamp(1.05rem, 2.6vw, 1.35rem);
-		line-height: 1.25;
-		color: var(--ink);
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-	}
-	.back-text[data-empty='true'] {
-		opacity: 0.45;
-	}
-	.back-from {
-		margin-top: 0.4rem;
-		font-family: var(--script);
-		font-size: 1.1rem;
-		color: var(--ink);
-	}
-	.back-side {
-		display: grid;
-		grid-template-rows: auto 1fr;
-		min-width: 0;
-	}
-	.back-top {
-		display: flex;
-		justify-content: flex-end;
-		align-items: flex-start;
-		gap: 0.4rem;
-	}
-	.stamp-box {
-		width: clamp(3.4rem, 9vw, 4.6rem);
-		padding: 0;
-		background: none;
-		border: none;
-		cursor: pointer;
-		rotate: 3deg;
-		transition: rotate 0.3s var(--ease-out);
-	}
-	.stamp-box:hover {
-		rotate: -2deg;
-	}
-	.stamp-for[hidden] {
-		display: none;
-	}
-	/* the cancellation: press it for another */
-	.pm {
-		display: grid;
-		place-items: center;
-		align-content: center;
-		width: clamp(3.6rem, 9vw, 4.8rem);
-		aspect-ratio: 1;
-		margin-right: -1.6rem;
-		margin-top: 0.8rem;
-		z-index: 1;
-		background: none;
-		border: 2px solid rgba(177, 58, 37, 0.75);
-		border-radius: 50%;
-		box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px rgba(177, 58, 37, 0.75);
-		color: rgba(177, 58, 37, 0.9);
-		font: 500 clamp(0.42rem, 1.1vw, 0.55rem) / 1.25 var(--mono);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		text-align: center;
-		rotate: var(--pm-rot, -12deg);
-		cursor: pointer;
-	}
-	.back-to {
-		align-self: end;
-		font-size: clamp(1rem, 2.4vw, 1.3rem);
-		line-height: 1.6;
-		color: var(--ink);
-		background: repeating-linear-gradient(to bottom, transparent 0 1.55em, rgba(27, 33, 50, 0.3) 1.55em calc(1.55em + 1px));
 	}
 
 	.stage-actions {
@@ -889,7 +743,29 @@ const first = kinds[0];
 		font-size: 0.88rem;
 		color: var(--ink-soft);
 	}
+	.photo-field input[type='file'] {
+		display: block;
+		max-width: 100%;
+		margin-top: 0.35rem;
+		font-size: 0.86rem;
+	}
+	.photo-note,
+	.mine {
+		font-size: 0.8rem;
+		color: var(--ink-soft);
+	}
+	.photo-note .link {
+		margin-left: 0.4rem;
+		min-height: 0;
+	}
+	.photo-note .link[hidden] {
+		display: none;
+	}
+	.mine a {
+		color: var(--ink);
+	}
 	.sender[hidden],
+	.mine[hidden],
 	.preview-out[hidden] {
 		display: none;
 	}
@@ -988,15 +864,8 @@ const first = kinds[0];
 		color: rgba(27, 33, 50, 0.7);
 	}
 
-	html[data-motion='off'] .card,
-	html[data-motion='off'] .card-wrap {
-		transition: none;
+	html[data-motion='off'] .card-in {
 		animation: none;
-	}
-	@media (prefers-reduced-motion: reduce) {
-		html:not([data-motion='on']) .card {
-			transition: none;
-		}
 	}
 
 	@media (max-width: 900px) {
@@ -1007,12 +876,6 @@ const first = kinds[0];
 	@media (max-width: 520px) {
 		.two {
 			grid-template-columns: minmax(0, 1fr);
-		}
-		.card {
-			aspect-ratio: 4 / 3.2;
-		}
-		.back {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
 		}
 	}
 </style>

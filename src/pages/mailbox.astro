@@ -1,5 +1,8 @@
 ---
-/* The owner's mailbox: every postcard sent from /post, newest first.
+/* The owner's mailbox: every postcard sent from /post, newest first, drawn
+ * exactly as it was sent. A card that is still travelling shows where it is
+ * instead, with its tracking. Delivered cards can be answered: the studio's
+ * reply is a postcard too, and travels back to the sender's country.
  *
  * Cloudflare Access is the login (the "App admin" Access app covers
  * futile.studio/mailbox and /api/mailbox), and the API checks the Access token
@@ -7,7 +10,11 @@
  * the token /api/mailbox answers 401 and the page says so.
  */
 import Layout from '../layouts/Layout.astro';
+import Postcard from '../components/Postcard.astro';
 import { url } from '../lib/url.js';
+import { kinds, designs, papers, inks, MAX_CHARS } from '../data/postcards.js';
+
+const options = { kind: kinds, design: designs, paper: papers, ink: inks };
 ---
 
 <Layout title="Mailbox · Futile Studio" noindex={true}>
@@ -20,47 +27,236 @@ import { url } from '../lib/url.js';
 		</header>
 		<ol class="mb-list" id="mb-list"></ol>
 	</main>
+
+	<template id="mb-card"><Postcard /></template>
+
+	<form class="mb-compose" id="mb-compose" hidden novalidate>
+		<h2 class="label">Write back</h2>
+		<div class="mb-compose-card" data-slot></div>
+		<div class="mb-fields">
+			{
+				Object.entries(options).map(([name, list]) => (
+					<label>
+						<span class="label">{name === 'design' ? 'picture side' : name}</span>
+						<select name={name}>
+							{list.map((o) => (
+								<option value={o.id}>{o.label}</option>
+							))}
+						</select>
+					</label>
+				))
+			}
+		</div>
+		<label class="mb-wide">
+			<span class="label">Message</span>
+			<textarea name="message" rows="5" maxlength={MAX_CHARS}></textarea>
+		</label>
+		<div class="mb-fields">
+			<label>
+				<span class="label">Signed</span>
+				<input name="signed" type="text" maxlength="60" value="Mayur" />
+			</label>
+			<label>
+				<span class="label">Photo (optional)</span>
+				<input name="image" type="file" accept="image/jpeg,image/png,image/webp" />
+			</label>
+		</div>
+		<p class="mb-err" data-err role="alert"></p>
+		<div class="mb-actions">
+			<button class="btn btn-stamp" type="submit">Post it back</button>
+			<button class="btn" type="button" data-flip>Turn it over</button>
+			<button class="btn" type="button" data-cancel>Not now</button>
+		</div>
+	</form>
 </Layout>
 
 <script>
-	import { apiFetch } from '../lib/api.js';
+	import { apiFetch, API_BASE } from '../lib/api.js';
+	import { paint, turn, cardNo, fromStored, addressOf, postmarkDate } from '../lib/postcard.js';
+	import { route, progress, countryName } from '../data/postal.js';
+	import { kinds } from '../data/postcards.js';
+	import { url } from '../lib/url.js';
 
-	type Card = { id: number; kind: string; message: string; signed: string; reply: string; visitor: string; created_at: string };
+	type Card = {
+		id: number;
+		kind: string;
+		message: string;
+		signed: string;
+		reply: string;
+		visitor: string;
+		created_at: string;
+		country: string;
+		direction: 'in' | 'out';
+		parent: number | null;
+		track: string;
+		delivered: boolean;
+		deliveredAt: string;
+		addressee: string;
+	};
 	const list = document.getElementById('mb-list')!;
 	const status = document.getElementById('mb-status')!;
-	const no = (id: number) => `FP-${String(id).padStart(6, '0')}`;
+	const tpl = document.getElementById('mb-card') as HTMLTemplateElement;
+	const compose = document.getElementById('mb-compose') as HTMLFormElement;
 	const el = (tag: string, className: string, textContent = '') => Object.assign(document.createElement(tag), { className, textContent });
+	const link = (href: string, text: string) => Object.assign(document.createElement('a'), { href, textContent: text });
+	const trackHref = (c: Card) => `${url('track')}?c=${c.track}`;
+	const when = (s: string | number) => new Date(typeof s === 'string' ? `${s.replace(' ', 'T')}Z` : s).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+	const day = (s: string) => new Date(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+	const place = (c: Card) => countryName(c.country) || 'somewhere unrecorded';
+
+	function cardEl(c: Card) {
+		const wrap = (tpl.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+		paint(wrap, fromStored(c, API_BASE), { still: true });
+		return wrap;
+	}
+	function flipButton(wrap: HTMLElement) {
+		const b = el('button', 'btn', 'Turn it over') as HTMLButtonElement;
+		b.type = 'button';
+		b.addEventListener('click', () => {
+			const back = !wrap.querySelector('.card')!.classList.contains('is-back');
+			turn(wrap, back);
+			b.textContent = back ? 'Turn to the picture' : 'Turn it over';
+		});
+		return b;
+	}
+	/* "on the way" with the last scan, for cards in either direction */
+	function transit(c: Card) {
+		const p = progress(route(c));
+		const box = el('div', 'mb-transit');
+		box.append(el('b', '', c.direction === 'out' ? `On its way to ${place(c)}.` : `On the way from ${place(c)}.`), ` ${p.last.text}, ${p.last.place}. Due ${day(c.deliveredAt)}. `, link(trackHref(c), 'Track it'));
+		return box;
+	}
 
 	/* Every value came from a stranger, so it is set as text, never as HTML. */
-	function card(c: Card) {
+	function item(c: Card, replies: Card[]) {
 		const li = el('li', 'mb-card');
 		const meta = el('p', 'mb-meta');
-		const when = new Date(`${c.created_at.replace(' ', 'T')}Z`).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-		for (const t of [no(c.id), c.kind, when, c.visitor && `as ${c.visitor}`]) if (t) meta.append(el('span', '', t));
+		const k = kinds.find((x) => x.id === c.kind);
+		for (const t of [cardNo(c.id), k?.label ?? c.kind, when(c.created_at), c.visitor && `as ${c.visitor}`, `from ${place(c)}`]) if (t) meta.append(el('span', '', t));
+		li.append(meta);
+		const actions = el('div', 'mb-actions');
+
+		if (c.delivered) {
+			const wrap = cardEl(c);
+			li.append(wrap);
+			actions.append(flipButton(wrap));
+			const write = el('button', 'btn btn-stamp', 'Write back') as HTMLButtonElement;
+			write.type = 'button';
+			write.addEventListener('click', () => openCompose(c, li));
+			actions.append(write);
+		} else li.append(transit(c));
+
 		const from = el('p', 'mb-from', c.signed ? `from ${c.signed}` : 'unsigned');
 		if (c.reply) {
-			const a = el('a', '', c.reply) as HTMLAnchorElement;
-			a.href = `mailto:${encodeURIComponent(c.reply).replace('%40', '@')}?subject=${encodeURIComponent(`Re: your postcard ${no(c.id)}`)}`;
+			const a = link(`mailto:${encodeURIComponent(c.reply).replace('%40', '@')}?subject=${encodeURIComponent(`Re: your postcard ${cardNo(c.id)}`)}`, c.reply);
 			from.append(' · reply to ', a);
 		}
+		if (c.delivered) li.append(from);
+
+		for (const r of replies) {
+			const p = el('div', 'mb-reply');
+			p.append(el('b', '', `Your reply ${cardNo(r.id)}: `));
+			if (r.delivered) p.append(`delivered ${day(r.deliveredAt)}. `, link(trackHref(r), 'See it'));
+			else p.append(transit(r));
+			li.append(p);
+		}
+
 		const del = el('button', 'btn', 'Delete') as HTMLButtonElement;
 		del.type = 'button';
-		del.setAttribute('aria-label', `Delete postcard ${no(c.id)}`);
+		del.setAttribute('aria-label', `Delete postcard ${cardNo(c.id)}`);
 		del.addEventListener('click', async () => {
-			if (!confirm(`Delete postcard ${no(c.id)}?`)) return;
+			if (!confirm(`Delete postcard ${cardNo(c.id)}${replies.length ? ' and your replies to it' : ''}?`)) return;
 			const r = await apiFetch(`/api/mailbox/${c.id}`, { method: 'DELETE' });
 			if (r.ok) {
+				if (li.contains(compose)) closeCompose();
 				li.remove();
 				count();
 			} else status.textContent = 'Could not delete that one.';
 		});
-		li.append(meta, el('p', 'mb-msg', c.message), from, del);
+		actions.append(del);
+		li.append(actions);
 		return li;
 	}
 	const count = () => {
 		const n = list.children.length;
 		status.textContent = n ? `${n} postcard${n === 1 ? '' : 's'}.` : 'The mailbox is empty.';
 	};
+
+	/* ---------- Futile Mail: writing back ---------- */
+	const preview = (tpl.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+	compose.querySelector('[data-slot]')!.append(preview);
+	const field = (name: string) => compose.elements.namedItem(name) as HTMLInputElement;
+	let to: Card | null = null;
+	let photoUrl = '';
+	const draft = () => ({
+		kind: field('kind').value,
+		design: field('design').value,
+		paper: field('paper').value,
+		ink: field('ink').value,
+		message: field('message').value,
+		signed: field('signed').value.trim(),
+		postmark: 0,
+		prompt: 0,
+		image: photoUrl,
+		date: postmarkDate(Date.now()),
+		to: to ? addressOf({ direction: 'out', addressee: to.signed || to.visitor, country: to.country }) : [],
+	});
+	const repaint = () => paint(preview, draft(), { still: true });
+	compose.addEventListener('input', repaint);
+	field('image').addEventListener('change', () => {
+		if (photoUrl) URL.revokeObjectURL(photoUrl);
+		const f = field('image').files?.[0];
+		photoUrl = f ? URL.createObjectURL(f) : '';
+		repaint();
+	});
+	compose.querySelector('[data-flip]')!.addEventListener('click', () => turn(preview, !preview.querySelector('.card')!.classList.contains('is-back')));
+	function openCompose(c: Card, li: HTMLElement) {
+		to = c;
+		compose.reset();
+		if (photoUrl) URL.revokeObjectURL(photoUrl);
+		photoUrl = '';
+		compose.querySelector('[data-err]')!.textContent = '';
+		li.append(compose);
+		compose.hidden = false;
+		turn(preview, true);
+		repaint();
+		field('message').focus();
+	}
+	function closeCompose() {
+		compose.hidden = true;
+		document.body.append(compose);
+		to = null;
+	}
+	compose.querySelector('[data-cancel]')!.addEventListener('click', closeCompose);
+	compose.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const target = to;
+		if (!target) return;
+		const err = compose.querySelector('[data-err]')!;
+		if (!field('message').value.trim()) {
+			err.textContent = 'Write something on the back first.';
+			return;
+		}
+		const body = new FormData(compose);
+		if (!field('image').files?.length) body.delete('image');
+		const send = compose.querySelector<HTMLButtonElement>('[type="submit"]')!;
+		send.disabled = true;
+		try {
+			const res = await apiFetch(`/api/mailbox/${target.id}/reply`, { method: 'POST', body, headers: { 'X-Futile-Post': '1' } });
+			const out = await res.json().catch(() => ({}));
+			if (res.status !== 201) {
+				err.textContent = out.error || 'The post office refused that one.';
+				return;
+			}
+			closeCompose();
+			await load();
+			status.textContent = `Posted back as ${cardNo(out.id)}. It reaches ${place(target)} around ${day(out.deliveredAt)}.`;
+		} catch {
+			err.textContent = 'Could not reach the post office.';
+		} finally {
+			send.disabled = false;
+		}
+	});
 
 	async function load() {
 		status.textContent = 'Opening the box…';
@@ -71,7 +267,9 @@ import { url } from '../lib/url.js';
 			return;
 		}
 		const { postcards } = (await res.json()) as { postcards: Card[] };
-		list.replaceChildren(...postcards.map(card));
+		const replies = (id: number) => postcards.filter((r) => r.direction === 'out' && r.parent === id).reverse();
+		if (!compose.hidden) closeCompose();
+		list.replaceChildren(...postcards.filter((c) => c.direction !== 'out').map((c) => item(c, replies(c.id))));
 		count();
 	}
 	document.getElementById('mb-refresh')!.addEventListener('click', load);
@@ -100,15 +298,13 @@ import { url } from '../lib/url.js';
 	.mb-list {
 		list-style: none;
 		display: grid;
-		gap: 1rem;
+		gap: 2.6rem;
 		margin-top: 2rem;
 		padding: 0;
 	}
 	.mb-list :global(.mb-card) {
-		padding: 1rem 1.1rem;
-		background: var(--card);
-		border: 1px solid var(--ink-ghost);
-		border-radius: 4px;
+		display: grid;
+		gap: 0.9rem;
 	}
 	.mb-list :global(.mb-meta) {
 		display: flex;
@@ -118,16 +314,76 @@ import { url } from '../lib/url.js';
 		font-size: 0.72rem;
 		color: var(--ink-soft);
 	}
-	.mb-list :global(.mb-msg) {
-		margin: 0.6rem 0;
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		color: var(--ink);
+	.mb-list :global(.mb-transit) {
+		padding: 1rem 1.1rem;
+		background: var(--card);
+		border: 1px dashed var(--ink-faint);
+		border-radius: 4px;
 	}
-	.mb-list :global(.mb-from) {
-		margin-bottom: 0.7rem;
+	.mb-list :global(.mb-from),
+	.mb-list :global(.mb-reply) {
 		font-size: 0.9rem;
 		color: var(--ink-soft);
 		overflow-wrap: anywhere;
+	}
+	.mb-list :global(.mb-reply .mb-transit) {
+		margin-top: 0.4rem;
+		padding: 0.6rem 0.8rem;
+	}
+	.mb-list :global(a) {
+		color: var(--ink);
+	}
+	.mb-list :global(.mb-actions),
+	.mb-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.mb-compose {
+		display: grid;
+		gap: 1rem;
+		padding: 1.2rem;
+		background: var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 4px;
+		box-shadow: var(--lift);
+	}
+	.mb-compose[hidden] {
+		display: none;
+	}
+	.mb-compose-card {
+		max-width: 30rem;
+		width: 100%;
+		justify-self: center;
+	}
+	.mb-fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+		gap: 0.8rem;
+	}
+	.mb-compose label {
+		display: grid;
+		gap: 0.3rem;
+	}
+	.mb-compose select,
+	.mb-compose textarea,
+	.mb-compose input[type='text'] {
+		min-height: 40px;
+		padding: 0.5rem 0.6rem;
+		font: inherit;
+		color: var(--ink);
+		background: var(--paper);
+		border: 1px solid var(--ink-faint);
+		border-radius: 3px;
+	}
+	.mb-compose input[type='file'] {
+		max-width: 100%;
+		font-size: 0.85rem;
+	}
+	.mb-err {
+		min-height: 1.2em;
+		font-size: 0.85rem;
+		color: var(--stamp);
 	}
 </style>
