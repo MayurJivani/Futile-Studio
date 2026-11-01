@@ -29,7 +29,7 @@ The owner writes back from `/mailbox`, to delivered cards only. A reply is a row
 
 ## Photos
 
-Sniffed from the bytes, JPEG, PNG or WebP only, 4 MB cap. No image library is installed, so `server/lib/images.js` removes metadata by walking the file structure: EXIF, XMP, comments and text chunks go, and a JPEG keeps only its orientation. Anything that does not parse is refused. It does not decode pixels, so an image with valid structure and broken data still passes. Adding `sharp` and re-encoding would close that. Files live in `STUDIO_UPLOAD_DIR/postcards` under random names and are checked only after the card itself passes, so refused cards never reach the disk.
+Sniffed from the bytes, JPEG, PNG or WebP only, 4 MB cap. No image library is installed, so `server/lib/images.js` removes metadata by walking the file structure: EXIF, XMP, comments and text chunks go, and a JPEG keeps only its orientation. Anything that does not parse is refused. It does not decode pixels, so an image with valid structure and broken data still passes. Adding `sharp` and re-encoding would close that. Files live in `STUDIO_UPLOAD_DIR/postcards` under random names, are served from `/api/postcards/photos` (Caddy only proxies `/api` and `/ws`, so `/media` never reaches the API in production) and are checked only after the card itself passes, so refused cards never reach the disk.
 
 ## Data
 

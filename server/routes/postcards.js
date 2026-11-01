@@ -3,7 +3,7 @@
    /mailbox behind Cloudflare Access. Tracking is public to whoever holds a
    card's random tracking code, which only its sender's receipt shows. */
 
-import { Router } from 'express';
+import express, { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import path from 'node:path';
@@ -17,7 +17,7 @@ import { cleanImage } from '../lib/images.js';
 import { MAX_IMAGE_BYTES } from '../../src/data/postcards.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-/* under /media, so the existing static route serves them; the names are random, never the sender's */
+/* the names are random, never the sender's */
 const photoDir = path.join(process.env.STUDIO_UPLOAD_DIR || path.join(__dirname, '..', 'uploads'), 'postcards');
 
 const sendLimiter = rateLimit({
@@ -96,6 +96,9 @@ export default function postcardRoutes({ postcards, visitors }) {
 		if (!v.ok) return res.status(v.spam ? 422 : 400).json({ error: v.error });
 		await storeCard(postcards, req, res, v.value, { visitor: visitors?.nameOf(req.body.token) || '', country: countryOf(req.get('cf-ipcountry')) });
 	});
+
+	/* under /api because the production proxy sends only /api and /ws to this server */
+	router.use('/photos', express.static(photoDir, { dotfiles: 'deny', index: false }));
 
 	router.get('/track/:code', (req, res) => {
 		const card = postcards.byTrack(req.params.code);
