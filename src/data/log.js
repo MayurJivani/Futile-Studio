@@ -26,7 +26,6 @@ export const entries = [
 	{ month: '2026-09', name: 'Sextant' },
 	{ month: '2026-09', name: 'Murmur' },
 	{ month: '2026-09', name: 'Patina' },
-	{ month: '2026-10', name: 'Borderline' },
 	{ month: '2026-10', name: 'Orbitle' },
 	{ month: '2026-10', name: 'Cubby' },
 	{ month: '2026-10', name: 'Lab' },

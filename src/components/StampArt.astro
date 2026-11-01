@@ -95,7 +95,6 @@ const art = { x: pad + 5, y: top, w: W - 2 * (pad + 5), h: H - top - bottom };
 					{s.motif === 'qno' && <path d="M20 16h14v22H20z" stroke-width="2" transform="rotate(-12 27 27)" />}
 					{s.motif === 'knock' && <path d="M40 22q6 8 0 16M45 17q10 13 0 26" stroke-width="2.2" />}
 					{s.motif === 'mosaic' && <path d="M12 12h12v12H12zM36 36h12v12H36z" stroke-width="2" fill={acc} />}
-					{s.motif === 'borderline' && <path d="M10 36c8-10 18 6 26-4s12-10 16-6" stroke-width="2.4" />}
 					{s.motif === 'cubby' && <path d="M22 26v-6a8 8 0 0 1 16 0v6" stroke-width="2.6" />}
 					{s.motif === 'explorer' && <path d="M14 22l-4-8" stroke-width="3" />}
 					{s.motif === 'lamp' && <circle cx="30" cy="38" r="12" fill={acc} stroke="none" opacity="0.6" />}
@@ -187,15 +186,6 @@ const art = { x: pad + 5, y: top, w: W - 2 * (pad + 5), h: H - top - bottom };
 									)),
 								)}
 								<path d="M44 44l8 8" stroke-width="2.2" />
-							</g>
-						)
-					}
-					{
-						s.motif === 'borderline' && (
-							<g>
-								<path d="M8 24c6-6 14-8 20-4s16 4 24 0v26H8z" fill={paper} />
-								<path d="M30 18c-2 8 4 14 0 28" stroke-dasharray="3 3" stroke-width="1.6" />
-								<circle cx="40" cy="30" r="2" fill={ink} />
 							</g>
 						)
 					}

@@ -47,4 +47,4 @@ export const layers = [
    serves itself. Checked against `systemctl` and the Caddy config on Jinx; a
    project not listed in either simply does not appear. */
 export const SERVICES = ['patina', 'noggin', 'qno', 'mosaic', 'chorusify'];
-export const STATIC = ['borderline', 'orbitle', 'knock'];
+export const STATIC = ['orbitle', 'knock'];

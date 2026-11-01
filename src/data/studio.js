@@ -16,7 +16,6 @@ export const SHELVES = ['Games', 'Experiments', 'Tools', 'Systems'];
 
 /** @type {Record<string, string>} */
 export const shelfOf = {
-	borderline: 'Games',
 	orbitle: 'Games',
 	noggin: 'Games',
 	qno: 'Games',
@@ -134,7 +133,6 @@ export const featured = [
 /** Real captures for the archive thumbnails, where a project has one. */
 /** @type {Record<string, string>} */
 export const thumbOf = {
-	borderline: 'shots/borderline-d.webp',
 	atlas: 'shots/atlas-d.webp',
 	hunch: 'shots/hunch-d.webp',
 	cubby: 'shots/cubby-d.webp',
