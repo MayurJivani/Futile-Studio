@@ -31,6 +31,7 @@ export const entries = [
 	{ month: '2026-10', name: 'Lab' },
 	{ month: '2026-10', name: 'Atlas' },
 	{ month: '2026-10', name: 'Hunch' },
+	{ month: '2026-10', name: 'Haggle' },
 ];
 
 /** Grouped by month, so a busy month is one lookup rather than a filter. */
