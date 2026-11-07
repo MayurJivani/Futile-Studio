@@ -147,6 +147,18 @@ export const open = [
 		desc: 'A 3D deduction game for three to five players. Read your clue, question the others, find the habitat.',
 		stack: 'React, three.js, Socket.IO',
 	},
+	{
+		id: 'haggle',
+		shipped: '2026-10',
+		name: 'Haggle',
+		kind: 'market game',
+		href: 'https://haggle.futile.studio',
+		cta: 'Play it',
+		mount: 'corner',
+		art: 'crate',
+		desc: 'A live stock market for the whole room. 500 players, 75 real companies, simulated prices, one opening bell.',
+		stack: 'React, Vite, Express, WebSockets, Postgres',
+	},
 ];
 
 /** Half-built. On the board so the page is not only the flattering half. */

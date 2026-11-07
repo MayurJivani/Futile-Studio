@@ -21,6 +21,7 @@ export const shelfOf = {
 	qno: 'Games',
 	chorusify: 'Games',
 	hunch: 'Games',
+	haggle: 'Games',
 	patina: 'Experiments',
 	knock: 'Experiments',
 	murmur: 'Experiments',
@@ -135,6 +136,7 @@ export const featured = [
 export const thumbOf = {
 	atlas: 'shots/atlas-d.webp',
 	hunch: 'shots/hunch-d.webp',
+	haggle: 'shots/haggle-d.webp',
 	cubby: 'shots/cubby-d.webp',
 	...Object.fromEntries(featured.map((f) => [f.id, f.shot.src])),
 };
