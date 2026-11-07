@@ -1,10 +1,11 @@
 name: Deploy
 
-# Jinx has no inbound SSH port: it is reachable only through Cloudflare
-# Access. The runner authenticates with an Access service token, cloudflared
-# carries the session, and deploy/deploy.sh then runs exactly as it does on a
-# laptop. Secrets needed: JINX_SSH_KEY, CF_ACCESS_CLIENT_ID,
-# CF_ACCESS_CLIENT_SECRET.
+# Jinx has no inbound SSH port: it is reachable only through its Cloudflare
+# tunnel. cloudflared carries the session (with the Access service token, for
+# when ssh.futile.studio sits behind an Access app), and deploy/deploy.sh then
+# runs exactly as it does on a laptop. Secrets needed: JINX_SSH_KEY (its public
+# half, ~/.ssh/jinx_ci.pub, goes in the box's authorized_keys),
+# CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET.
 on:
   push:
     branches: [main]
@@ -38,8 +39,9 @@ jobs:
           chmod 600 ~/.ssh/jinx
 
           # Pinned rather than accepted on sight: StrictHostKeyChecking=no would
-          # hand the deploy key to whatever answers on that hostname.
-          echo 'ssh.futile.studio ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB9r2Wzf+BIWhKlOZy4I9vq/8Qe5h8Aok8rVABitpDds' > ~/.ssh/known_hosts
+          # hand the deploy key to whatever answers on that hostname. A reinstall
+          # changes it: re-pin from `ssh-keygen -F ssh.futile.studio`.
+          echo 'ssh.futile.studio ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIGhe7JST0yayW3F8tANy6Dun2XYvbwlws2+GJ1iymBC' > ~/.ssh/known_hosts
 
           # ServerAlive* because a cold `npm ci` and build on the box can run for
           # several minutes without writing anything to the channel.
