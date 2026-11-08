@@ -53,18 +53,8 @@ const tinkering = [
 				</p>
 
 				<h1 class="wordmark" aria-label="Futile Studio">
-					{
-						['Futile', 'Studio'].map((word, w) => (
-							<span class:list={['wm-line', { 'wm-line-2': w }]} aria-hidden="true">
-								{[...word].map((ch, i) => (
-									<span class="cut" style={`--i:${w * 6 + i}; --r:${[-4, 3, -2, 5, -3, 2][(i + w) % 6]}deg`}>
-										{ch}
-									</span>
-								))}
-							</span>
-						))
-					}
-					<span class="brandmark wm-sticker" aria-hidden="true">futile<b>.</b>studio</span>
+					<span class="wm-text" aria-hidden="true"><span class="wm-line">Futile</span><span class="wm-line">Studio</span></span>
+					<canvas class="wm-dots" aria-hidden="true"></canvas>
 				</h1>
 
 				<p class="manifesto" data-reveal style="--d:150ms">
@@ -323,6 +313,7 @@ const tinkering = [
 	import { gsap } from 'gsap';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import { collect, collected } from '../lib/guide.js';
+	import { radiate } from '../lib/radiant.js';
 	gsap.registerPlugin(ScrollTrigger);
 
 	const root = document.documentElement;
@@ -330,6 +321,8 @@ const tinkering = [
 		root.dataset.motion === 'off' ||
 		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 	const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+	radiate(document.querySelector('.wordmark')!, still);
 
 	/* ---------- the postmark: today, from the visitor's own clock ---------- */
 	const pm = document.getElementById('postmark-date');
@@ -668,65 +661,31 @@ const tinkering = [
 		container-type: inline-size;
 		min-width: 0;
 	}
+	/* The name is set in the display face, then redrawn as dots that give off
+	   heat (src/lib/radiant.js). The text keeps the space and is what shows
+	   without script; once the dots are drawn it steps aside. */
 	.wordmark {
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		--wm: min(8.2rem, 21.5cqi);
-		font-family: var(--hero-mark);
-		font-size: var(--wm);
-		font-weight: 400;
-		/* each scrap cut with room round it: the paper edges must not touch */
-		letter-spacing: 0.06em;
-		line-height: 1.04;
+		font: 800 min(9.5rem, 27cqi) / 0.9 var(--display);
+		font-variation-settings: 'wdth' 75, 'opsz' 96;
+		letter-spacing: -0.01em;
 		margin-bottom: clamp(1rem, 3vh, 1.8rem);
-		/* the paper the letters are cut from, showing round their edges */
-		--cut-edge: var(--card);
+		cursor: crosshair;
 	}
 	.wm-line {
+		display: block;
 		white-space: nowrap;
 	}
-	.wm-line-2 {
-		/* indented, but never so far that the italic o runs off the column */
-		padding-left: 0.22em;
+	.wordmark.is-dots .wm-text {
+		visibility: hidden;
 	}
-	/* Papercut: every letter its own scrap, with a margin of card left round
-	   it by the scissors, lifted off the page and stuck down at a slight angle. */
-	.cut {
-		display: inline-block;
-		rotate: var(--r);
-		paint-order: stroke fill;
-		-webkit-text-stroke: 0.09em var(--cut-edge);
-		filter: drop-shadow(0 0.035em 0 rgba(27, 33, 50, 0.22)) drop-shadow(0 0.1em 0.08em rgba(27, 33, 50, 0.24));
-		animation: cut-in 0.55s var(--ease-out) both;
-		animation-delay: calc(var(--i) * 45ms + 80ms);
-	}
-	.wm-line-2 .cut {
-		color: var(--stamp);
-	}
-	.wm-line-2 .cut:nth-child(even) {
-		color: var(--airmail);
-	}
-	@keyframes cut-in {
-		from {
-			opacity: 0;
-			translate: 0 -0.25em;
-			rotate: calc(var(--r) * -3);
-			scale: 1.15;
-		}
-	}
-	/* The live site's mark, stuck on under the end of the word like a label on
-	   a crate: same face, red dot and tilt as the nav. */
-	.wm-sticker {
-		align-self: flex-end;
-		margin-top: 0.1rem;
-		padding: 0.25rem 0.7rem 0.35rem;
-		font-size: clamp(0.95rem, 1.5vw, 1.25rem);
-		line-height: 1;
-		letter-spacing: 0;
-		background: var(--card);
-		box-shadow: var(--lift);
-		rotate: -6deg;
+	/* bleeds past the name so dots thrown off it are not cut */
+	.wm-dots {
+		position: absolute;
+		inset: -80px;
+		width: calc(100% + 160px);
+		height: calc(100% + 160px);
+		pointer-events: none;
 	}
 
 	.manifesto {
