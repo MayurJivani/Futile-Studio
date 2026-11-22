@@ -3,6 +3,7 @@
 services:
   futile-api:
     image: ghcr.io/mayurjivani/futile-api:latest
+    pull_policy: always
     network_mode: host
     restart: unless-stopped
     user: "1000:1000"
