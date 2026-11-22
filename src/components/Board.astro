@@ -7,15 +7,21 @@
  * Rows are not links themselves. A row holds up to two links (the running
  * thing and its source) and a disclosure, and nesting those in one anchor
  * would be invalid and unreachable by keyboard.
+ *
+ * Two views of the same rows: a collection of mounted covers and a register
+ * (the ledger). One set of rows switched by an attribute on the list, so the
+ * filter only ever has one list to hide things in.
  */
 import Sketch from './Sketch.astro';
 import Stamp from './Stamp.astro';
 import { url } from '../lib/url.js';
 import { open, workbench } from '../data/board.js';
-import { SHELVES, shelfOf, sourceOf, statusOf, thumbOf } from '../data/studio.js';
+import { SHELVES, shelfOf, sourceOf, statusOf, thumbOf, featured } from '../data/studio.js';
 
+/* Selected work already has its own spreads; the archive holds the rest. */
+const isFeatured = new Set(featured.map((f) => f.id));
 const cards = [
-	...open.map((p) => ({ ...p, shelf: 'open' })),
+	...open.filter((p) => !isFeatured.has(p.id)).map((p) => ({ ...p, shelf: 'open' })),
 	...workbench.map((p) => ({ ...p, shelf: 'workbench' })),
 ].map((p) => ({
 	...p,
@@ -28,110 +34,146 @@ const cards = [
 const counts = Object.fromEntries(SHELVES.map((s) => [s, cards.filter((c) => c.drawer === s).length]));
 /* The note goes in after the running things and before the bench. */
 const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
+
+/* Picks get the big mounts; the rest alternate so no two neighbours match.
+   Frames and tilts cycle on different lengths so the pattern never lines up. */
+const sizeOf = (p, i) => (p.pick ? 'l' : i % 3 === 1 ? 's' : 'm');
+const FRAMES = ['tape', 'clip', 'corners', 'plain'];
+const TILTS = [-1.2, 0.7, -0.4, 1.3, -0.8, 0.3, 1, -1.5];
+const DROPS = [0, 1.6, 0.6, 2.2, 0.2, 1.1];
 ---
 
-<section id="archive" class="archive wrap" aria-labelledby="archive-title">
-	<div class="archive-head">
-		<h2 id="archive-title" class="sect-label">The archive</h2>
-		<p class="sect-lede">Everything, newest first, running or not. Search it, or pull out one drawer.</p>
-	</div>
-
-	<form class="archive-tools" role="search" aria-label="Search the archive" onsubmit="return false">
-		<div class="search">
-			<label for="archive-q" class="label">Search</label>
-			<input id="archive-q" type="search" placeholder="Try: WebSockets, game, 2024" autocomplete="off" />
+<section id="archive" class="archive" aria-labelledby="archive-title">
+	<div class="wrap">
+		<div class="archive-head">
+			<h2 id="archive-title" class="sect-label">The archive</h2>
+			<p class="sect-lede">Everything, newest first, running or not. Search it, or pull out one drawer.</p>
 		</div>
-		<div class="filters" role="group" aria-label="Filter by drawer">
-			<button class="filter" type="button" data-filter="all" aria-pressed="true">
-				All <span class="filter-n">{cards.length}</span>
-			</button>
+
+		<form class="archive-tools" role="search" aria-label="Search the archive" onsubmit="return false">
+			<div class="search">
+				<label for="archive-q" class="label">Search</label>
+				<input id="archive-q" type="search" placeholder="Try: WebSockets, game, 2024" autocomplete="off" />
+			</div>
+			<div class="views" role="group" aria-label="View" hidden>
+				<button class="view" type="button" data-view="collection" aria-pressed="true">Collection</button>
+				<button class="view" type="button" data-view="register" aria-pressed="false">Register</button>
+			</div>
+			<div class="filters" role="group" aria-label="Filter by drawer">
+				<button class="filter" type="button" data-filter="all" aria-pressed="true">
+					All <span class="filter-n">{cards.length}</span>
+				</button>
+				{
+					SHELVES.map((s) => (
+						<button class="filter" type="button" data-filter={s} aria-pressed="false" disabled={!counts[s]}>
+							{s} <span class="filter-n">{counts[s]}</span>
+						</button>
+					))
+				}
+			</div>
+		</form>
+		<p class="archive-count label" id="filter-status" aria-live="polite">{cards.length} projects</p>
+
+		<ol class="index" role="list" data-view="collection">
+			<li class="ledger-head label" aria-hidden="true">
+				<span>No.</span><span>Name</span><span>Drawer, kind</span><span>Status</span><span>Year</span><span
+					>Stack</span
+				><span>Links</span>
+			</li>
 			{
-				SHELVES.map((s) => (
-					<button class="filter" type="button" data-filter={s} aria-pressed="false" disabled={!counts[s]}>
-						{s} <span class="filter-n">{counts[s]}</span>
-					</button>
-				))
-			}
-		</div>
-	</form>
-	<p class="archive-count label" id="filter-status" aria-live="polite">{cards.length} projects</p>
-
-	<ol class="index" role="list">
-		{
-			cards.map((p, i) => (
-				<Fragment>
-					{i === breakAt && (
-						<li class="index-break" aria-hidden="true" data-keep>
-							<p class="script">
-								And the half-built half. Here because a page of only the flattering things would be a brochure.
+				cards.map((p, i) => (
+					<Fragment>
+						{i === breakAt && (
+							<li class="index-break" aria-hidden="true" data-keep>
+								<p class="script">
+									And the half-built half. Here because a page of only the flattering things would be a brochure.
+								</p>
+							</li>
+						)}
+						<li
+							id={`row-${p.id}`}
+							class:list={[
+								'row',
+								`size-${sizeOf(p, i)}`,
+								`frame-${FRAMES[i % 4]}`,
+								{ 'is-bench': p.shelf === 'workbench' },
+							]}
+							style={`--tilt:${TILTS[i % 8]}deg;--drop:${DROPS[i % 6]}rem`}
+							data-drawer={p.drawer}
+							data-text={`${p.name} ${p.kind} ${p.drawer} ${p.stack} ${p.desc} ${p.shipped ?? ''} ${p.state}`.toLowerCase()}
+						>
+							{i % 4 === 0 && <span class="tape" aria-hidden="true" />}
+							<div class="row-thumb" aria-hidden="true">
+								{p.thumb ? (
+									<img src={url(p.thumb)} alt="" width="1280" height="800" loading="lazy" decoding="async" />
+								) : (
+									<Sketch name={p.art} class="row-sketch" />
+								)}
+							</div>
+							<span class="row-no catno">FS-{String(i + 1).padStart(3, '0')}</span>
+							<h3 class="row-name cat-title">{p.name}</h3>
+							<p class="row-where label">
+								{p.drawer}, {p.kind}
 							</p>
-						</li>
-					)}
-					<li
-						id={`row-${p.id}`}
-						class:list={['row', { 'is-bench': p.shelf === 'workbench' }]}
-						data-drawer={p.drawer}
-						data-text={`${p.name} ${p.kind} ${p.drawer} ${p.stack} ${p.desc} ${p.shipped ?? ''} ${p.state}`.toLowerCase()}
-					>
-						<div class="row-thumb" aria-hidden="true">
-							{p.thumb ? (
-								<img src={url(p.thumb)} alt="" width="1280" height="800" loading="lazy" decoding="async" />
-							) : (
-								<Sketch name={p.art} class="row-sketch" />
-							)}
-						</div>
-						<div class="row-main">
-							<p class="row-meta label">
-								<span class:list={['row-state', `state-${p.state.split(' ')[0].toLowerCase()}`]}>{p.state}</span>
-								<span>
-									{p.drawer}, {p.kind}
+							<p class="row-status label">
+								<span
+									class:list={[
+										'row-state',
+										`state-${p.state.split(/[ ,]/)[0].toLowerCase()}`,
+										{ 'is-live': p.state === 'Live' },
+									]}
+								>
+									{p.state}
 								</span>
-								{p.shipped && <span>{p.shipped.slice(0, 7)}</span>}
 							</p>
-							<h3 class="row-name">{p.name}</h3>
+							{p.shipped && <p class="row-year label">{p.shipped.slice(0, 7)}</p>}
 							<p class="row-desc">{p.desc}</p>
-							<details class="row-more">
+							<p class="row-stack-col">{p.stack}</p>
+							<details class:list={['row-more', { 'no-origin': !p.origin }]}>
 								<summary>How it is built</summary>
 								<p class="row-stack">{p.stack}</p>
 								{p.origin && <p class="row-origin script">{p.origin}</p>}
 							</details>
-						</div>
-						<div class="row-actions">
-							{p.href && (
-								<a class="row-cta" href={p.href} target="_blank" rel="noopener" data-clue={`p-${p.id}`}>
-									{p.cta}
-									<span class="visually-hidden">: {p.name}, opens in a new tab</span>
-									<svg viewBox="0 0 16 16" aria-hidden="true">
-										<path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-									</svg>
-								</a>
-							)}
-							{p.source && (
-								<a class="row-src" href={p.source} target="_blank" rel="noopener">
-									Source<span class="visually-hidden"> for {p.name}, opens in a new tab</span>
-								</a>
-							)}
 							{p.shelf === 'workbench' && <Stamp kind={p.status ?? 'bench'} class="row-stamp" />}
-						</div>
-					</li>
-				</Fragment>
-			))
-		}
-	</ol>
+							<div class="row-actions">
+								{p.href && (
+									<a class="row-cta" href={p.href} target="_blank" rel="noopener" data-clue={`p-${p.id}`}>
+										{p.cta}
+										<span class="visually-hidden">: {p.name}, opens in a new tab</span>
+										<svg viewBox="0 0 16 16" aria-hidden="true">
+											<path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+										</svg>
+									</a>
+								)}
+								{p.source && (
+									<a class="row-src" href={p.source} target="_blank" rel="noopener" data-clue="log">
+										Source<span class="visually-hidden"> for {p.name}, opens in a new tab</span>
+									</a>
+								)}
+							</div>
+						</li>
+					</Fragment>
+				))
+			}
+		</ol>
 
-	<div class="archive-empty" id="archive-empty" hidden>
-		<p class="script">Nothing in this drawer matches that.</p>
-		<button class="btn" type="button" id="archive-reset">Clear the search and filters</button>
+		<div class="archive-empty" id="archive-empty" hidden>
+			<p class="script">Nothing in this drawer matches that.</p>
+			<button class="btn" type="button" id="archive-reset">Clear the search and filters</button>
+		</div>
 	</div>
 </section>
 
 <script>
+	import { animate, stagger } from 'motion';
+
 	const buttons = document.querySelectorAll<HTMLButtonElement>('.filter[data-filter]');
 	const rows = document.querySelectorAll<HTMLElement>('.index .row');
 	const brk = document.querySelector<HTMLElement>('.index-break');
 	const q = document.getElementById('archive-q') as HTMLInputElement;
 	const status = document.getElementById('filter-status')!;
 	const empty = document.getElementById('archive-empty')!;
+	const head = document.querySelector<HTMLElement>('.ledger-head')!;
 	let drawer = 'all';
 
 	function apply() {
@@ -145,6 +187,7 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		});
 		if (brk) brk.hidden = drawer !== 'all' || words.length > 0;
 		empty.hidden = shown > 0;
+		head.hidden = shown === 0;
 		status.textContent = shown === rows.length ? `${rows.length} projects` : `Showing ${shown} of ${rows.length} projects`;
 	}
 
@@ -163,11 +206,64 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		apply();
 		q.focus();
 	});
+
+	/* The view: covers or the register. Remembered, else covers on wide screens. */
+	const list = document.querySelector<HTMLElement>('.index')!;
+	const views = document.querySelectorAll<HTMLButtonElement>('.view[data-view]');
+	const KEY = 'futile-archive-view';
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' ||
+		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	function setView(v: string, move: boolean) {
+		list.dataset.view = v;
+		views.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+		if (!move || still()) return;
+		/* The switch sits above the list, so only the first dozen are in view to settle. */
+		const shown = [...rows].filter((r) => !r.hidden).slice(0, 12);
+		animate(shown, { opacity: [0, 1], y: [10, 0] }, { duration: 0.28, delay: stagger(0.025) });
+	}
+
+	let saved: string | null = null;
+	try {
+		saved = localStorage.getItem(KEY);
+	} catch {}
+	setView(
+		saved === 'register' || saved === 'collection'
+			? saved
+			: matchMedia('(min-width: 761px)').matches
+				? 'collection'
+				: 'register',
+		false,
+	);
+	views.forEach((b) =>
+		b.addEventListener('click', () => {
+			if (list.dataset.view === b.dataset.view) return;
+			setView(b.dataset.view!, true);
+			try {
+				localStorage.setItem(KEY, b.dataset.view!);
+			} catch {}
+		}),
+	);
+	/* Without the script there is one view, so the switch only appears with it. */
+	views[0].parentElement!.hidden = false;
 </script>
 
 <style>
+	/* Archival paper, ruled like a ledger: the ground everything here is filed on. */
 	.archive {
-		padding-block: clamp(5rem, 11vw, 8rem) 2rem;
+		--rule: color-mix(in srgb, var(--ink) 7%, transparent);
+		/* A spring as a curve: overshoots a little and settles, no script needed. */
+		--spring: linear(0, 0.21 4%, 0.64 10%, 0.98 17%, 1.1 23%, 1.11 28%, 1.05 36%, 0.99 46%, 0.98 55%, 1 70%, 1);
+		padding-block: clamp(5rem, 11vw, 8rem) 3rem;
+		background-color: var(--paper);
+		background-image: repeating-linear-gradient(
+			to bottom,
+			transparent 0 calc(1.75rem - 1px),
+			var(--rule) calc(1.75rem - 1px) 1.75rem
+		);
+		border-block: 3px double var(--ink-ghost);
 	}
 	.archive-head {
 		margin-bottom: 2rem;
@@ -177,8 +273,7 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-end;
-		gap: 1rem 2rem;
-		padding-bottom: 1.2rem;
+		gap: 0 1.5rem;
 		border-bottom: 2px solid var(--ink);
 	}
 	.search {
@@ -186,68 +281,108 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		gap: 0.35rem;
 		flex: 1 1 16rem;
 		max-width: 24rem;
+		margin-bottom: 1rem;
 	}
+	/* A typed index card: red head rule, blue ruling, typewriter face. */
 	.search input {
-		min-height: 44px;
-		padding: 0 0.9rem;
-		font: inherit;
-		font-size: 0.95rem;
+		min-height: 48px;
+		padding: 0.5rem 0.9rem 0;
+		font: 400 0.8rem/1 var(--mono);
+		letter-spacing: 0.02em;
 		color: var(--ink);
-		background: var(--card);
-		border: 1px solid var(--ink-faint);
-		border-radius: 4px;
+		background:
+			linear-gradient(var(--stamp), var(--stamp)) 0 7px / 100% 1px no-repeat,
+			linear-gradient(var(--rule), var(--rule)) 0 calc(100% - 10px) / 100% 1px no-repeat,
+			var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 2px;
+		box-shadow: var(--lift);
 	}
 	.search input::placeholder {
 		color: var(--ink-soft);
 		opacity: 0.8;
 	}
-	.search input:focus-visible {
+	.search input:focus-visible,
+	.view:focus-visible,
+	.filter:focus-visible {
 		outline: 2px solid var(--stamp);
-		outline-offset: 1px;
+		outline-offset: 2px;
 	}
 
+	.views {
+		display: flex;
+		margin-bottom: 1rem;
+		border: 1px solid var(--ink);
+	}
+	.views[hidden] {
+		display: none;
+	}
+	.view {
+		min-height: 44px;
+		padding: 0.1rem 0.95rem 0;
+		font: 400 1.05rem/1 var(--label-face);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--ink);
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+	}
+	.view + .view {
+		border-left: 1px solid var(--ink);
+	}
+	.view[aria-pressed='true'] {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	/* Card-catalogue drawer tabs standing on the rule; the open one is pulled out. */
 	.filters {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.4rem;
+		align-items: flex-end;
+		gap: 0.3rem;
+		margin-left: auto;
 	}
 	.filter {
 		display: inline-flex;
-		align-items: center;
+		align-items: baseline;
 		gap: 0.45rem;
 		min-height: 44px;
-		padding: 0 0.95rem;
-		font: 500 0.78rem/1 var(--mono);
-		letter-spacing: 0.04em;
+		padding: 0.75rem 0.95rem 0.5rem;
+		font: 400 1.1rem/1 var(--label-face);
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--ink-soft);
-		background: transparent;
+		background: var(--paper-2);
 		border: 1px solid var(--ink-ghost);
-		border-radius: 999px;
+		border-bottom: 0;
+		border-radius: 2px 2px 0 0;
 		cursor: pointer;
 		transition:
 			background 0.2s ease,
 			color 0.2s ease,
-			border-color 0.2s ease;
+			translate 0.25s var(--ease-out);
 	}
-	.filter:hover {
+	.filter:hover:not(:disabled) {
 		color: var(--ink);
-		border-color: var(--ink-faint);
+		translate: 0 -2px;
 	}
 	.filter[aria-pressed='true'] {
-		background: var(--ink);
+		margin-bottom: -2px;
+		padding-bottom: calc(0.5rem + 2px);
+		background: var(--card);
+		color: var(--ink);
 		border-color: var(--ink);
-		color: var(--paper);
-	}
-	.filter:active {
-		scale: 0.97;
 	}
 	.filter:disabled {
 		opacity: 0.4;
 		cursor: default;
 	}
 	.filter-n {
-		opacity: 0.7;
+		font: 400 0.62rem/1 var(--mono);
+		font-variant-numeric: tabular-nums;
+		opacity: 0.75;
 	}
 	.archive-count {
 		margin: 0.8rem 0 0.4rem;
@@ -255,42 +390,30 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 
 	.index {
 		list-style: none;
-	}
-	.row {
-		display: grid;
-		grid-template-columns: 11rem minmax(0, 1fr) 10rem;
-		gap: 1.6rem;
-		align-items: start;
-		padding: 1.6rem 0;
-		border-bottom: 1px solid var(--ink-ghost);
+		margin-top: 1.4rem;
 	}
 	.row[hidden],
-	.index-break[hidden] {
-		display: none;
+	.index-break[hidden],
+	.ledger-head[hidden] {
+		display: none !important;
+	}
+
+	/* ---------- shared parts ---------- */
+	.row {
+		position: relative;
+		display: grid;
+		align-items: start;
 	}
 	.row-thumb {
+		grid-area: thumb;
+		position: relative;
 		aspect-ratio: 16 / 10;
 		overflow: hidden;
-		border-radius: 3px;
-		background: var(--paper-2);
-		box-shadow: inset 0 0 0 1px var(--ink-ghost);
 		display: grid;
 		place-items: center;
 		color: var(--ink-soft);
-		rotate: var(--tilt, 0deg);
-		transition:
-			rotate 0.4s var(--ease-out),
-			scale 0.4s var(--ease-out);
-	}
-	.row:nth-child(3n + 1) .row-thumb {
-		--tilt: -1.2deg;
-	}
-	.row:nth-child(3n + 2) .row-thumb {
-		--tilt: 0.8deg;
-	}
-	.row:hover .row-thumb {
-		rotate: 0deg;
-		scale: 1.04;
+		background: var(--paper-2);
+		box-shadow: inset 0 0 0 1px var(--ink-ghost);
 	}
 	.row-thumb img {
 		width: 100%;
@@ -299,52 +422,90 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		object-position: top;
 	}
 	.row-thumb :global(.row-sketch) {
-		width: 46%;
+		width: 40%;
 		height: auto;
 	}
-
-	.row-meta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.2rem 0.9rem;
-		margin-bottom: 0.25rem;
+	.is-bench .row-thumb {
+		background: transparent;
+		box-shadow: none;
+		outline: 1.5px dashed var(--ink-faint);
+		outline-offset: -1.5px;
 	}
-	.row-state {
-		color: var(--ink);
-	}
-	/* Green is reserved for one meaning: this answers right now. */
-	.state-live {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		color: var(--live);
-	}
-	.state-live::before {
-		content: '';
-		width: 0.42rem;
-		height: 0.42rem;
-		border-radius: 50%;
-		background: currentColor;
-	}
-	.row-name {
-		font-size: clamp(1.5rem, 2.6vw, 2.1rem);
-		font-variation-settings: 'wdth' 82;
-		margin-bottom: 0.35rem;
-	}
-	.row-desc {
-		max-width: 46rem;
-		font-size: 0.93rem;
+	.row-no {
+		grid-area: no;
+		justify-self: start;
 		color: var(--ink-soft);
 	}
+	.row-name {
+		grid-area: name;
+		color: var(--ink);
+		font-size: clamp(1.8rem, 2.6vw, 2.3rem);
+	}
+	.row-where {
+		grid-area: where;
+	}
+	.row-status {
+		grid-area: status;
+	}
+	.row-year {
+		grid-area: year;
+	}
+	.row-desc {
+		grid-area: desc;
+		max-width: 46rem;
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+	}
+	.row-stack-col {
+		grid-area: stack;
+		font: 400 0.68rem/1.55 var(--mono);
+		color: var(--ink-soft);
+	}
+
+	/* Each state reads differently without its colour: dot, solid, dashed, dotted, double, faded. */
+	.row-state {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.25rem 0.55rem 0.2rem;
+		color: var(--ink);
+		border: 1px solid currentColor;
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+	.state-live {
+		color: var(--live);
+	}
+	.state-source {
+		color: var(--ink-soft);
+	}
+	.state-work {
+		border-style: dashed;
+	}
+	.state-experiment {
+		color: var(--stamp);
+		border-style: dotted;
+		border-width: 2px;
+	}
+	.state-finished {
+		color: var(--cobalt);
+		border-style: double;
+		border-width: 3px;
+	}
+	.state-archived {
+		color: var(--ink-faint);
+		background: var(--paper-2);
+		border-color: transparent;
+	}
+
 	.row-more {
-		margin-top: 0.5rem;
+		grid-area: more;
 		font-size: 0.85rem;
 	}
 	.row-more summary {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		min-height: 36px;
+		min-height: 44px;
 		cursor: pointer;
 		list-style: none;
 		color: var(--ink-soft);
@@ -363,7 +524,7 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 	}
 	.row-stack {
 		font-family: var(--mono);
-		font-size: 0.78rem;
+		font-size: 0.74rem;
 		color: var(--ink-soft);
 	}
 	.row-origin {
@@ -372,11 +533,11 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 	}
 
 	.row-actions {
+		grid-area: act;
 		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.2rem;
-		text-align: right;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 1.2rem;
 	}
 	.row-cta {
 		display: inline-flex;
@@ -384,7 +545,6 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		gap: 0.3rem;
 		min-height: 44px;
 		font-family: var(--display);
-		font-weight: 700;
 		font-size: 1.05rem;
 		color: var(--stamp);
 		text-decoration: none;
@@ -403,24 +563,209 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		font-size: 0.88rem;
 		color: var(--ink-soft);
 	}
-	.row-actions :global(.row-stamp) {
-		margin-top: 0.6rem;
-	}
-	.is-bench .row-thumb {
-		background: transparent;
-		box-shadow: none;
-		outline: 1.5px dashed var(--ink-faint);
-	}
 
 	.index-break {
+		flex: 1 1 100%;
 		padding: 2.4rem 0 1.4rem;
-		border-bottom: 1px solid var(--ink-ghost);
 	}
 	.index-break .script {
 		max-width: 34rem;
 		font-size: 1.6rem;
 		color: var(--stamp);
 		rotate: -1deg;
+	}
+
+	/* ---------- collection: covers mounted by hand ---------- */
+	/* Flex rather than grid so every line fills itself, whatever the filter leaves. */
+	.index[data-view='collection'] {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 2.6rem 2.2rem;
+		padding-top: 1.2rem;
+	}
+	.index[data-view='collection'] .ledger-head,
+	.index[data-view='collection'] .row-stack-col {
+		display: none;
+	}
+	.size-l {
+		--grow: 4;
+		--basis: 30rem;
+	}
+	.size-m {
+		--grow: 3;
+		--basis: 20rem;
+	}
+	.size-s {
+		--grow: 2;
+		--basis: 14rem;
+	}
+	.index[data-view='collection'] .row {
+		flex: var(--grow) 1 var(--basis);
+		min-width: 0;
+		margin-top: var(--drop);
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			'thumb thumb'
+			'no status'
+			'name name'
+			'where year'
+			'desc desc'
+			'more more'
+			'act act';
+		gap: 0.4rem 0.8rem;
+		align-items: center;
+		padding: 0.7rem 0.7rem 0.6rem;
+		background: var(--card);
+		box-shadow: var(--lift);
+		rotate: var(--tilt);
+		transition:
+			rotate 0.7s var(--spring),
+			translate 0.7s var(--spring),
+			box-shadow 0.3s ease;
+	}
+	.index[data-view='collection'] .row:hover,
+	.index[data-view='collection'] .row:focus-within {
+		z-index: 2;
+		rotate: 0deg;
+		translate: 0 -6px;
+		box-shadow: var(--lift-high);
+	}
+	.index[data-view='collection'] .row-thumb {
+		margin-bottom: 0.35rem;
+	}
+	.index[data-view='collection'] .row-status,
+	.index[data-view='collection'] .row-year {
+		justify-self: end;
+	}
+	.index[data-view='collection'] .size-l .row-name {
+		font-size: clamp(2.2rem, 3.6vw, 3.1rem);
+	}
+	.index[data-view='collection'] .row-desc {
+		margin-top: 0.2rem;
+	}
+	/* A polaroid-deep mount for the ones with no other fixing. */
+	.index[data-view='collection'] .frame-plain {
+		padding: 1rem 1rem 0.8rem;
+	}
+	.row .tape {
+		top: -13px;
+		left: 50%;
+		translate: -50% 0;
+		rotate: -3deg;
+	}
+	/* A paper clip over the top edge: two nested loops of wire. */
+	.index[data-view='collection'] .frame-clip::before,
+	.index[data-view='collection'] .frame-clip::after {
+		content: '';
+		position: absolute;
+		z-index: 3;
+		border: 2px solid var(--grey);
+		pointer-events: none;
+	}
+	.index[data-view='collection'] .frame-clip::before {
+		top: -16px;
+		left: 1.5rem;
+		width: 16px;
+		height: 50px;
+		border-radius: 8px;
+	}
+	.index[data-view='collection'] .frame-clip::after {
+		top: -9px;
+		left: calc(1.5rem + 4px);
+		width: 8px;
+		height: 34px;
+		border-radius: 4px;
+	}
+	/* Black paper photo corners, as in an album. */
+	.index[data-view='collection'] .frame-corners .row-thumb::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background:
+			linear-gradient(135deg, var(--ink-fixed) 0 50%, transparent 50%) top left / 18px 18px no-repeat,
+			linear-gradient(225deg, var(--ink-fixed) 0 50%, transparent 50%) top right / 18px 18px no-repeat,
+			linear-gradient(45deg, var(--ink-fixed) 0 50%, transparent 50%) bottom left / 18px 18px no-repeat,
+			linear-gradient(315deg, var(--ink-fixed) 0 50%, transparent 50%) bottom right / 18px 18px no-repeat;
+	}
+	/* The bench stamp is pressed onto the cover itself. */
+	.index[data-view='collection'] :global(.row-stamp) {
+		position: absolute;
+		z-index: 3;
+		top: 1.8rem;
+		right: 1.4rem;
+		background: var(--card);
+	}
+
+	/* ---------- register: the ledger ---------- */
+	.index[data-view='register'] {
+		border-top: 2px solid var(--ink);
+	}
+	.index[data-view='register'] .row-thumb,
+	.index[data-view='register'] .tape,
+	.index[data-view='register'] .row-more .row-stack,
+	.index[data-view='register'] .row-more.no-origin {
+		display: none;
+	}
+	.ledger-head,
+	.index[data-view='register'] .row {
+		display: grid;
+		grid-template-columns:
+			4.6rem minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1.15fr) 4.4rem
+			minmax(0, 1.3fr) 8.5rem;
+		column-gap: 1.2rem;
+	}
+	.ledger-head {
+		padding: 0.55rem 0;
+		border-bottom: 1px solid var(--ink);
+	}
+	.index[data-view='register'] .row {
+		grid-template-areas:
+			'no name where status year stack act'
+			'no desc where stamp year stack act'
+			'no more where stamp year stack act';
+		grid-template-rows: auto auto 1fr;
+		row-gap: 0.25rem;
+		padding: 0.9rem 0 0.6rem;
+		border-bottom: 1px solid var(--ink-ghost);
+	}
+	.index[data-view='register'] .row-no {
+		padding: 0.5rem 0 0;
+		border: 0;
+		font-size: 0.72rem;
+		color: var(--ink);
+	}
+	.index[data-view='register'] .row-name {
+		font-size: 1.7rem;
+	}
+	.index[data-view='register'] .row-where,
+	.index[data-view='register'] .row-year,
+	.index[data-view='register'] .row-stack-col {
+		padding-top: 0.5rem;
+	}
+	.index[data-view='register'] .row-status {
+		padding-top: 0.25rem;
+	}
+	.index[data-view='register'] .row-desc {
+		font-size: 0.84rem;
+	}
+	.index[data-view='register'] .row-actions {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0;
+	}
+	.index[data-view='register'] .row-cta {
+		font-size: 0.92rem;
+	}
+	.index[data-view='register'] :global(.row-stamp) {
+		grid-area: stamp;
+		justify-self: start;
+		margin-top: 0.4rem;
+		--stamp-tilt: -2deg;
+	}
+	.index[data-view='register'] .index-break {
+		border-bottom: 1px solid var(--ink-ghost);
 	}
 
 	.archive-empty {
@@ -432,17 +777,61 @@ const breakAt = cards.findIndex((c) => c.shelf === 'workbench');
 		margin-bottom: 1rem;
 	}
 
-	@media (max-width: 760px) {
-		.row {
-			grid-template-columns: 6.5rem minmax(0, 1fr);
-			gap: 1rem;
+	@media (prefers-reduced-motion: reduce) {
+		html:not([data-motion='on']) .row,
+		html:not([data-motion='on']) .filter {
+			transition: none;
 		}
-		.row-actions {
-			grid-column: 2;
+	}
+
+	/* The ledger folds into stacked entries once seven columns stop fitting. */
+	@media (max-width: 960px) {
+		.ledger-head {
+			display: none !important;
+		}
+		.index[data-view='register'] .row {
+			grid-template-columns: 4.2rem minmax(0, 1fr) auto;
+			grid-template-areas:
+				'no name name'
+				'no status year'
+				'no stamp stamp'
+				'no where where'
+				'no desc desc'
+				'no stack stack'
+				'no more more'
+				'no act act';
+			grid-template-rows: none;
+		}
+		.index[data-view='register'] .row-year {
+			justify-self: end;
+		}
+		.index[data-view='register'] .row-actions {
 			flex-direction: row;
-			flex-wrap: wrap;
 			align-items: center;
 			gap: 0 1.2rem;
+		}
+	}
+
+	@media (max-width: 600px) {
+		.filters {
+			margin-left: 0;
+		}
+		.index[data-view='collection'] {
+			gap: 2.2rem;
+		}
+		.index[data-view='collection'] .row {
+			flex-basis: 100%;
+			margin-top: 0;
+		}
+		/* Small mounts stay small, and step left and right down the drawer. */
+		.index[data-view='collection'] .size-s {
+			flex: 0 1 88%;
+		}
+		.index[data-view='collection'] .size-s:nth-child(even) {
+			margin-left: auto;
+		}
+		.index[data-view='register'] .row {
+			grid-template-columns: 3.4rem minmax(0, 1fr) auto;
 		}
 	}
 </style>

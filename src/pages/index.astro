@@ -5,15 +5,14 @@ import Nav from '../components/Nav.astro';
 import DeskPanel from '../components/DeskPanel.astro';
 import Cursors from '../components/Cursors.astro';
 import DeskToys from '../components/DeskToys.astro';
-import Logbook from '../components/Logbook.astro';
 import Explorer from '../components/Explorer.astro';
 import Featured from '../components/Featured.astro';
 import Board from '../components/Board.astro';
 import FieldGuide from '../components/FieldGuide.astro';
 import BackRoom from '../components/BackRoom.astro';
 import SharedStudio from '../components/SharedStudio.astro';
-import { workbench } from '../data/board.js';
-import { ideas } from '../data/studio.js';
+import { open, workbench } from '../data/board.js';
+import { ideas, featured } from '../data/studio.js';
 
 const spec = [
 	['Makes', 'Web things, mostly games and small tools'],
@@ -22,7 +21,8 @@ const spec = [
 	['Plays', 'Vinyl, cassettes, and whatever Chorusify picks'],
 ];
 
-/* What I actually reach for, grouped the way the work is split. */
+/* What I actually reach for, filed the way a field guide files its species:
+   genus first, then the specimens in it. */
 const kit = [
 	{ group: 'Frontend', items: ['React', 'Astro', 'TypeScript', 'Next.js', 'Tailwind', 'Vite'] },
 	{ group: 'Backend', items: ['Node', 'Express', 'Python', 'Flask', 'WebSockets', 'REST'] },
@@ -36,6 +36,31 @@ const tinkering = [
 	...workbench.map((p) => `${p.name}. ${p.desc.split('. ')[0]}.`),
 	...ideas.map((i) => `${i.name}: ${i.note}.`),
 ];
+
+/* The timeline is the shipping dates the projects already carry, nothing else.
+   Undated ones are left off rather than guessed. */
+const shipped = open
+	.filter((p) => p.shipped)
+	.map((p) => ({ name: p.name, id: p.id, when: p.shipped }))
+	.sort((a, b) => a.when.localeCompare(b.when));
+/* The handheld's channels: the selected work, each with its real screenshot
+   and the first few parts of its real stack for the circuit board inside. */
+const channels = featured
+	.map((f) => ({ f, p: open.find((p) => p.id === f.id) }))
+	.filter((c) => c.p)
+	.map(({ f, p }) => ({
+		id: p.id,
+		name: p.name,
+		kind: p.kind,
+		src: url(f.shot.src),
+		parts: String(p.stack ?? '')
+			.split(/,\s*|\s+·\s+|\s+\+\s+/)
+			.map((s) => s.trim())
+			.filter(Boolean),
+	}));
+const ch0 = channels[0];
+const fmtWhen = (w: string) =>
+	w.length > 4 ? new Date(`${w}-01`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : w;
 ---
 
 <Layout>
@@ -45,254 +70,349 @@ const tinkering = [
 	<Cursors />
 
 	<main id="main">
-		<!-- ============ 1. the door ============ -->
-		<header id="top" class="door wrap">
-			<div class="door-copy">
-				<p class="door-status label">
-					<span class="door-status-dot" aria-hidden="true"></span>Currently making things
-				</p>
+		<!-- ============ the entrance: a cutting mat on the workbench ============ -->
+		<header id="top" class="door">
+			<svg class="mat-marks" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+				<g fill="none" stroke="currentColor" stroke-width="1">
+					<circle cx="1180" cy="760" r="180"></circle>
+					<circle cx="1180" cy="760" r="300" stroke-dasharray="2 8"></circle>
+					<circle cx="1180" cy="760" r="420"></circle>
+					<path d="M1180 760 760 340M1180 760 1180 200M1180 760 935 336M1180 760 760 760"></path>
+					<path d="M0 120h1440M0 840h1440" stroke-dasharray="1 39"></path>
+				</g>
+				<g fill="currentColor" font-family="Martian Mono, monospace" font-size="11" letter-spacing="1">
+					<text x="770" y="332">45°</text>
+					<text x="940" y="326">60°</text>
+					<text x="1188" y="196">90°</text>
+					<text x="24" y="30">0</text><text x="264" y="30">6</text><text x="504" y="30">12</text><text x="744" y="30">18</text><text x="984" y="30">24</text><text x="1224" y="30">30</text>
+					<text x="24" y="884">FUTILE · SELF-HEALING · A2</text>
+				</g>
+			</svg>
+			<div class="door-inner wrap">
+				<div class="door-copy">
+					<p class="door-status label"><span class="is-live">Currently making things</span></p>
 
-				<h1 class="wordmark" aria-label="Futile Studio">
-					<span class="wm-text" aria-hidden="true"><span class="wm-line">Futile</span><span class="wm-line">Studio</span></span>
-					<canvas class="wm-dots" aria-hidden="true"></canvas>
-				</h1>
+					<h1 class="wordmark" aria-label="Futile Studio">
+						<span class="wm-text" aria-hidden="true"><span class="wm-line">Futile</span><span class="wm-line">Studio</span></span>
+						<canvas class="wm-dots" aria-hidden="true"></canvas>
+					</h1>
 
-				<p class="manifesto" data-reveal style="--d:150ms">
-					Nothing matters. <span class="manifesto-2">Build cool shit anyway.</span>
-				</p>
-				<p class="door-sub" data-reveal style="--d:250ms">
-					I'm Mayur. I build small games, tools and odd experiments, and run every one on a server in my flat.
-				</p>
+					<div class="door-say">
+						<p class="manifesto">
+							Nothing matters. <span class="manifesto-2">Build cool shit anyway.</span>
+						</p>
+						<p class="door-sub">
+							I'm Mayur. I build small games, tools and odd experiments, and run every one on a server in my flat.
+						</p>
 
-				<div class="door-actions" data-reveal style="--d:330ms">
-					<a href="#work" class="btn btn-stamp">
-						Browse projects
-						<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-							<path d="M8 3v10M4 9l4 4 4-4"></path>
-						</svg>
-					</a>
-					<a href={url('cv.pdf')} class="btn" target="_blank" rel="noopener">
-						View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
-					</a>
-				</div>
-			</div>
-
-			<div class="collage" data-depth-stage>
-				<a class="c-photo" href="#spread-orbitle" data-depth="0.6" aria-label="Orbitle, the newest one. Jump to it.">
-					<span class="mount mount-tape c-tape-a" aria-hidden="true"></span>
-					<img src={url('shots/orbitle-d.webp')} alt="" width="1280" height="800" fetchpriority="high" />
-					<span class="c-caption script" aria-hidden="true">orbitle, newest</span>
-				</a>
-
-				<a class="c-phone" href="#spread-chorusify" data-depth="1.3" aria-label="Chorusify on a phone. Jump to it.">
-					<span class="c-corner c-corner-tl" aria-hidden="true"></span>
-					<span class="c-corner c-corner-br" aria-hidden="true"></span>
-					<img src={url('shots/chorusify-m.webp')} alt="" width="390" height="780" />
-				</a>
-
-				<div class="c-ticket" data-depth="1.8">
-					<div class="tk-card">
-						<a class="tk-face tk-front" href="#spread-noggin" aria-label="Noggin', a quiz for a room of phones. Jump to it.">
-							<span class="tk-main">
-								<span class="tk-kicker">Futile Studio presents</span>
-								<span class="tk-name">Noggin'</span>
-								<span class="tk-sub">a quiz for a room of phones</span>
-								<span class="tk-meta"><span>Seat · your phone</span><span>Screen · the TV</span></span>
-							</span>
-							<span class="tk-stub">
-								<span class="tk-admit">Admit one</span>
-								<span class="tk-code" aria-hidden="true"></span>
-								<span class="tk-no">FS-003</span>
-							</span>
-						</a>
-						<div class="tk-face tk-back" id="tk-back" inert>
-							<p class="tk-back-head">Conditions of entry</p>
-							<p>Good for one round. The TV is the board and every phone in the room is a buzzer.</p>
-							<p class="tk-back-hint">The matching stub is stamp FS-003 in the Field Guide. The Noggin' spread is hiding it.</p>
+						<div class="door-actions">
+							<a href="#work" class="btn btn-stamp">
+								Browse projects
+								<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+									<path d="M8 3v10M4 9l4 4 4-4"></path>
+								</svg>
+							</a>
+							<a href={url('cv.pdf')} class="btn btn-quiet" target="_blank" rel="noopener">
+								View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
+							</a>
 						</div>
 					</div>
-					<button class="tk-flip" type="button" aria-pressed="false" aria-controls="tk-back">
-						<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8a6 6 0 0 1 11-2m1-3v3.5h-3.5M16 12a6 6 0 0 1-11 2m-1 3v-3.5h3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-						<span class="visually-hidden">Turn the ticket over</span>
-					</button>
 				</div>
 
-				<a class="c-postmark label" href={url('post/')} data-depth="1">
-					<span aria-hidden="true">Paderborn</span>
-					<span id="postmark-date" aria-hidden="true">DE</span>
-					<span class="visually-hidden">Write to the studio: open the postcard desk</span>
-				</a>
-				<button class="c-note" type="button" aria-expanded="false" aria-controls="c-note-back" aria-describedby="c-note-how" data-depth="1.6">
-					<span class="c-note-front script">psst. open me</span>
-					<span class="c-note-back" id="c-note-back">
-						Stamps are hidden all over the studio. The little counter by the menu keeps score. None of it is
-						required.
-					</span>
-					<span class="visually-hidden" id="c-note-how">Not stuck down: drag it, or use the arrow keys to move it.</span>
-				</button>
-				<button class="c-tidy" type="button" hidden>Tidy the desk</button>
+				<div class="door-desk">
+					<!-- the handheld: a pocket archive of the selected work. Its screen
+					     flips through real screenshots; open it and the board inside
+					     is printed with what that project is made of. -->
+					{
+						ch0 && (
+							<div class="handheld intro" style="--i:1" data-handheld>
+								<span class="hh-chain" aria-hidden="true" />
+								<div class="hh-board" id="hh-board" aria-label="Inside the handheld">
+									<button class="hh-chip" type="button" data-hh="poke" aria-label="Poke the chip">
+										<span class="hh-chip-label" data-hh-chip>{ch0.name}</span>
+										<span class="hh-chip-post" data-hh-post aria-hidden="true">ready</span>
+									</button>
+									<p class="hh-bom label" aria-hidden="true">Parts list</p>
+									<ul class="hh-parts" role="list" data-hh-parts aria-label="Built with">
+										{ch0.parts.map((s) => (
+											<li>{s}</li>
+										))}
+									</ul>
+									<span class="hh-void" aria-hidden="true">Warranty void if opened. You opened it.</span>
+									<p class="hh-rev" aria-hidden="true">FS-7 rev. 2026<br />built in a flat<br />in Paderborn</p>
+								</div>
+								<div class="hh-face">
+									<p class="hh-brand" aria-hidden="true">
+										<span>futile</span>
+										<span class="hh-model">FS-7 pocket archive</span>
+									</p>
+									<div class="hh-bezel">
+										<p class="hh-lcd label" aria-hidden="true">
+											<span data-hh-ch>CH 01/{String(channels.length).padStart(2, '0')}</span>
+											<span class="is-live">running</span>
+										</p>
+										<a class="hh-screen" href={`#spread-${ch0.id}`} data-hh-link>
+											<img src={ch0.src} alt="" width="1280" height="800" fetchpriority="high" data-hh-img />
+											<span class="hh-scan" aria-hidden="true" />
+											<span class="visually-hidden" data-hh-sr>
+												{ch0.name}, jump to it
+											</span>
+										</a>
+										<p class="hh-name" aria-live="polite">
+											<span data-hh-name>{ch0.name}</span>
+											<span class="hh-kind" data-hh-kind>
+												{ch0.kind}
+											</span>
+										</p>
+									</div>
+									<div class="hh-controls">
+										<button class="hh-btn" type="button" data-hh="prev" aria-label="Previous project">
+											<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+										</button>
+										<button class="hh-btn hh-btn-a" type="button" data-hh="open" aria-expanded="false" aria-controls="hh-board">
+											<span class="hh-open-label">Open</span>
+										</button>
+										<button class="hh-btn" type="button" data-hh="next" aria-label="Next project">
+											<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+										</button>
+									</div>
+									<span class="hh-speaker" aria-hidden="true" />
+								</div>
+							</div>
+						)
+					}
+					<script type="application/json" id="hh-channels" set:html={JSON.stringify(channels)} />
 
-				<p class="c-arrow script" aria-hidden="true">
-					<svg viewBox="0 0 80 40"><path d="M76 4C50 4 20 10 8 30m0 0 10-2M8 30l-1-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
-					everything here runs
-				</p>
+					<div class="collage" data-depth-stage>
+						<a class="c-phone intro" style="--i:2" href="#spread-chorusify" data-depth="1.3" aria-label="Chorusify on a phone. Jump to it.">
+							<img src={url('shots/chorusify-m.webp')} alt="" width="390" height="780" />
+						</a>
 
-				<button class="c-explorer" type="button" data-clue="explorer" aria-label="Wave at the explorer" aria-expanded="false" aria-controls="explorer-says">
-					<Explorer class="is-idle door-explorer" />
-				</button>
+						<div class="c-ticket intro" style="--i:3" data-depth="1.8">
+							<div class="tk-card">
+								<a class="tk-face tk-front" href="#spread-noggin" aria-label="Noggin', a quiz for a room of phones. Jump to it.">
+									<span class="tk-main">
+										<span class="tk-kicker">Futile Studio presents</span>
+										<span class="tk-name">Noggin'</span>
+										<span class="tk-sub">a quiz for a room of phones</span>
+										<span class="tk-meta"><span>Seat · your phone</span><span>Screen · the TV</span></span>
+									</span>
+									<span class="tk-stub">
+										<span class="tk-admit">Admit one</span>
+										<span class="tk-code" aria-hidden="true"></span>
+										<span class="tk-no">FS-003</span>
+									</span>
+								</a>
+								<div class="tk-face tk-back" id="tk-back" inert>
+									<p class="tk-back-head">Conditions of entry</p>
+									<p>Good for one round. The TV is the board and every phone in the room is a buzzer.</p>
+									<p class="tk-back-hint">The matching stub is stamp FS-003 in the Field Guide. The Noggin' spread is hiding it.</p>
+								</div>
+							</div>
+							<button class="tk-flip" type="button" aria-pressed="false" aria-controls="tk-back">
+								<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8a6 6 0 0 1 11-2m1-3v3.5h-3.5M16 12a6 6 0 0 1-11 2m-1 3v-3.5h3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+								<span class="visually-hidden">Turn the ticket over</span>
+							</button>
+						</div>
+
+						<button class="c-note intro" style="--i:4" type="button" aria-expanded="false" aria-controls="c-note-back" aria-describedby="c-note-how" data-depth="1.6">
+							<span class="c-note-front script">psst. open me</span>
+							<span class="c-note-back" id="c-note-back">
+								Stamps are hidden all over the studio. The little counter by the menu keeps score. None of it is
+								required.
+							</span>
+							<span class="visually-hidden" id="c-note-how">Not stuck down: drag it, or use the arrow keys to move it.</span>
+						</button>
+						<button class="c-tidy" type="button" hidden>Tidy the desk</button>
+
+						<a class="c-postmark label intro" style="--i:7" href={url('post/')}>
+							<span aria-hidden="true">Paderborn</span>
+							<span id="postmark-date" aria-hidden="true">DE</span>
+							<span class="visually-hidden">Write to the studio: open the postcard desk</span>
+						</a>
+						<span class="c-sticker intro" style="--i:8" aria-hidden="true"><span>do it<br />anyway</span></span>
+
+						<p class="c-arrow script intro" style="--i:6" aria-hidden="true">
+							everything here runs
+							<svg viewBox="0 0 80 40"><path d="M4 30C24 34 52 28 74 8m0 0-10 1m10-1-2 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+						</p>
+
+						<button class="c-explorer intro" style="--i:5" type="button" data-clue="explorer" aria-label="Wave at the explorer" aria-expanded="false" aria-controls="explorer-says">
+							<Explorer class="is-idle door-explorer" />
+						</button>
+					</div>
+				</div>
 			</div>
 
 			<div class="c-bubble" id="explorer-says" role="status" hidden>
 				<p class="c-bubble-text script"><span data-hello>Hello. Nice of you to come in.</span></p>
-				<button class="c-bubble-close" type="button" aria-label="Close the greeting">✕</button>
+				<button class="c-bubble-close" type="button" aria-label="Close the greeting">
+					<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+				</button>
 			</div>
+
+			<!-- the brass label holder on the drawer front -->
+			<a class="door-plate" href="#work">
+				<span class="label">Drawer 01</span>
+				<span class="door-plate-name">Pull out the selected work</span>
+				<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+			</a>
 		</header>
 
-		<!-- ============ 2. selected work ============ -->
 		<Featured />
 
-		<!-- ============ 3. everything ============ -->
 		<Board />
 
-		<!-- ============ 4. the guide ============ -->
 		<FieldGuide />
 
-		<!-- ============ 5. the maker's journal ============ -->
-		<section id="about" class="journal wrap" aria-labelledby="journal-title">
-			<div class="journal-book">
-				<div class="j-page j-left">
-					<h2 id="journal-title" class="j-title" data-annotate>Who keeps this place</h2>
-					<p class="j-statement" data-annotate>I like knowing how things work, so I tend to build one until it does.</p>
-					<p>
-						Most of this began as a scribble that could have stayed a scribble. The interesting part is carrying
-						on past the point where it stopped being fun.
-					</p>
-					<p>
-						Everything here runs on a machine I can walk over to, which keeps the whole chain within reach. At
-						1am the problem is on this side of the wall.
-					</p>
+		<!-- ============ about: a manila dossier ============ -->
+		<section id="about" class="dossier" aria-labelledby="about-title">
+			<div class="wrap">
+				<div class="folder">
+					<p class="folder-tab label" aria-hidden="true">File · M. Jivani · Futile Studio</p>
 
-					<div class="tinker">
-						<p class="label">Currently tinkering with</p>
-						<p class="tinker-text script" id="tinker-text" aria-live="polite">{tinkering[0]}</p>
-						<button class="tinker-next" type="button" id="tinker-next">Turn the page</button>
-					</div>
-				</div>
+					<div class="folder-body">
+						<article class="sheet-typed on-paper">
+							<span class="clip clip-top" aria-hidden="true"></span>
+							<h2 id="about-title" class="dossier-title">Who keeps this place</h2>
+							<p class="dossier-statement">I like knowing how things work, so I tend to build one until it does.</p>
+							<p>
+								Most of this began as a scribble that could have stayed a scribble. The interesting part is carrying on
+								past the point where it stopped being fun.
+							</p>
+							<p>
+								Everything here runs on a machine I can walk over to, which keeps the whole chain within reach. At 1am
+								the problem is on this side of the wall.
+							</p>
 
-				<div class="j-page j-right">
-					<figure class="desk-diagram">
-						<svg viewBox="0 0 420 220" role="img" aria-labelledby="desk-cap">
-							<title id="desk-cap">A sketch of the desk: a laptop, a turntable and a cassette tape, each labelled by hand.</title>
-							<g fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M10 170h400M30 170v40M390 170v40"></path>
-								<path d="M60 168l12-62h96l12 62z" fill="var(--card)"></path>
-								<path d="M48 168h144"></path>
-								<rect x="220" y="140" width="96" height="28" rx="3" fill="var(--card)"></rect>
-								<ellipse cx="258" cy="140" rx="24" ry="6" fill="var(--ink)"></ellipse>
-								<path d="M300 140l-14-14"></path>
-								<rect x="334" y="148" width="40" height="20" rx="2" fill="var(--card)"></rect>
-								<circle cx="346" cy="158" r="4"></circle>
-								<circle cx="362" cy="158" r="4"></circle>
-							</g>
-							<g fill="none" stroke="var(--stamp)" stroke-width="1.4" stroke-dasharray="3 4">
-								<path d="M110 100C100 70 90 60 70 52"></path>
-								<path d="M262 132C270 100 284 84 300 72"></path>
-								<path d="M356 146C366 120 378 110 392 104"></path>
-							</g>
-							<g class="desk-notes">
-								<text x="20" y="46">where the code happens</text>
-								<text x="250" y="64">vinyl, mostly</text>
-								<text x="296" y="98">Futile Rec. Co</text>
-							</g>
-						</svg>
-					</figure>
+							<dl class="spec">
+								{
+									spec.map(([k, v]) => (
+										<div>
+											<dt class="label">{k}</dt>
+											<dd>{v}</dd>
+										</div>
+									))
+								}
+							</dl>
 
-					<dl class="j-spec">
-						{
-							spec.map(([k, v]) => (
-								<div>
-									<dt class="label">{k}</dt>
-									<dd>{v}</dd>
-								</div>
-							))
-						}
-					</dl>
-
-					<div class="j-links">
-						<a href={url('cv.pdf')} class="btn btn-stamp" target="_blank" rel="noopener">
-							View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
-						</a>
-						<a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a>
-						<a class="btn" href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a>
-						<a class="btn" href="mailto:mayur@futile.studio">Email</a>
-					</div>
-				</div>
-			</div>
-
-			<div class="kit" aria-labelledby="kit-title">
-				<h3 id="kit-title" class="kit-title">What I reach for</h3>
-				<div class="kit-grid">
-					{
-						kit.map((k) => (
-							<div class="kit-col">
-								<h4 class="label kit-group">{k.group}</h4>
-								<ul class="kit-items" role="list">
-									{k.items.map((i) => (
-										<li>{i}</li>
-									))}
-								</ul>
+							<div class="dossier-links">
+								<a href={url('cv.pdf')} class="btn btn-stamp" target="_blank" rel="noopener">
+									View CV<span class="visually-hidden">, PDF, opens in a new tab</span>
+								</a>
+								<a class="btn" href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a>
+								<a class="btn" href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a>
 							</div>
-						))
+						</article>
+
+						<div class="dossier-side">
+							<div class="tinker on-paper">
+								<p class="label">Currently tinkering with</p>
+								<p class="tinker-text" id="tinker-text" aria-live="polite">{tinkering[0]}</p>
+								<button class="tinker-next" type="button" id="tinker-next">
+									Turn the page
+									<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+								</button>
+							</div>
+
+							<div class="field-index on-paper">
+								<h3 class="field-index-title">Field index of tools</h3>
+								<p class="field-index-note label">What I reach for, filed by genus</p>
+								{
+									kit.map((k, gi) => (
+										<div class="genus">
+											<h4 class="genus-name">
+												<span class="genus-no label" aria-hidden="true">{String.fromCharCode(65 + gi)}</span>
+												{k.group}
+											</h4>
+											<ol class="species" role="list">
+												{k.items.map((item, ii) => (
+													<li>
+														<span class="species-no" aria-hidden="true">
+															{String.fromCharCode(65 + gi)}.{String(ii + 1).padStart(2, '0')}
+														</span>
+														{item}
+													</li>
+												))}
+											</ol>
+										</div>
+									))
+								}
+							</div>
+						</div>
+					</div>
+
+					{
+						shipped.length > 1 && (
+							<div class="timeline on-paper">
+								<h3 class="timeline-title cat-title">Shipping record</h3>
+								<p class="timeline-note label">dates from the archive, oldest first</p>
+								<div class="tl-wrap">
+									<span class="tl-rule" aria-hidden="true">
+										<span class="tl-fill" />
+									</span>
+									<ol class="tl" role="list">
+										{shipped.map((s) => (
+											<li class="tl-item">
+												<span class="tl-when label">{fmtWhen(s.when)}</span>
+												<a class="tl-name" href={`#row-${s.id}`}>
+													{s.name}
+												</a>
+											</li>
+										))}
+									</ol>
+								</div>
+							</div>
+						)
 					}
 				</div>
 			</div>
 		</section>
 
-		<Logbook />
-
-		<!-- ============ 6. the back room ============ -->
 		<BackRoom />
 
-		<!-- ============ 7. together ============ -->
 		<SharedStudio />
 	</main>
 
-	<!-- ============ 8. the post office ============ -->
+	<!-- ============ contact: a postcard, lined in airmail ============ -->
 	<footer id="contact" class="post" aria-labelledby="post-title">
 		<div class="wrap post-inner">
-			<div class="post-copy">
-				<h2 id="post-title" class="post-title" data-annotate>Write to the studio.</h2>
-				<p class="post-sub">Work, questions, or an idea that sounds slightly pointless. All of it gets read.</p>
-				<a class="post-mail" href="mailto:mayur@futile.studio" data-annotate>mayur@futile.studio</a>
-				<ul class="post-links" role="list">
-					<li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener">GitHub</a></li>
-					<li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener">LinkedIn</a></li>
-					<li>
-						<a href={url('cv.pdf')} target="_blank" rel="noopener">CV<span class="visually-hidden">, PDF</span></a>
-					</li>
-					<li><a href={url('jinx')}>Jinx</a></li>
-				</ul>
-			</div>
-
-			<div class="post-scene">
-				<div class="envelope" id="envelope">
+			<div class="postcard on-paper" id="envelope">
+				<div class="pc-left">
+					<h2 id="post-title" class="post-title" data-annotate>Write to the studio.</h2>
+					<p class="post-sub">Work, questions, or an idea that sounds slightly pointless. All of it gets read.</p>
+					<a class="post-mail" href="mailto:mayur@futile.studio" data-annotate>mayur@futile.studio</a>
+					<div class="post-box">
+						<a class="btn btn-stamp" href={url('post/')} id="post-it" data-clue="post">Post it</a>
+						<p class="post-hint">Opens the postcard desk: write on the back and post it to the studio.</p>
+					</div>
+				</div>
+				<div class="pc-right">
 					<div class="env-stamp" id="env-stamp" aria-hidden="true"><span>your stamp here</span></div>
-					<p class="env-to script">
-						Mayur Jivani<br />futile.studio<br />Paderborn, DE
+					<span class="pc-postmark" aria-hidden="true"><span>Futile Post</span><span>Paderborn</span></span>
+					<p class="env-to">
+						<span>Mayur Jivani</span><span>futile.studio</span><span>Paderborn, DE</span>
 					</p>
 					<p class="env-mark label" aria-hidden="true">Par avion · Futile Post</p>
 				</div>
-				<div class="post-box">
-					<div class="post-explorer" aria-hidden="true"><Explorer class="is-idle" /></div>
-					<a class="btn btn-stamp" href={url('post/')} id="post-it" data-clue="post">Post it</a>
-				</div>
-				<p class="post-hint">Opens the postcard desk: write on the back and post it to the studio.</p>
+			</div>
+
+			<div class="post-aside">
+				<ul class="post-links" role="list">
+					<li><a href="https://github.com/mayurjivani" target="_blank" rel="noopener" data-annotate>GitHub</a></li>
+					<li><a href="https://linkedin.com/in/mayurjivani" target="_blank" rel="noopener" data-annotate>LinkedIn</a></li>
+					<li>
+						<a href={url('cv.pdf')} target="_blank" rel="noopener" data-annotate>CV<span class="visually-hidden">, PDF</span></a>
+					</li>
+					<li><a href={url('jinx')} data-annotate>Jinx</a></li>
+				</ul>
+				<div class="post-explorer" aria-hidden="true"><Explorer class="is-idle" /></div>
 				<DeskToys />
 			</div>
 		</div>
 
 		<div class="wrap post-foot">
-			<p class="brandmark post-brand" aria-hidden="true">futile<b>.</b>studio</p>
+			<p class="brandmark post-brand" aria-hidden="true" data-annotate>futile<b>.</b>studio</p>
 			<div class="post-small">
 				<a href="#top" class="post-top">Back to the door ↑</a>
 				<p>
@@ -309,18 +429,16 @@ const tinkering = [
 </script>
 
 <script>
-	import { animate } from 'motion';
-	import { gsap } from 'gsap';
-	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	import { animate, inView, scroll } from 'motion';
 	import { collect, collected } from '../lib/guide.js';
 	import { radiate } from '../lib/radiant.js';
-	gsap.registerPlugin(ScrollTrigger);
 
 	const root = document.documentElement;
 	const still = () =>
 		root.dataset.motion === 'off' ||
 		(root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 	const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+	const wide = matchMedia('(min-width: 901px)').matches;
 
 	radiate(document.querySelector('.wordmark')!, still);
 
@@ -335,7 +453,7 @@ const tinkering = [
 	   keyboard. The first move earns the Rearranged stamp; Tidy puts it back. */
 	const note = document.querySelector<HTMLButtonElement>('.c-note');
 	const tidy = document.querySelector<HTMLButtonElement>('.c-tidy');
-	const stage = document.querySelector<HTMLElement>('.collage');
+	const stage = document.querySelector<HTMLElement>('.door-desk');
 	if (note && tidy && stage) {
 		let mx = 0;
 		let my = 0;
@@ -406,14 +524,114 @@ const tinkering = [
 		});
 	}
 
-	/* ---------- the ticket: a front and a reverse ---------- */
+	/* ---------- the ticket: a front and a reverse, turned on a spring ---------- */
 	const ticket = document.querySelector<HTMLElement>('.c-ticket');
+	const tkCard = ticket?.querySelector<HTMLElement>('.tk-card');
 	ticket?.querySelector('.tk-flip')?.addEventListener('click', (e) => {
 		const flipped = ticket.classList.toggle('is-flipped');
 		(e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(flipped));
 		ticket.querySelector<HTMLElement>('.tk-front')!.inert = flipped;
 		ticket.querySelector<HTMLElement>('.tk-back')!.inert = !flipped;
+		if (!tkCard) return;
+		const to = flipped ? 180 : 0;
+		if (still()) tkCard.style.transform = `rotateY(${to}deg)`;
+		else animate(tkCard, { rotateY: to }, { type: 'spring', stiffness: 160, damping: 17 });
 	});
+
+	/* ---------- the handheld: change channel, or open it up ---------- */
+	const hh = document.querySelector<HTMLElement>('[data-handheld]');
+	const chans: { id: string; name: string; kind: string; src: string; parts: string[] }[] = JSON.parse(
+		document.getElementById('hh-channels')?.textContent || '[]',
+	);
+	if (hh && chans.length) {
+		const $ = (s: string) => hh.querySelector<HTMLElement>(s)!;
+		const img = $('[data-hh-img]') as HTMLImageElement;
+		const openBtn = $('[data-hh="open"]');
+		let at = 0;
+		/* warm the cache so a channel change never shows an empty screen */
+		const warm = () => chans.forEach((c) => (new Image().src = c.src));
+		const tune = (step: number) => {
+			at = (at + step + chans.length) % chans.length;
+			const c = chans[at];
+			img.src = c.src;
+			$('[data-hh-link]').setAttribute('href', `#spread-${c.id}`);
+			$('[data-hh-sr]').textContent = `${c.name}, jump to it`;
+			$('[data-hh-name]').textContent = c.name;
+			$('[data-hh-kind]').textContent = c.kind;
+			$('[data-hh-ch]').textContent = `CH ${String(at + 1).padStart(2, '0')}/${String(chans.length).padStart(2, '0')}`;
+			$('[data-hh-chip]').textContent = c.name;
+			$('[data-hh-parts]').replaceChildren(...c.parts.map((p) => Object.assign(document.createElement('li'), { textContent: p })));
+			if (hh.classList.contains('is-open')) selfTest();
+			if (still()) return;
+			/* the picture rolls in top to bottom like an old LCD redrawing */
+			animate(img, { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'] }, { duration: 0.32, ease: 'linear' });
+			animate($('.hh-bezel'), { rotate: [step * 1.5, 0] }, { type: 'spring', stiffness: 500, damping: 14 });
+		};
+		hh.querySelector('[data-hh="prev"]')!.addEventListener('click', () => tune(-1));
+		hh.querySelector('[data-hh="next"]')!.addEventListener('click', () => tune(1));
+		hh.addEventListener('pointerenter', warm, { once: true });
+		hh.addEventListener('focusin', warm, { once: true });
+		/* Opening it runs a power-on self test: the chip boots, then each part of
+		   the stack is soldered on and its LED comes up in turn. A new run
+		   cancels the old one, so fast clicks never leave LEDs half lit. */
+		const board = $('.hh-board');
+		const post = $('[data-hh-post]');
+		let run = 0;
+		const selfTest = async () => {
+			const me = ++run;
+			const parts = [...board.querySelectorAll<HTMLElement>('.hh-parts li')];
+			const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+			if (still()) return void (post.textContent = 'ok');
+			board.classList.add('is-testing');
+			parts.forEach((li) => li.classList.remove('is-ok'));
+			for (const word of ['boot', 'boot.', 'boot..']) {
+				post.textContent = word;
+				await wait(140);
+				if (me !== run) return;
+			}
+			for (const li of parts) {
+				animate(li, { opacity: [0, 1], x: [-14, 0], rotate: [-4, 0] }, { type: 'spring', stiffness: 520, damping: 22 });
+				await wait(110);
+				if (me !== run) return;
+				li.classList.add('is-ok');
+			}
+			post.textContent = `${parts.length}/${parts.length} ok`;
+			board.classList.remove('is-testing');
+		};
+		openBtn.addEventListener('click', () => {
+			const isOpen = hh.classList.toggle('is-open');
+			openBtn.setAttribute('aria-expanded', String(isOpen));
+			$('.hh-open-label').textContent = isOpen ? 'Close' : 'Open';
+			if (isOpen) setTimeout(selfTest, still() ? 0 : 280);
+			else run++;
+		});
+		/* poking the chip: it is warm, it says so, and it jumps */
+		const ouch = ['ouch', 'warm', 'hey', 'still ok', 'stop'];
+		let pokes = 0;
+		$('[data-hh="poke"]').addEventListener('click', () => {
+			post.textContent = ouch[pokes++ % ouch.length];
+			if (!still()) animate($('.hh-chip'), { y: [0, -6, 0], rotate: [0, -6, 4, 0] }, { duration: 0.4 });
+		});
+		/* arrow keys flip channels while anything on the handheld has focus */
+		hh.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+				e.preventDefault();
+				tune(e.key === 'ArrowLeft' ? -1 : 1);
+			}
+		});
+		/* a fine pointer tilts the toy toward it, a few degrees, on a spring */
+		if (fine && !still()) {
+			hh.addEventListener('pointermove', (e) => {
+				const r = hh.getBoundingClientRect();
+				const nx = (e.clientX - r.left) / r.width - 0.5;
+				const ny = (e.clientY - r.top) / r.height - 0.5;
+				animate(hh, { rotateY: nx * 14, rotateX: -ny * 10, transformPerspective: 900 }, { type: 'spring', stiffness: 220, damping: 20 });
+			});
+			hh.addEventListener('pointerleave', () =>
+				animate(hh, { rotateY: 0, rotateX: 0 }, { type: 'spring', stiffness: 160, damping: 16 }),
+			);
+		}
+	}
 
 	/* ---------- the explorer: looks at the pointer, waves when greeted, hops at a stamp ---------- */
 	const door = document.querySelector<HTMLButtonElement>('.c-explorer');
@@ -422,7 +640,7 @@ const tinkering = [
 	   want to read or press. Each candidate spot round the explorer is tried in
 	   turn and the first that covers no link, button, heading or paragraph wins;
 	   if none is clear (a narrow phone), it opens in the space under the
-	   collage, with its tail still pointing at the explorer. */
+	   desk, with its tail still pointing at the explorer. */
 	const bubble = document.getElementById('explorer-says')!;
 	const doorEl = document.querySelector<HTMLElement>('.door')!;
 	const busy = () =>
@@ -451,8 +669,8 @@ const tinkering = [
 			return x >= 8 && x + w <= innerWidth - 8 && !others.some((o) => hits(r, o));
 		};
 		const pick = spots.find(fits);
-		const collage = doorEl.querySelector('.collage')!.getBoundingClientRect();
-		const [side, x, y] = pick ?? ['reserved', Math.max(8, Math.min(innerWidth - w - 8, me.left)), collage.bottom + gap + 8];
+		const desk = doorEl.querySelector('.door-desk')!.getBoundingClientRect();
+		const [side, x, y] = pick ?? ['reserved', Math.max(8, Math.min(innerWidth - w - 8, me.left)), desk.bottom + gap + 8];
 		bubble.dataset.side = side;
 		bubble.style.left = `${x - host.left}px`;
 		bubble.style.top = `${y - host.top}px`;
@@ -463,7 +681,9 @@ const tinkering = [
 		if (!door) return;
 		bubble.hidden = !open;
 		door.setAttribute('aria-expanded', String(open));
-		if (open) placeBubble();
+		if (!open) return;
+		placeBubble();
+		if (!still()) animate(bubble, { opacity: [0, 1], scale: [0.85, 1] }, { type: 'spring', stiffness: 420, damping: 22 });
 	};
 	door?.addEventListener('click', () => {
 		fig?.classList.remove('is-waving');
@@ -509,11 +729,10 @@ const tinkering = [
 		});
 	});
 
-	/* ---------- the collage: a few pixels of depth on a fine pointer ---------- */
-	if (fine && !still()) {
-		const stage = document.querySelector<HTMLElement>('.collage');
-		const layers = [...(stage?.querySelectorAll<HTMLElement>('[data-depth]') ?? [])];
-		stage?.addEventListener('pointermove', (e) => {
+	/* ---------- the desk: a few pixels of depth on a fine pointer ---------- */
+	if (fine && !still() && stage) {
+		const layers = [...stage.querySelectorAll<HTMLElement>('[data-depth]')];
+		stage.addEventListener('pointermove', (e) => {
 			const r = stage.getBoundingClientRect();
 			const nx = (e.clientX - r.left) / r.width - 0.5;
 			const ny = (e.clientY - r.top) / r.height - 0.5;
@@ -523,7 +742,7 @@ const tinkering = [
 				l.style.setProperty('--dy', `${(ny * d).toFixed(1)}px`);
 			}
 		});
-		stage?.addEventListener('pointerleave', () =>
+		stage.addEventListener('pointerleave', () =>
 			layers.forEach((l) => {
 				l.style.removeProperty('--dx');
 				l.style.removeProperty('--dy');
@@ -531,62 +750,42 @@ const tinkering = [
 		);
 	}
 
-	/* ---------- the collage separates as you leave the door ----------
-	   Scrubbed by scroll, never driving it: the layers drift apart by their
+	/* ---------- scrubbed by scroll, never driving it ----------
+	   As you leave the entrance the loose things lift off the card by their
 	   depth, so the pile reads as paper at different heights. Wide screens
-	   only, where the pile is a pile; the phone layout is a stack. */
-	if (!still()) {
-		gsap.matchMedia().add('(min-width: 901px)', () => {
-			document.querySelectorAll<HTMLElement>('.collage [data-depth]').forEach((el) => {
-				gsap.to(el, {
-					y: -parseFloat(el.dataset.depth!) * 26,
-					ease: 'none',
-					scrollTrigger: { trigger: '.door', start: 'top top', end: 'bottom top', scrub: 0.6 },
-				});
-			});
+	   only: on a phone the desk is a stack, not a pile. */
+	if (!still() && wide && stage) {
+		stage.querySelectorAll<HTMLElement>('[data-depth]').forEach((el) => {
+			const lift = -parseFloat(el.dataset.depth!) * 34;
+			scroll(animate(el, { y: [0, lift] }, { ease: 'linear' }), { target: doorEl, offset: ['start start', 'end start'] });
 		});
 	}
 
-	/* ---------- the rest of the walk: four scrubbed sequences ----------
-	   All of them follow the scroll and none of them drive it; text only
-	   ever moves within its own block, never across other text. */
-	if (!still()) {
-		const mm = gsap.matchMedia();
-		mm.add('(min-width: 901px)', () => {
-			/* the name shrinks back as you walk away from the door */
-			gsap.to('.wordmark', {
-				scale: 0.86,
-				y: -24,
-				transformOrigin: '0% 0%',
-				ease: 'none',
-				scrollTrigger: { trigger: '.door', start: 'top top', end: 'bottom 30%', scrub: 0.5 },
+	/* ---------- the shipping record fills in as it scrolls past ---------- */
+	const fill = document.querySelector<HTMLElement>('.tl-fill');
+	if (fill) {
+		if (still()) fill.style.transform = 'scaleX(1)';
+		else
+			scroll(animate(fill, { scaleX: [0, 1] }, { ease: 'linear' }), {
+				target: document.querySelector('.timeline')!,
+				offset: ['start 85%', 'end 50%'],
 			});
-			/* screenshots tilt a little as they pass, like prints lifted off a table */
-			gsap.utils.toArray<HTMLElement>('.spread-shot, .spread-phone, .spread-live-clip').forEach((el, i) => {
-				gsap.fromTo(
-					el,
-					{ rotation: i % 2 ? -1.6 : 1.6, y: 24 },
-					{ rotation: i % 2 ? 0.8 : -0.8, y: -12, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.6 } },
+	}
+
+	/* ---------- the postcard: arrives tipped back and settles flat ---------- */
+	const card = document.querySelector<HTMLElement>('.postcard');
+	if (card && !still()) {
+		inView(
+			card,
+			() => {
+				animate(
+					card,
+					{ rotateX: [-24, 0], y: [30, 0], opacity: [0.5, 1], transformPerspective: 1400 },
+					{ type: 'spring', stiffness: 90, damping: 16 },
 				);
-			});
-		});
-		/* every scene title lands out of register and settles, the way a second
-		   ink pass catches up with the first */
-		gsap.utils.toArray<HTMLElement>('.sect-label').forEach((el) => {
-			gsap.fromTo(el, { '--reg': '7px' }, { '--reg': '0px', ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 55%', scrub: 0.4 } });
-		});
-		/* the post office: the envelope, the box and the desk tray arrive from
-		   wherever they were and come to rest together at the end */
-		gsap.utils.toArray<HTMLElement>('.post-scene > *').forEach((el, i) => {
-			gsap.from(el, {
-				x: [-60, 50, -30, 40][i % 4],
-				y: 40,
-				rotation: [-8, 6, -4, 5][i % 4],
-				opacity: 0.4,
-				ease: 'none',
-				scrollTrigger: { trigger: '.post', start: 'top 85%', end: 'top 35%', scrub: 0.6 },
-			});
-		});
+			},
+			{ amount: 0.25 },
+		);
 	}
 
 	/* ---------- currently tinkering with ---------- */
@@ -596,10 +795,10 @@ const tinkering = [
 	document.getElementById('tinker-next')?.addEventListener('click', () => {
 		at = (at + 1) % items.length;
 		tinkerText.textContent = items[at];
-		if (!still()) animate(tinkerText, { opacity: [0, 1], x: [8, 0] }, { duration: 0.35 });
+		if (!still()) animate(tinkerText, { opacity: [0, 1], x: [10, 0] }, { duration: 0.35 });
 	});
 
-	/* ---------- the post office: the envelope wears your latest stamp ---------- */
+	/* ---------- the postcard wears your latest stamp ---------- */
 	const envStamp = document.getElementById('env-stamp')!;
 	function stickLatest(fresh = false) {
 		const got = [...collected()];
@@ -607,13 +806,12 @@ const tinkering = [
 		const art = last && document.querySelector(`.slot[data-stamp="${last}"] .slot-art`);
 		if (!art) return envStamp.replaceChildren(Object.assign(document.createElement('span'), { textContent: 'your stamp here' }));
 		envStamp.replaceChildren(art.cloneNode(true));
-		/* A new stamp is licked and pressed on, so the corner of the envelope
+		/* A new stamp is licked and pressed on, so the corner of the postcard
 		   answers the find even from the other end of the page. */
 		if (fresh && !still()) animate(envStamp, { scale: [1.5, 1], rotate: [-14, 4] }, { type: 'spring', stiffness: 420, damping: 16 });
 	}
 	stickLatest();
 	window.addEventListener('futile-stamp', () => stickLatest(true));
-
 </script>
 
 <style>
@@ -625,56 +823,125 @@ const tinkering = [
 		padding: 0.6rem 1rem;
 		background: var(--ink);
 		color: var(--paper);
-		border-radius: 4px;
 	}
 	.skip:focus {
 		top: 1rem;
 	}
 
-	/* ================= the door ================= */
-	.door {
-		position: relative;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: clamp(1.5rem, 4vw, 4rem);
-		align-items: center;
-		min-height: calc(100dvh - 4.5rem);
-		padding-block: clamp(1.5rem, 4vh, 3rem) clamp(4rem, 9vh, 6rem);
+	/* A paper clip: two wire loops, drawn in CSS. */
+	.clip {
+		position: absolute;
+		z-index: 4;
+		width: 16px;
+		height: 46px;
+		border: 2.5px solid #8d8e86;
+		border-radius: 9px;
+		box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.25);
+		pointer-events: none;
 	}
-	.door-status {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1.2rem;
-		color: var(--ink);
-	}
-	.door-status-dot {
-		width: 0.5rem;
-		height: 0.5rem;
-		background: var(--stamp);
-		rotate: 45deg;
+	.clip::after {
+		content: '';
+		position: absolute;
+		inset: 5px 2.5px 12px;
+		border: 2.5px solid #8d8e86;
+		border-bottom: none;
+		border-radius: 6px 6px 0 0;
 	}
 
-	/* Sized against its own column, not the viewport, so it is as large as
-	   the column allows at every width and never runs past it. */
+	/* First paint: things are laid on the baize one after another. CSS, so it
+	   runs before any script and never leaves anything hidden if script fails;
+	   the global motion rules flatten it for reduced motion. */
+	@keyframes lay {
+		from {
+			opacity: 0;
+			translate: 0 -26px;
+			rotate: var(--lay-r, -5deg);
+			scale: 1.04;
+		}
+	}
+	.intro {
+		animation: lay 0.75s cubic-bezier(0.22, 1.25, 0.36, 1) calc(0.12s + var(--i, 0) * 0.11s) backwards;
+	}
+
+	/* ================= the entrance ================= */
+	.door {
+		--ink: #f2ebdd;
+		--ink-soft: #dcd6c4;
+		--ink-faint: #b9bba6;
+		--ink-ghost: rgba(242, 235, 221, 0.2);
+		--pink: #ff4f9a;
+		--mat: #2247a6;
+		position: relative;
+		isolation: isolate;
+		/* a self-healing cutting mat: fine grid, a heavier one every 5 squares,
+		   and the same in both lamps because it is an object, not the room */
+		background:
+			linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 60px 60px,
+			linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 60px 60px,
+			linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px) 0 0 / 12px 12px,
+			linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px) 0 0 / 12px 12px,
+			var(--mat);
+		color: var(--ink);
+		padding-block: clamp(2rem, 6vh, 4.5rem) 0;
+		overflow-x: clip;
+		/* the mat's dark rubber edge */
+		box-shadow: inset 0 0 0 10px #10162b, inset 0 0 90px rgba(5, 10, 30, 0.6);
+	}
+	.door::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--grain);
+		opacity: 0.14;
+		mix-blend-mode: overlay;
+		pointer-events: none;
+	}
+	.mat-marks {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		width: 100%;
+		height: 100%;
+		color: rgba(255, 255, 255, 0.32);
+		pointer-events: none;
+	}
+	.door-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+		gap: clamp(2rem, 5vw, 5rem);
+		align-items: start;
+	}
+
+	/* Sized against its own column, so it is as large as the column allows
+	   at every width and never runs past it. */
 	.door-copy {
 		container-type: inline-size;
 		min-width: 0;
+		display: grid;
+		gap: 1.4rem;
+		padding-top: 0.6rem;
+	}
+	.door-status {
+		color: var(--ink-soft);
 	}
 	/* The name is set in the display face, then redrawn as dots that give off
 	   heat (src/lib/radiant.js). The text keeps the space and is what shows
-	   without script; once the dots are drawn it steps aside. */
+	   without script; once the dots are drawn it steps aside. --stamp here is
+	   the colour the dots heat toward. */
 	.wordmark {
 		position: relative;
-		font: 800 min(9.5rem, 27cqi) / 0.9 var(--display);
-		font-variation-settings: 'wdth' 75, 'opsz' 96;
-		letter-spacing: 0.07em;
-		margin-bottom: clamp(1rem, 3vh, 1.8rem);
+		font: 400 min(10rem, 24cqi) / 0.86 var(--display);
+		letter-spacing: -0.02em;
 		cursor: crosshair;
+		--stamp: #ff4f9a;
 	}
 	.wm-line {
 		display: block;
 		white-space: nowrap;
+	}
+	.wm-line + .wm-line {
+		padding-left: 0.42em;
 	}
 	.wordmark.is-dots .wm-text {
 		visibility: hidden;
@@ -688,88 +955,449 @@ const tinkering = [
 		pointer-events: none;
 	}
 
+	.door-say {
+		display: grid;
+		gap: 1rem;
+		max-width: 34rem;
+	}
 	.manifesto {
-		font-family: var(--display);
-		font-weight: 700;
-		font-size: clamp(1.5rem, 2.8vw, 2.3rem);
-		font-variation-settings: 'wdth' 85;
-		letter-spacing: -0.02em;
+		font-family: var(--body);
+		font-style: italic;
+		font-size: clamp(1.6rem, 2.8vw, 2.3rem);
 		line-height: 1.05;
-		margin-bottom: 0.9rem;
+		letter-spacing: -0.01em;
 	}
 	.manifesto-2 {
 		display: block;
-		font-family: var(--script);
-		font-weight: 700;
-		font-size: 1.2em;
-		color: var(--stamp);
-		letter-spacing: 0;
-		rotate: -2deg;
 		width: fit-content;
+		font-family: var(--script);
+		font-style: normal;
+		font-size: 1.35em;
+		color: var(--lime);
+		rotate: -2deg;
+		margin-top: 0.1em;
 	}
 	.door-sub {
-		max-width: 28rem;
+		font-size: 1.12rem;
 		color: var(--ink-soft);
-		font-size: 1.05rem;
 	}
 	.door-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.7rem;
-		margin-top: 1.6rem;
+		gap: 0.8rem;
+		margin-top: 0.4rem;
+	}
+	.door .btn-stamp {
+		background: var(--pink);
+		color: var(--ink-fixed);
+		border-color: var(--ink-fixed);
+		box-shadow: 0 2px 0 var(--ink-fixed), 0 14px 22px -12px rgba(0, 0, 0, 0.6);
+	}
+	.door .btn-quiet {
+		background: transparent;
+		color: var(--ink);
+		border-color: var(--ink-soft);
+		box-shadow: none;
 	}
 
-	/* ---------- the collage ---------- */
-	.collage {
+	/* ---------- the workbench: the handheld and what lies around it ---------- */
+	.door-desk {
 		position: relative;
-		aspect-ratio: 1 / 1.02;
-		max-width: 38rem;
+		min-width: 0;
+		min-height: 36rem;
+		display: grid;
+		justify-items: center;
+		padding: 2.5rem 0 7rem;
+	}
+
+	/* The handheld: hot-pink moulded plastic, the one loud object on the mat.
+	   Two layers: the circuit board underneath and the shell on top, which
+	   slides aside on a hinge when it is opened. */
+	.handheld {
+		position: relative;
+		z-index: 3;
+		width: min(21rem, 100%);
+		rotate: -5deg;
+		--lay-r: -18deg;
+		--shell: #ff4f9a;
+	}
+	.hh-chain {
+		position: absolute;
+		left: 50%;
+		top: -2.6rem;
+		width: 2.4rem;
+		height: 3.2rem;
+		translate: -50% 0;
+		background: radial-gradient(circle, #e9ecf2 0 2.5px, #8b93a6 3px 3.6px, transparent 4px) 50% 0 / 9px 9px repeat-y;
+		filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.4));
+	}
+	.hh-face,
+	.hh-board {
+		border-radius: 2.4rem 2.4rem 3.4rem 3.4rem;
+	}
+	.hh-face {
+		position: relative;
+		z-index: 2;
+		display: grid;
+		gap: 0.9rem;
+		padding: 1.2rem 1.3rem 1.6rem;
+		background:
+			radial-gradient(120% 70% at 30% 10%, rgba(255, 255, 255, 0.35), transparent 45%),
+			radial-gradient(100% 80% at 80% 110%, rgba(120, 0, 50, 0.45), transparent 55%),
+			var(--shell);
+		box-shadow:
+			inset 0 2px 0 rgba(255, 255, 255, 0.5),
+			inset 0 -6px 0 rgba(120, 0, 50, 0.35),
+			0 3px 0 #b8165f,
+			0 40px 50px -24px rgba(5, 8, 30, 0.85);
+		transition: transform 0.75s cubic-bezier(0.22, 1.3, 0.36, 1);
+	}
+	.handheld.is-open .hh-face {
+		transform: translate(58%, -4%) rotate(9deg);
+	}
+	.hh-brand {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		color: #3a0019;
+	}
+	.hh-brand > span:first-child {
+		font-family: var(--brand);
+		font-weight: 800;
+		font-size: 1.5rem;
+		line-height: 1;
+	}
+	.hh-model {
+		font-family: var(--mono);
+		font-size: 0.52rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+	.hh-bezel {
+		display: grid;
+		gap: 0.45rem;
+		padding: 0.6rem 0.6rem 0.7rem;
+		background: #1b1320;
+		border-radius: 0.9rem;
+		box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.35);
+	}
+	.hh-lcd {
+		display: flex;
+		justify-content: space-between;
+		color: #c9ef62;
+	}
+	.hh-screen {
+		position: relative;
+		display: block;
+		aspect-ratio: 16 / 11;
+		overflow: hidden;
+		border-radius: 0.35rem;
+		background: #0b0b0d;
+	}
+	.hh-screen img {
+		position: absolute;
+		inset: 0;
 		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: 40% 30%;
+	}
+	/* scanlines and a glass sheen: the screen reads as a screen, not a photo */
+	.hh-scan {
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(115deg, rgba(255, 255, 255, 0.16), transparent 38%),
+			repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+		pointer-events: none;
+	}
+	.hh-name {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 0.6rem;
+		color: #f2ebdd;
+	}
+	.hh-name > span:first-child {
+		font-family: var(--label-face);
+		font-size: 1.7rem;
+		text-transform: uppercase;
+		line-height: 1;
+	}
+	.hh-kind {
+		font-family: var(--mono);
+		font-size: 0.55rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: #d9c9dd;
+		text-align: right;
+	}
+	.hh-controls {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 1.2rem;
+	}
+	.hh-btn {
+		display: grid;
+		place-items: center;
+		width: 3rem;
+		height: 3rem;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 30%, #4a3a52, #1b1320 70%);
+		color: #f2ebdd;
+		box-shadow: 0 4px 0 #6d0a37, 0 6px 10px -4px rgba(0, 0, 0, 0.6);
+		cursor: pointer;
+		transition: translate 0.08s ease, box-shadow 0.08s ease;
+	}
+	.hh-btn svg {
+		width: 1rem;
+		height: 1rem;
+	}
+	.hh-btn:active {
+		translate: 0 3px;
+		box-shadow: 0 1px 0 #6d0a37, 0 2px 4px -2px rgba(0, 0, 0, 0.6);
+	}
+	.hh-btn-a {
+		width: 4rem;
+		height: 4rem;
+		background: radial-gradient(circle at 35% 30%, #e8ff9a, #c9ef62 60%, #8fb23a);
+		color: #171816;
+	}
+	.hh-open-label {
+		font-family: var(--label-face);
+		font-size: 1.15rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.handheld .hh-btn:focus-visible {
+		outline: 3px solid #f2ebdd;
+		outline-offset: 3px;
+	}
+	.hh-speaker {
 		justify-self: end;
+		width: 3.4rem;
+		height: 1.4rem;
+		margin-top: -0.4rem;
+		background: radial-gradient(circle, #6d0a37 0 2px, transparent 2.5px) 0 0 / 8px 8px;
+		rotate: -18deg;
+	}
+
+	/* the board inside: green PCB, a chip named for the channel, the stack as
+	   parts on the board, all printed in silkscreen white. Everything sits in
+	   the strip the open shell leaves bare, so no part hides under it. */
+	.hh-board {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		display: grid;
+		align-content: center;
+		justify-items: start;
+		gap: 0.7rem;
+		padding: 1.6rem 47% 1.6rem 1.4rem;
+		background:
+			radial-gradient(circle, #d6b85a 0 2px, transparent 2.6px) 14px 14px / 22px 22px,
+			linear-gradient(90deg, transparent 48%, rgba(201, 239, 98, 0.25) 48% 52%, transparent 52%) 0 0 / 70px 100%,
+			#0f5b33;
+		color: #eef3e6;
+		box-shadow: inset 0 0 0 4px #0a3f23;
+		visibility: hidden;
+		transition: visibility 0s 0.75s;
+	}
+	.handheld.is-open .hh-board {
+		visibility: visible;
+		transition: none;
+	}
+	/* the chip: legs down both sides, the channel's name lasered on top */
+	.hh-chip {
+		position: relative;
+		display: grid;
+		place-items: center;
+		align-content: center;
+		gap: 0.2rem;
+		width: 5.6rem;
+		height: 5.6rem;
+		padding: 0;
+		background: #141414;
+		border: none;
+		border-radius: 4px;
+		box-shadow:
+			-7px 0 0 -3px #b5b9c0,
+			7px 0 0 -3px #b5b9c0,
+			0 8px 14px rgba(0, 0, 0, 0.5);
+		cursor: pointer;
+	}
+	/* the legs: a comb of pins drawn either side */
+	.hh-chip::before {
+		content: '';
+		position: absolute;
+		inset: 0.5rem -0.55rem;
+		background:
+			repeating-linear-gradient(#b5b9c0 0 3px, transparent 3px 9px) left / 5px 100% no-repeat,
+			repeating-linear-gradient(#b5b9c0 0 3px, transparent 3px 9px) right / 5px 100% no-repeat;
+		z-index: -1;
+	}
+	.hh-chip-label {
+		max-width: 5rem;
+		font-family: var(--mono);
+		font-size: 0.6rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: #c9c9c9;
+		text-align: center;
+		overflow-wrap: anywhere;
+	}
+	.hh-chip-post {
+		font-family: var(--mono);
+		font-size: 0.48rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--lime);
+	}
+	.hh-bom {
+		margin-top: 0.3rem;
+		color: #d6b85a;
+	}
+	/* the stack, soldered on as parts: an LED, a trace, a silkscreened name */
+	.hh-parts {
+		list-style: none;
+		display: grid;
+		gap: 0.35rem;
+		width: 100%;
+	}
+	/* :global because channel changes rebuild these items in script */
+	.hh-parts :global(li) {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.22rem 0.45rem 0.22rem 0.35rem;
+		background: rgba(10, 40, 22, 0.75);
+		border: 1px solid rgba(238, 243, 230, 0.55);
+		border-radius: 2px;
+		font-family: var(--mono);
+		font-size: 0.56rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		line-height: 1.25;
+	}
+	.hh-parts :global(li)::before {
+		content: '';
+		flex: none;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--lime);
+		box-shadow: 0 0 6px var(--lime);
+	}
+	/* while the self test runs, each LED waits its turn */
+	.hh-board.is-testing .hh-parts :global(li:not(.is-ok))::before {
+		background: #3a4a33;
+		box-shadow: none;
+	}
+	.hh-void {
+		padding: 0.3rem 0.5rem;
+		max-width: 100%;
+		background: repeating-linear-gradient(-45deg, #f2ebdd 0 6px, #e6dcc6 6px 12px);
+		color: #a8331f;
+		border: 1px dashed #a8331f;
+		font-family: var(--mono);
+		font-size: 0.46rem;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		line-height: 1.35;
+		rotate: -4deg;
+	}
+	.hh-rev {
+		max-width: 100%;
+		font-family: var(--mono);
+		font-size: 0.48rem;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		opacity: 0.85;
+	}
+
+	/* the rubber stamp, inked straight onto the mat */
+	.c-postmark {
+		right: 0;
+		top: 1rem;
+		display: grid;
+		place-items: center;
+		align-content: center;
+		width: 5.2rem;
+		height: 5.2rem;
+		border: 2px solid #f2ebdd;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 3px var(--mat), inset 0 0 0 4.5px #f2ebdd;
+		color: #f2ebdd;
+		text-align: center;
+		font-size: 0.5rem;
+		line-height: 1.35;
+		rotate: -12deg;
+		opacity: 0.9;
+		text-decoration: none;
+		transition: rotate 0.3s var(--ease-out), scale 0.15s ease;
+	}
+	/* a die-cut sticker slapped on the mat: the philosophy, in its loudest voice */
+	.c-sticker {
+		left: 30%;
+		top: -1.6rem;
+		z-index: 6;
+		display: grid;
+		place-items: center;
+		width: 7.2rem;
+		height: 7.2rem;
+		background: #c9ef62;
+		color: #171816;
+		clip-path: polygon(50% 0, 61% 18%, 82% 9%, 82% 31%, 100% 38%, 87% 54%, 98% 73%, 77% 77%, 72% 98%, 54% 86%, 36% 100%, 30% 79%, 8% 80%, 15% 60%, 0 45%, 18% 33%, 14% 12%, 36% 16%);
+		rotate: 12deg;
+		--lay-r: 40deg;
+		pointer-events: none;
+	}
+	.c-sticker span {
+		font-family: var(--display);
+		font-size: 0.95rem;
+		line-height: 0.95;
+		text-align: center;
+		text-transform: uppercase;
+	}
+	/* pressed like a rubber stamp: the way into the postcard desk */
+	.c-postmark:hover,
+	.c-postmark:focus-visible {
+		rotate: 2deg;
+	}
+	.c-postmark:active {
+		scale: 0.9;
+	}
+
+	/* ---------- loose things on the card ---------- */
+	/* no z-index of its own, so each loose thing stacks against the handheld:
+	   the ticket tucks under it, the note and the sticker land on top */
+	.collage {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+	.collage > :not(.c-sticker, .c-arrow) {
+		pointer-events: auto;
 	}
 	.collage > * {
 		position: absolute;
 		translate: var(--dx, 0) var(--dy, 0);
 		transition: translate 0.7s var(--ease-out);
 	}
-	.c-photo {
-		left: 2%;
-		top: 6%;
-		width: 82%;
-		padding: 0.7rem 0.7rem 2.6rem;
-		background: var(--card);
-		box-shadow: var(--lift-high);
-		rotate: -3deg;
-		z-index: 1;
-		transition:
-			rotate 0.4s var(--ease-out),
-			translate 0.7s var(--ease-out);
-	}
-	.c-photo img {
-		display: block;
-		width: 100%;
-		height: auto;
-	}
-	.c-tape-a {
-		left: 12%;
-		rotate: -22deg;
-	}
-	.c-caption {
-		position: absolute;
-		left: 1rem;
-		bottom: 0.4rem;
-		font-size: 1.35rem;
-		color: var(--ink-soft);
-	}
 	.c-phone {
-		right: 0;
-		top: 26%;
-		width: 30%;
+		left: -9%;
+		bottom: 0.5rem;
+		width: clamp(6.5rem, 9.5vw, 8.8rem);
 		z-index: 3;
-		border: 7px solid #1b1d22;
+		border: 6px solid #1b1d22;
 		border-radius: 18px;
-		box-shadow: var(--lift-high);
-		rotate: 7deg;
+		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 26px 40px -20px rgba(0, 0, 0, 0.7);
+		rotate: -7deg;
+		--lay-r: -14deg;
 	}
 	.c-phone img {
 		display: block;
@@ -777,34 +1405,18 @@ const tinkering = [
 		height: auto;
 		border-radius: 11px;
 	}
-	.c-corner {
-		position: absolute;
-		width: 18px;
-		height: 18px;
-		background: var(--ink);
-		opacity: 0.85;
-		z-index: 1;
-	}
-	.c-corner-tl {
-		top: -10px;
-		left: -10px;
-		clip-path: polygon(0 0, 100% 0, 0 100%);
-	}
-	.c-corner-br {
-		bottom: -10px;
-		right: -10px;
-		clip-path: polygon(100% 100%, 100% 0, 0 100%);
-	}
-	/* ---------- the admit ticket ----------
-	   Noggin's own black and gold, on card with a printed grain. A tear line
-	   with two punched notches divides the stub, and the card turns over. */
+
+	/* ---------- the Noggin' ticket ----------
+	   Noggin's own black and gold. A tear line with two punched notches
+	   divides the stub, and the card turns over on a spring. */
 	.c-ticket {
-		left: 2%;
-		bottom: 7%;
-		z-index: 4;
-		width: min(19rem, 52%);
+		right: -4%;
+		bottom: 1.2rem;
+		z-index: 2;
+		width: min(19rem, 74%);
 		perspective: 900px;
-		rotate: 4deg;
+		rotate: -4deg;
+		--lay-r: 8deg;
 		--tk-ink: #f1e6c8;
 		--tk-gold: #d6a640;
 		--tk-stub: 26%;
@@ -812,18 +1424,13 @@ const tinkering = [
 	.tk-card {
 		display: grid;
 		transform-style: preserve-3d;
-		transition: transform 0.6s var(--ease-out);
-	}
-	.is-flipped .tk-card {
-		transform: rotateY(180deg);
 	}
 	.tk-face {
 		grid-area: 1 / 1;
 		display: flex;
 		min-height: 7.4rem;
 		backface-visibility: hidden;
-		filter: drop-shadow(0 12px 14px rgba(27, 33, 50, 0.28));
-		/* the two notches where the stub tears off, punched top and bottom */
+		filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.4));
 		mask:
 			radial-gradient(circle at calc(100% - var(--tk-stub)) 0, transparent 7px, #000 7.5px) top / 100% 51% no-repeat,
 			radial-gradient(circle at calc(100% - var(--tk-stub)) 100%, transparent 7px, #000 7.5px) bottom / 100% 51% no-repeat;
@@ -834,7 +1441,6 @@ const tinkering = [
 		background:
 			repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 4px),
 			#141416;
-		border-radius: 4px;
 	}
 	.tk-main {
 		flex: 1;
@@ -843,28 +1449,25 @@ const tinkering = [
 		align-content: center;
 		gap: 0.15rem;
 		padding: 0.75rem 0.9rem 0.7rem 1rem;
-		/* a hairline frame inset from the edge, as on a printed ticket */
 		box-shadow: inset 0 0 0 5px #141416, inset 0 0 0 6px rgba(214, 166, 64, 0.45);
 	}
 	.tk-kicker,
 	.tk-sub,
 	.tk-meta {
 		font-family: var(--mono);
-		font-size: 0.6rem;
-		letter-spacing: 0.08em;
+		font-size: 0.55rem;
+		font-variation-settings: 'wdth' 87.5;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		line-height: 1.3;
+		line-height: 1.35;
 	}
 	.tk-kicker {
-		color: rgba(241, 230, 200, 0.62);
+		color: rgba(241, 230, 200, 0.72);
 	}
 	.tk-name {
-		font-family: var(--letterpress);
-		font-weight: 800;
-		font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
-		font-size: 2.1rem;
+		font-family: var(--display);
+		font-size: 2rem;
 		line-height: 0.95;
-		letter-spacing: 0.01em;
 		color: var(--tk-gold);
 	}
 	.tk-sub {
@@ -877,7 +1480,7 @@ const tinkering = [
 		margin-top: 0.35rem;
 		padding-top: 0.35rem;
 		border-top: 1px solid rgba(241, 230, 200, 0.18);
-		color: rgba(241, 230, 200, 0.62);
+		color: rgba(241, 230, 200, 0.72);
 	}
 	.tk-stub {
 		flex: none;
@@ -889,17 +1492,14 @@ const tinkering = [
 		padding: 0.6rem 0.3rem 0.55rem;
 		background: var(--tk-gold);
 		color: #141416;
-		/* the tear line */
 		border-left: 2px dashed #141416;
-		border-radius: 0 4px 4px 0;
 	}
 	.tk-admit {
 		writing-mode: vertical-rl;
 		rotate: 180deg;
-		font-family: var(--display);
-		font-weight: 800;
-		font-size: 0.8rem;
-		letter-spacing: 0.12em;
+		font-family: var(--label-face);
+		font-size: 1.1rem;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
 	.tk-code {
@@ -909,8 +1509,8 @@ const tinkering = [
 	}
 	.tk-no {
 		font-family: var(--mono);
-		font-size: 0.55rem;
-		letter-spacing: 0.06em;
+		font-size: 0.52rem;
+		letter-spacing: 0.04em;
 	}
 	.tk-back {
 		flex-direction: column;
@@ -919,23 +1519,22 @@ const tinkering = [
 		padding: 0.8rem 1rem;
 		transform: rotateY(180deg);
 		background: #f1e6c8;
-		color: #1b2132;
-		border-radius: 4px;
-		font-size: 0.78rem;
+		color: #171816;
+		font-size: 0.82rem;
 		line-height: 1.35;
 	}
 	.tk-back-head {
 		font-family: var(--mono);
-		font-size: 0.6rem;
-		letter-spacing: 0.08em;
+		font-size: 0.55rem;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: rgba(27, 33, 50, 0.65);
+		color: #3d3d36;
 	}
 	.tk-back-hint {
 		font-family: var(--script);
-		font-size: 1.05rem;
-		line-height: 1.15;
-		color: #a4321f;
+		font-size: 1.25rem;
+		line-height: 1;
+		color: #a8331f;
 		padding-right: var(--tk-stub);
 	}
 	.tk-flip {
@@ -944,14 +1543,14 @@ const tinkering = [
 		right: -0.9rem;
 		display: grid;
 		place-items: center;
-		width: 2.2rem;
-		height: 2.2rem;
+		width: 2.4rem;
+		height: 2.4rem;
 		padding: 0;
-		background: var(--card);
-		color: var(--ink);
-		border: 1px solid var(--ink-ghost);
+		background: #f2ebdd;
+		color: #171816;
+		border: 1px solid rgba(23, 24, 22, 0.25);
 		border-radius: 50%;
-		box-shadow: var(--lift);
+		box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.5);
 		cursor: pointer;
 		transition: rotate 0.4s var(--ease-out);
 	}
@@ -968,67 +1567,28 @@ const tinkering = [
 	.tk-flip:hover {
 		rotate: 180deg;
 	}
-	.c-ticket:hover {
-		z-index: 6;
-	}
-	.c-photo:hover,
+	.c-ticket:hover,
 	.c-phone:hover {
 		z-index: 6;
 	}
-	.c-photo:hover {
-		rotate: -1deg;
-	}
-	.c-postmark {
-		right: 10%;
-		top: 1%;
-		z-index: 5;
-		display: grid;
-		place-items: center;
-		align-content: center;
-		width: 6.4rem;
-		height: 6.4rem;
-		border: 2px solid var(--stamp);
-		border-radius: 50%;
-		box-shadow:
-			inset 0 0 0 4px var(--paper),
-			inset 0 0 0 5px var(--stamp);
-		color: var(--stamp);
-		text-align: center;
-		font-size: 0.6rem;
-		line-height: 1.3;
-		rotate: 14deg;
-		text-decoration: none;
-		transition:
-			rotate 0.3s var(--ease-out),
-			opacity 0.2s ease,
-			translate 0.7s var(--ease-out);
-	}
-	/* pressed like a rubber stamp: the way into the postcard desk */
-	.c-postmark:hover,
-	.c-postmark:focus-visible {
-		opacity: 1;
-		rotate: 4deg;
-	}
-	.c-postmark:active {
-		scale: 0.92;
-	}
+
+	/* the loose note: lime paper, the one highlighter colour, same in either lamp */
 	.c-note {
-		right: 2%;
-		bottom: 1%;
+		left: -12%;
+		top: 5rem;
 		z-index: 5;
-		width: clamp(8.5rem, 30%, 11rem);
-		min-height: 5.5rem;
+		width: 9.6rem;
+		min-height: 5.4rem;
 		padding: 0.8rem 0.9rem;
-		background: var(--marker);
-		color: #1b2132;
+		background: var(--lime);
+		color: #171816;
 		border: none;
-		box-shadow: var(--lift);
+		box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2), 0 14px 22px -14px rgba(0, 0, 0, 0.55);
 		text-align: left;
-		cursor: pointer;
-		rotate: -4deg;
-		transition:
-			rotate 0.4s var(--ease-out),
-			translate 0.7s var(--ease-out);
+		cursor: grab;
+		rotate: -5deg;
+		--lay-r: -16deg;
+		transition: rotate 0.4s var(--ease-out), translate 0.7s var(--ease-out);
 	}
 	.collage > .c-note {
 		touch-action: pan-y;
@@ -1036,45 +1596,26 @@ const tinkering = [
 		translate: calc(var(--dx, 0px) + var(--mx, 0px)) calc(var(--dy, 0px) + var(--my, 0px));
 	}
 	.c-note:hover {
-		rotate: 0deg;
+		rotate: -1deg;
 	}
 	/* picked up: a little higher off the table, no lag behind the finger */
 	.c-note.is-lifted {
 		z-index: 7;
-		rotate: -1deg;
-		box-shadow: var(--lift-high);
+		rotate: 2deg;
+		box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2), 0 30px 36px -18px rgba(0, 0, 0, 0.6);
 		transition: rotate 0.2s var(--ease-out);
 		cursor: grabbing;
 	}
-	.c-tidy {
-		right: 0;
-		bottom: -2.8rem;
-		min-height: 44px;
-		padding: 0 0.2rem;
-		background: none;
-		border: none;
-		font: 500 0.72rem var(--mono);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--ink-soft);
-		text-decoration: underline;
-		text-underline-offset: 0.2em;
-		cursor: pointer;
-	}
-	.c-tidy[hidden] {
-		display: none;
-	}
-	/* ink on yellow in either lamp: the note is the same paper at night */
 	.c-note-front,
 	.c-note-back {
-		color: #1b2132;
+		color: #171816;
 	}
 	.c-note-front {
-		font-size: 1.4rem;
+		font-size: 1.7rem;
 	}
 	.c-note-back {
 		display: none;
-		font-size: 0.82rem;
+		font-size: 0.86rem;
 		line-height: 1.4;
 	}
 	.c-note[aria-expanded='true'] {
@@ -1087,32 +1628,91 @@ const tinkering = [
 	.c-note[aria-expanded='true'] .c-note-back {
 		display: block;
 	}
+	.c-tidy {
+		right: 0;
+		bottom: -2.4rem;
+		min-height: 44px;
+		padding: 0 0.2rem;
+		background: none;
+		border: none;
+		font: 400 0.62rem var(--mono);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--ink-soft);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+	}
+	.c-tidy[hidden] {
+		display: none;
+	}
 	.c-arrow {
-		left: 40%;
-		top: -3%;
+		left: 18%;
+		bottom: -1.2rem;
 		display: flex;
 		align-items: flex-end;
 		gap: 0.2rem;
-		font-size: 1.3rem;
-		color: var(--stamp);
+		font-size: 1.9rem;
+		color: var(--lime);
 		rotate: -3deg;
 		z-index: 2;
+		pointer-events: none;
 	}
-	/* drawn heading down-left: from the words onto the photo under them */
 	.c-arrow svg {
 		width: 4rem;
-		order: -1;
+		margin-bottom: 0.6rem;
 	}
 	.c-explorer {
-		left: -9%;
-		bottom: -4%;
-		width: 6.4rem;
+		left: -26%;
+		bottom: 3rem;
+		width: 6rem;
 		z-index: 6;
 		padding: 0;
 		background: none;
 		border: none;
 		cursor: pointer;
+		color: #f2ebdd;
+		--card: #262721;
 	}
+
+	/* the brass label holder on the drawer front: the invitation to go on */
+	.door-plate {
+		position: relative;
+		z-index: 3;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem;
+		width: fit-content;
+		min-height: 44px;
+		margin: clamp(1.5rem, 4vw, 3rem) auto 0;
+		padding: 0.55rem 1.4rem 0.45rem;
+		translate: 0 50%;
+		background: linear-gradient(180deg, #d9bf7a, #a8873f 55%, #c9ab62);
+		color: #2a2210;
+		text-decoration: none;
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+		border-radius: 2px;
+	}
+	.door-plate .label {
+		color: #2a2210;
+	}
+	.door-plate-name {
+		font-family: var(--label-face);
+		font-size: 1.3rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		line-height: 1;
+	}
+	.door-plate svg {
+		width: 1rem;
+		height: 1rem;
+		transition: translate 0.3s var(--ease-out);
+	}
+	.door-plate:hover svg {
+		translate: 0 3px;
+	}
+
 	/* The speech bubble: solid paper, ink text, a tail at the explorer. It is
 	   placed by script against whatever is around it, so it has no fixed spot. */
 	.c-bubble {
@@ -1124,9 +1724,9 @@ const tinkering = [
 		width: max-content;
 		max-width: min(17rem, calc(100vw - 2rem));
 		padding: 0.55rem 0.4rem 0.6rem 0.9rem;
-		background: #fbf9f4;
-		color: #1b2132;
-		border: 2px solid #1b2132;
+		background: #f2ebdd;
+		color: #171816;
+		border: 2px solid #171816;
 		border-radius: 14px;
 		box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.45);
 		--tail-x: 2rem;
@@ -1135,24 +1735,28 @@ const tinkering = [
 		display: none;
 	}
 	.c-bubble-text {
-		font-size: 1.3rem;
-		line-height: 1.2;
-		color: #1b2132;
-		padding-top: 0.15rem;
+		font-size: 1.5rem;
+		line-height: 1;
+		color: #171816;
+		padding-top: 0.2rem;
 	}
 	.c-bubble-close {
 		flex: none;
+		display: grid;
+		place-items: center;
 		width: 36px;
 		height: 36px;
 		margin: -0.2rem 0 -0.2rem 0.1rem;
 		background: none;
 		border: none;
 		border-radius: 50%;
-		font-size: 0.85rem;
-		color: #1b2132;
+		color: #171816;
 		cursor: pointer;
 	}
-	/* the tail: a small triangle in the bubble's own ink and paper */
+	.c-bubble-close svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
 	.c-bubble::before,
 	.c-bubble::after {
 		content: '';
@@ -1162,146 +1766,171 @@ const tinkering = [
 	}
 	.c-bubble[data-side='above']::before {
 		top: 100%;
-		border-top-color: #1b2132;
+		border-top-color: #171816;
 	}
 	.c-bubble[data-side='above']::after {
 		top: calc(100% - 3px);
-		border-top-color: #fbf9f4;
+		border-top-color: #f2ebdd;
 	}
 	.c-bubble:is([data-side='below'], [data-side='reserved'])::before {
 		bottom: 100%;
-		border-bottom-color: #1b2132;
+		border-bottom-color: #171816;
 	}
 	.c-bubble:is([data-side='below'], [data-side='reserved'])::after {
 		bottom: calc(100% - 3px);
-		border-bottom-color: #fbf9f4;
+		border-bottom-color: #f2ebdd;
 	}
 	.c-bubble[data-side='right']::before,
 	.c-bubble[data-side='right']::after {
 		left: auto;
 		right: 100%;
 		top: 0.9rem;
-		border-right-color: #1b2132;
+		border-right-color: #171816;
 	}
 	.c-bubble[data-side='right']::after {
 		right: calc(100% - 3px);
-		border-right-color: #fbf9f4;
+		border-right-color: #f2ebdd;
 	}
 	.c-bubble[data-side='left']::before,
 	.c-bubble[data-side='left']::after {
 		left: 100%;
 		top: 0.9rem;
-		border-left-color: #1b2132;
+		border-left-color: #171816;
 	}
 	.c-bubble[data-side='left']::after {
 		left: calc(100% - 3px);
-		border-left-color: #fbf9f4;
+		border-left-color: #f2ebdd;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		html:not([data-motion='on']) .tk-card {
-			transition: none;
+	@media (max-width: 1180px) {
+		.c-explorer {
+			left: -4%;
+			bottom: auto;
+			top: -5.4rem;
+			width: 5rem;
 		}
 	}
-	html[data-motion='off'] .tk-card {
-		transition: none;
-	}
 
+	/* ---------- tablet: the desk goes under the copy, still a pile ---------- */
 	@media (max-width: 900px) {
-		.door {
+		.door-inner {
 			grid-template-columns: minmax(0, 1fr);
-			min-height: auto;
 		}
-		.collage {
+		.door-desk {
+			width: min(36rem, 100%);
 			justify-self: center;
-			max-width: 34rem;
-			margin-top: 1rem;
+			margin-top: 2rem;
 		}
-		.c-arrow {
+		.c-phone {
+			left: -6%;
+		}
+		.c-explorer {
+			left: auto;
+			right: 4%;
+			top: -5.6rem;
+		}
+	}
+
+	/* ---------- the entrance on a phone ----------
+	   Not the desktop pile shrunk: a short, ordered stack. The card, then the
+	   ticket and the phone side by side, then the note and the explorer, so
+	   nothing a finger needs sits under anything else. */
+	@media (max-width: 640px) {
+		.door-desk {
+			width: 100%;
+			margin-top: 1rem;
+			min-height: 0;
+			padding: 3rem 0 0;
+		}
+		.handheld {
+			width: min(19rem, 88%);
+			rotate: -3deg;
+		}
+		/* on a phone the board opens downward, so the shell never leaves the screen */
+		.handheld.is-open .hh-face {
+			transform: translate(0, 62%) rotate(4deg);
+		}
+		.handheld.is-open {
+			margin-bottom: 18rem;
+		}
+		/* the shell drops down here, so the board's top 60% is the bare part:
+		   chip on the left, parts beside it, the small print under both */
+		.hh-board {
+			align-content: start;
+			grid-template-columns: auto minmax(0, 1fr);
+			column-gap: 1.2rem;
+			padding: 1.8rem 1.4rem;
+		}
+		.hh-chip {
+			grid-row: 1 / span 2;
+			margin-left: 0.5rem;
+		}
+		.hh-bom,
+		.hh-parts {
+			grid-column: 2;
+		}
+		.hh-bom {
+			margin-top: 0;
+		}
+		.hh-void,
+		.hh-rev {
+			grid-column: 1 / -1;
+			max-width: none;
+		}
+		.c-sticker {
 			display: none;
 		}
-	}
-
-	/* ---------- the collage on a phone ----------
-	   Not the desktop pile shrunk: a short, ordered stack. The photo and the
-	   phone keep one deliberate overlap; the ticket, the note and the explorer
-	   each get their own row, so nothing a finger needs sits under anything. */
-	@media (max-width: 640px) {
+		.c-postmark {
+			grid-area: postmark;
+			justify-self: end;
+			right: auto;
+			top: auto;
+		}
 		.collage {
+			position: relative;
+			inset: auto;
 			display: grid;
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 			grid-template-areas:
-				'photo photo'
-				'ticket ticket'
-				'explorer note'
+				'ticket phone'
+				'note phone'
+				'explorer postmark'
 				'. tidy';
-			gap: 1.6rem 0.8rem;
-			aspect-ratio: auto;
-			max-width: 26rem;
-			padding-top: 0.6rem;
+			gap: 1.4rem 0.9rem;
+			margin-top: 1.6rem;
+			pointer-events: auto;
 		}
 		.collage > * {
 			position: relative;
 			inset: auto;
 			translate: none;
 		}
-		.c-photo {
-			grid-area: photo;
-			width: 78%;
-			padding: 0.5rem 0.5rem 2rem;
-			rotate: -2.5deg;
-		}
-		.c-caption {
-			left: 0.7rem;
-			bottom: 0.25rem;
-			font-size: 1.15rem;
-		}
-		.c-tape-a {
-			width: 56px;
-			height: 18px;
-		}
-		/* the phone leans on the photo's right edge and hangs below it */
 		.c-phone {
-			grid-area: photo;
+			grid-area: phone;
 			justify-self: end;
-			align-self: end;
-			width: 27%;
-			margin-bottom: -3.4rem;
-			border-width: 5px;
-			border-radius: 14px;
-			rotate: 6deg;
-		}
-		.c-phone img {
-			border-radius: 9px;
-		}
-		.c-postmark {
-			grid-area: photo;
-			justify-self: end;
-			align-self: start;
-			width: 4.2rem;
-			height: 4.2rem;
-			margin: -1.1rem 2% 0 0;
-			font-size: 0.5rem;
+			width: 100%;
+			max-width: 8rem;
+			left: auto;
+			bottom: auto;
+			rotate: 4deg;
 		}
 		.c-ticket {
 			grid-area: ticket;
-			justify-self: start;
-			width: min(19rem, 86%);
-			margin-top: 3.4rem;
+			width: 100%;
+			right: auto;
+			bottom: auto;
 			rotate: -2deg;
 		}
 		.c-note {
 			grid-area: note;
-			justify-self: end;
-			align-self: center;
+			left: auto;
+			top: auto;
 			width: 100%;
 			max-width: 11rem;
-			min-height: 4.4rem;
 			rotate: 3deg;
 		}
 		.c-note[aria-expanded='true'] {
 			width: 100%;
-			rotate: 1deg;
 		}
 		.collage > .c-note {
 			translate: var(--mx, 0px) var(--my, 0px);
@@ -1309,339 +1938,619 @@ const tinkering = [
 		.c-tidy {
 			grid-area: tidy;
 			justify-self: end;
+			right: auto;
+			bottom: auto;
 		}
 		.c-explorer {
 			grid-area: explorer;
 			justify-self: start;
 			width: 4.6rem;
-			margin-left: 0.6rem;
+			left: auto;
+			right: auto;
+			top: auto;
+		}
+		.c-arrow {
+			display: none;
+		}
+		.door-plate {
+			width: calc(100% - 2 * var(--gutter));
+		}
+		.door-plate-name {
+			font-size: 1.1rem;
 		}
 	}
 
-	/* ================= the journal ================= */
-	.journal {
-		padding-block: clamp(5rem, 11vw, 8rem) 2rem;
+	/* ================= about: the dossier ================= */
+	.dossier {
+		padding-block: clamp(5rem, 11vw, 9rem);
+		background: var(--paper-2);
 	}
-	.journal-book {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		background: var(--card);
-		border: 1px solid var(--ink-ghost);
-		border-radius: 4px 10px 10px 4px;
-		box-shadow: var(--lift-high);
-		rotate: -0.4deg;
-	}
-	.j-page {
-		padding: clamp(1.6rem, 4vw, 3rem);
-	}
-	/* ruled paper with a margin line: the left page of a notebook */
-	.j-left {
+	.folder {
+		position: relative;
+		padding: clamp(1.2rem, 3vw, 2.6rem);
 		background:
-			linear-gradient(90deg, transparent 2.2rem, rgba(196, 64, 42, 0.35) 2.2rem, transparent calc(2.2rem + 1.5px)),
-			repeating-linear-gradient(to bottom, transparent 0 1.8rem, var(--ink-ghost) 1.8rem calc(1.8rem + 1px));
-		padding-left: clamp(3rem, 5vw, 4rem);
+			linear-gradient(180deg, rgba(0, 0, 0, 0.06), transparent 2.5rem),
+			var(--kraft);
+		color: #171816;
+		box-shadow: 0 2px 3px rgba(23, 24, 22, 0.15), 0 40px 60px -40px rgba(23, 24, 22, 0.6);
+	}
+	.folder::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: var(--grain);
+		opacity: 0.18;
+		mix-blend-mode: multiply;
+		pointer-events: none;
+	}
+	.folder-tab {
+		position: absolute;
+		left: clamp(1rem, 4vw, 3rem);
+		bottom: 100%;
+		padding: 0.55rem 1.2rem 0.35rem;
+		background: var(--kraft);
+		color: #2a2418;
+		border-radius: 6px 6px 0 0;
+	}
+	.folder-body {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+		gap: clamp(1.4rem, 3vw, 2.6rem);
+		align-items: start;
+	}
+
+	.sheet-typed {
+		position: relative;
+		padding: clamp(1.6rem, 4vw, 3rem);
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: 0 1px 2px rgba(23, 24, 22, 0.2), 0 22px 30px -22px rgba(23, 24, 22, 0.55);
+		rotate: -0.6deg;
+	}
+	.sheet-typed > p:not(.dossier-statement) {
+		max-width: 62ch;
+		margin-top: 0.9rem;
+	}
+	.clip-top {
+		top: -1.3rem;
+		right: 2.4rem;
+	}
+	.dossier-title {
+		font-size: clamp(2.3rem, 5vw, 4.2rem);
+		line-height: 0.92;
+		letter-spacing: -0.03em;
+		max-width: 12ch;
+	}
+	.dossier-statement {
+		margin-top: 1.4rem;
+		font-style: italic;
+		font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+		line-height: 1.2;
+		max-width: 30ch;
+	}
+	.spec {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		margin-top: 2rem;
+		border-top: 1.5px solid var(--ink);
+	}
+	.spec > div {
+		padding: 0.7rem 0.8rem 0.8rem 0;
+		border-bottom: 1px solid var(--ink-ghost);
+	}
+	.spec > div:nth-child(odd) {
 		border-right: 1px solid var(--ink-ghost);
 	}
-	.j-title {
-		font-size: clamp(2.4rem, 4.6vw, 4rem);
-		font-weight: 800;
-		font-variation-settings: 'wdth' 76;
-		letter-spacing: -0.035em;
-		line-height: 0.92;
-		margin-bottom: 1rem;
+	.spec > div:nth-child(even) {
+		padding-left: 0.9rem;
 	}
-	.j-statement {
-		font-family: var(--script);
-		font-size: 1.7rem;
-		line-height: 1.15;
-		color: var(--stamp);
-		margin-bottom: 1rem;
+	.spec dd {
+		margin-top: 0.2rem;
+		font-size: 1rem;
+		line-height: 1.35;
 	}
-	.j-left p + p {
-		margin-top: 0.8rem;
+	.dossier-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.7rem;
+		margin-top: 1.8rem;
 	}
-	.j-left > p:not(.j-statement) {
-		color: var(--ink-soft);
-		max-width: 30rem;
+
+	.dossier-side {
+		display: grid;
+		gap: clamp(1.2rem, 3vw, 2rem);
 	}
 	.tinker {
-		margin-top: 2rem;
-		padding: 1rem 1.1rem;
-		background: color-mix(in srgb, var(--marker) 30%, var(--card));
-		rotate: 1deg;
+		position: relative;
+		padding: 1.2rem 1.3rem 1rem;
+		background: var(--card);
+		color: var(--ink);
 		box-shadow: var(--lift);
-		max-width: 26rem;
+		rotate: 1.2deg;
+	}
+	/* a strip of tape holding it to the folder */
+	.tinker::before {
+		content: '';
+		position: absolute;
+		top: -12px;
+		left: 50%;
+		width: 86px;
+		height: 24px;
+		translate: -50% 0;
+		rotate: -3deg;
+		background: rgba(233, 224, 196, 0.8);
+		box-shadow: 0 1px 2px rgba(23, 24, 22, 0.15);
 	}
 	.tinker-text {
-		font-size: 1.3rem;
-		color: var(--ink);
-		margin: 0.3rem 0 0.4rem;
-		min-height: 3.2em;
+		margin: 0.5rem 0 0.6rem;
+		min-height: 4.6rem;
+		font-family: var(--script);
+		font-size: 1.85rem;
+		line-height: 0.95;
 	}
 	.tinker-next {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
 		min-height: 44px;
 		padding: 0;
 		background: none;
 		border: none;
-		font: 500 0.78rem var(--mono);
-		letter-spacing: 0.05em;
+		font-family: var(--label-face);
+		font-size: 1.15rem;
 		text-transform: uppercase;
-		color: var(--ink-soft);
-		text-decoration: underline;
-		text-underline-offset: 0.2em;
+		letter-spacing: 0.04em;
+		color: var(--stamp);
 		cursor: pointer;
 	}
-
-	.desk-diagram {
-		margin: 0 0 1.4rem;
+	.tinker-next svg {
+		width: 0.95rem;
+		height: 0.95rem;
+		transition: translate 0.3s var(--ease-out);
 	}
-	.desk-diagram svg {
+	.tinker-next:hover svg {
+		translate: 4px 0;
+	}
+
+	/* the field index: genus headings, numbered specimens */
+	.field-index {
+		padding: 1.3rem 1.3rem 1.4rem;
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: var(--lift);
+		rotate: -0.4deg;
+	}
+	.field-index-title {
+		font-family: var(--label-face);
+		font-size: 2rem;
+		text-transform: uppercase;
+		letter-spacing: 0.01em;
+		line-height: 0.95;
+	}
+	.field-index-note {
+		margin: 0.25rem 0 0.9rem;
+	}
+	.genus {
+		padding-top: 0.6rem;
+		border-top: 1.5px solid var(--ink);
+	}
+	.genus + .genus {
+		margin-top: 0.8rem;
+	}
+	.genus-name {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		font-family: var(--body);
+		font-style: italic;
+		font-weight: 500;
+		font-size: 1.1rem;
+		line-height: 1.2;
+	}
+	.genus-no {
+		color: var(--stamp);
+	}
+	.species {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.1rem 1rem;
+		margin-top: 0.35rem;
+	}
+	.species li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		font-size: 0.98rem;
+		line-height: 1.5;
+		border-bottom: 1px dotted var(--ink-ghost);
+	}
+	.species-no {
+		flex: none;
+		width: 2.6rem;
+		font-family: var(--mono);
+		font-size: 0.55rem;
+		font-variant-numeric: tabular-nums lining-nums;
+		color: var(--ink-faint);
+	}
+
+	/* the shipping record: a ruler across the folder, filled as you pass */
+	.timeline {
+		position: relative;
+		z-index: 1;
+		margin-top: clamp(1.4rem, 3vw, 2.4rem);
+		padding: 1.2rem clamp(1rem, 3vw, 2rem) 1.4rem;
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: var(--lift);
+	}
+	.timeline-title {
+		font-size: 1.8rem;
+	}
+	.tl-wrap {
+		position: relative;
+		margin-top: 1.2rem;
+		padding-top: 1.4rem;
+		overflow-x: auto;
+		scrollbar-width: thin;
+	}
+	.tl-rule {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 0.5rem;
+		height: 2px;
+		background: var(--ink-ghost);
+	}
+	.tl-fill {
+		position: absolute;
+		inset: 0;
+		background: var(--stamp);
+		transform-origin: 0 50%;
+	}
+	.tl {
+		list-style: none;
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(6.5rem, 1fr);
+		gap: 0.5rem;
+	}
+	.tl-item {
+		position: relative;
+		display: grid;
+		gap: 0.2rem;
+	}
+	/* a tick on the rule for each thing shipped */
+	.tl-item::before {
+		content: '';
+		position: absolute;
+		top: -1.15rem;
+		left: 0;
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--card);
+		border: 2px solid var(--ink);
+	}
+	.tl-name {
+		font-family: var(--label-face);
+		font-size: 1.35rem;
+		text-transform: uppercase;
+		line-height: 1;
+		color: var(--ink);
+		text-decoration: none;
+		min-height: 44px;
+	}
+	.tl-name:hover {
+		color: var(--stamp);
+	}
+
+	@media (max-width: 900px) {
+		.folder-body {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.sheet-typed,
+		.tinker,
+		.field-index {
+			rotate: 0deg;
+		}
+	}
+	@media (max-width: 480px) {
+		.spec,
+		.species {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.spec > div:nth-child(odd) {
+			border-right: none;
+		}
+		.spec > div:nth-child(even) {
+			padding-left: 0;
+		}
+	}
+
+	/* ================= contact: a postcard on airmail blue ================= */
+	.post {
+		--ink: #f2ebdd;
+		--ink-soft: #e3e7f4;
+		--ink-ghost: rgba(242, 235, 221, 0.28);
+		position: relative;
+		background: var(--cobalt);
+		color: var(--ink);
+		padding-block: clamp(4.5rem, 10vw, 8rem) 2rem;
+		overflow-x: clip;
+	}
+	[data-lamp='off'] .post {
+		background: #1f3a80;
+	}
+	/* the airmail edge: red and blue chevrons along the top of the drawer */
+	.post::before {
+		content: '';
+		position: absolute;
+		inset: 0 0 auto;
+		height: 10px;
+		background: repeating-linear-gradient(-45deg, var(--vermilion) 0 14px, #f2ebdd 14px 22px, #1b3d8f 22px 36px, #f2ebdd 36px 44px);
+	}
+	.post-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+		gap: clamp(2rem, 4vw, 3.5rem);
+		align-items: end;
+	}
+
+	.postcard {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+		min-height: 24rem;
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: 0 3px 4px rgba(0, 0, 0, 0.25), 0 40px 60px -30px rgba(0, 0, 0, 0.6);
+		rotate: -1deg;
+		/* the postcard's own inks: dark on cream even inside the blue drawer */
+		--ink: #171816;
+		--ink-soft: #3d3d36;
+		--ink-faint: #55544a;
+		--ink-ghost: rgba(23, 24, 22, 0.18);
+		--card: #f2ebdd;
+		--stamp: #a8331f;
+	}
+	.pc-left {
+		display: grid;
+		align-content: start;
+		gap: 1rem;
+		padding: clamp(1.4rem, 3.5vw, 2.6rem);
+		border-right: 1.5px solid var(--ink-ghost);
+	}
+	.post-title {
+		font-size: clamp(2.4rem, 5.4vw, 4.6rem);
+		line-height: 0.9;
+		letter-spacing: -0.03em;
+	}
+	.post-sub {
+		max-width: 32ch;
+		font-size: 1.12rem;
+		color: var(--ink-soft);
+	}
+	.post-mail {
+		width: fit-content;
+		max-width: 100%;
+		font-family: var(--body);
+		font-style: italic;
+		font-size: clamp(1.35rem, 2.6vw, 2rem);
+		color: var(--stamp);
+		text-decoration-thickness: 1.5px;
+		overflow-wrap: anywhere;
+	}
+	.post-box {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.6rem 1.2rem;
+		margin-top: 0.6rem;
+	}
+	.post-hint {
+		flex: 1 1 14rem;
+		font-size: 0.92rem;
+		color: var(--ink-faint);
+	}
+
+	.pc-right {
+		position: relative;
+		display: grid;
+		align-content: end;
+		padding: clamp(1.4rem, 3.5vw, 2.6rem);
+		min-height: 18rem;
+	}
+	.env-stamp {
+		position: absolute;
+		top: 1.2rem;
+		right: 1.2rem;
+		display: grid;
+		place-items: center;
+		width: 5.4rem;
+		min-height: 6.4rem;
+		padding: 0.3rem;
+		border: 1.5px dashed var(--ink-faint);
+		font-family: var(--mono);
+		font-size: 0.52rem;
+		text-align: center;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--ink-faint);
+		rotate: 3deg;
+	}
+	.env-stamp :global(svg) {
 		width: 100%;
 		height: auto;
 	}
-	.desk-notes text {
-		font-family: var(--script);
-		font-size: 19px;
-		fill: var(--stamp);
-	}
-	.j-spec {
+	.pc-postmark {
+		position: absolute;
+		top: 3.4rem;
+		right: 7.6rem;
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem 1.4rem;
-	}
-	.j-spec dd {
-		font-size: 0.92rem;
-		margin-top: 0.1rem;
-	}
-	.j-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 1.6rem;
-	}
-
-	.kit {
-		margin-top: clamp(3.5rem, 8vw, 6rem);
-	}
-	.kit-title {
-		font-size: clamp(1.5rem, 2.6vw, 2rem);
-		font-variation-settings: 'wdth' 85;
-		margin-bottom: 1.4rem;
-	}
-	.kit-grid {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 2rem;
-	}
-	.kit-col {
-		padding-top: 0.8rem;
-		border-top: 2px solid var(--ink);
-	}
-	.kit-group {
-		margin-bottom: 0.6rem;
-		color: var(--ink);
-	}
-	.kit-items {
-		list-style: none;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.2rem 0.9rem;
-		color: var(--ink-soft);
-	}
-	@media (max-width: 860px) {
-		.journal-book {
-			grid-template-columns: 1fr;
-			rotate: none;
-		}
-		.j-left {
-			border-right: none;
-			border-bottom: 1px solid var(--ink-ghost);
-		}
-		.kit-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	/* ================= the post office ================= */
-	.post {
-		position: relative;
-		padding-top: clamp(5rem, 11vw, 8rem);
-		overflow: hidden;
-	}
-	.post-inner {
-		position: relative;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: clamp(2rem, 6vw, 5rem);
-		align-items: center;
-	}
-	.post-title {
-		font-size: clamp(2.8rem, 6vw, 5.2rem);
-		font-weight: 800;
-		font-variation-settings: 'wdth' 76;
-		letter-spacing: -0.04em;
-		line-height: 0.92;
-		margin-bottom: 1rem;
-	}
-	.post-sub {
-		color: var(--ink-soft);
-		font-size: 1.1rem;
-		max-width: 28rem;
-	}
-	.post-mail {
-		display: inline-block;
-		margin-top: 1.4rem;
-		font-family: var(--display);
-		font-weight: 700;
-		font-size: clamp(1.4rem, 2.6vw, 2rem);
+		place-items: center;
+		align-content: center;
+		width: 5rem;
+		height: 5rem;
+		border: 1.5px solid var(--stamp);
+		border-radius: 50%;
+		font-family: var(--mono);
+		font-size: 0.48rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 		color: var(--stamp);
-		text-decoration-thickness: 2px;
-		overflow-wrap: anywhere;
+		opacity: 0.8;
+		rotate: -16deg;
+		pointer-events: none;
+	}
+	/* the wavy cancellation lines running off the postmark */
+	.pc-postmark::after {
+		content: '';
+		position: absolute;
+		right: 85%;
+		top: 30%;
+		width: 4.5rem;
+		height: 40%;
+		background: var(--stamp);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 16'%3E%3Cpath d='M0 2q5-3 10 0t10 0t10 0t10 0M0 8q5-3 10 0t10 0t10 0t10 0M0 14q5-3 10 0t10 0t10 0t10 0' fill='none' stroke='%23000' stroke-width='1.4'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+	}
+	.env-to {
+		display: grid;
+		margin-top: 8rem;
+	}
+	.env-to span {
+		font-family: var(--script);
+		font-size: 2rem;
+		line-height: 1.4;
+		color: var(--ink);
+		border-bottom: 1px solid var(--ink-ghost);
+		padding-left: 0.4rem;
+	}
+	.env-mark {
+		margin-top: 1rem;
+		color: #2a4fae;
+	}
+
+	.post-aside {
+		display: grid;
+		gap: 1.4rem;
+		justify-items: start;
 	}
 	.post-links {
 		list-style: none;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0 1.4rem;
-		margin-top: 1rem;
+		display: grid;
+		gap: 0.1rem;
 	}
 	.post-links a {
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;
-		font-family: var(--mono);
-		font-size: 0.82rem;
-		letter-spacing: 0.04em;
+		font-family: var(--label-face);
+		font-size: 1.9rem;
 		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		line-height: 1;
 		color: var(--ink);
+		text-decoration: none;
+		transition: translate 0.3s var(--ease-out), color 0.2s ease;
 	}
-
-	.post-scene {
-		position: relative;
-		display: grid;
-		justify-items: center;
-		gap: 1.2rem;
-		padding-bottom: 2rem;
-	}
-	.envelope {
-		position: relative;
-		width: min(100%, 25rem);
-		aspect-ratio: 1.6;
-		background:
-			linear-gradient(155deg, transparent 49.6%, rgba(27, 33, 50, 0.14) 50%, transparent 50.4%),
-			linear-gradient(25deg, transparent 49.6%, rgba(27, 33, 50, 0.14) 50%, transparent 50.4%),
-			#f6efdd;
-		color: #1b2132;
-		box-shadow: var(--lift-high);
-		rotate: -2deg;
-		/* the airmail border */
-		border: 8px solid transparent;
-		border-image: repeating-linear-gradient(45deg, #c4402a 0 12px, #f6efdd 12px 20px, #2f5d8a 20px 32px, #f6efdd 32px 40px) 8;
-	}
-	.env-stamp {
-		position: absolute;
-		top: 0.8rem;
-		right: 0.8rem;
-		width: 4.4rem;
-		min-height: 5.2rem;
-		display: grid;
-		place-items: center;
-		border: 1.5px dashed rgba(27, 33, 50, 0.45);
-		font-family: var(--mono);
-		font-size: 0.6rem;
-		text-align: center;
-		color: rgba(27, 33, 50, 0.7);
-		rotate: 4deg;
-	}
-	.env-stamp:has(svg) {
-		border: none;
-	}
-	.env-stamp :global(.slot-art) {
-		display: block;
-		width: 100%;
-	}
-	.env-to {
-		position: absolute;
-		left: 34%;
-		bottom: 16%;
-		font-size: 1.45rem;
-		line-height: 1.25;
-	}
-	.env-mark {
-		position: absolute;
-		left: 1rem;
-		top: 0.9rem;
-		color: #2f5d8a;
-	}
-	/* The explorer is the one posting it: stood at the box, letter in hand. */
-	.post-box {
-		display: flex;
-		align-items: flex-end;
-		gap: 0.6rem;
-	}
-	.post-hint {
-		max-width: 22rem;
-		min-height: 2.6em;
-		font-size: 0.85rem;
-		color: var(--ink-soft);
-		text-align: center;
+	.post-links a:hover {
+		translate: 6px 0;
+		color: var(--lime);
 	}
 	.post-explorer {
-		width: 3.6rem;
+		width: 4.6rem;
+		color: #f2ebdd;
+		/* a dark coat on the blue in both lamps; the room's light card would erase him */
+		--card: #262721;
+	}
+	.post-aside :global(.toys) {
+		--paper-2: #141512;
+		--ink-soft: #e3e7f4;
 	}
 
 	.post-foot {
-		position: relative;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-end;
 		justify-content: space-between;
-		gap: 1rem;
-		margin-top: 3rem;
-		padding-bottom: 2rem;
+		gap: 1.5rem;
+		margin-top: clamp(3rem, 7vw, 5rem);
+		padding-top: 1.4rem;
+		border-top: 1px solid var(--ink-ghost);
 	}
-	/* The last thing on the page is the first thing on it: the mark, large. */
 	.post-brand {
-		font-size: clamp(2.6rem, 10.5vw, 10rem);
+		font-size: clamp(2.6rem, 8vw, 6rem);
+		color: var(--ink);
 		line-height: 0.9;
-		max-width: 100%;
+	}
+	.post-brand :global(b) {
+		color: var(--lime);
 	}
 	.post-small {
 		display: grid;
-		gap: 0.3rem;
 		justify-items: end;
-		font-size: 0.82rem;
+		gap: 0.3rem;
+		font-size: 0.9rem;
 		color: var(--ink-soft);
-		text-align: right;
 	}
 	.post-top {
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;
-		font-family: var(--mono);
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
 		color: var(--ink);
 	}
 	.post-wink {
-		min-height: 32px;
+		min-height: 44px;
 		background: none;
 		border: none;
 		padding: 0;
 		font: inherit;
 		color: inherit;
-		cursor: help;
 		text-decoration: underline dotted;
-		text-underline-offset: 0.2em;
+		text-underline-offset: 0.25em;
+		cursor: pointer;
 	}
-	@media (max-width: 860px) {
+	.post :focus-visible {
+		outline-color: var(--lime);
+	}
+	.postcard :focus-visible {
+		outline-color: #a8331f;
+	}
+
+	@media (max-width: 980px) {
 		.post-inner {
-			grid-template-columns: 1fr;
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.post-aside {
+			grid-template-columns: auto auto;
+			align-items: end;
+			justify-content: space-between;
+			width: 100%;
+		}
+		.post-aside > :global(.toys) {
+			grid-column: 1 / -1;
+		}
+	}
+	@media (max-width: 680px) {
+		.postcard {
+			grid-template-columns: minmax(0, 1fr);
+			rotate: 0deg;
+		}
+		.pc-left {
+			border-right: none;
+			border-bottom: 1.5px dashed var(--ink-ghost);
+		}
+		.pc-right {
+			min-height: 15rem;
+		}
+		.env-to {
+			margin-top: 6.5rem;
 		}
 		.post-small {
 			justify-items: start;
-			text-align: left;
 		}
 	}
 </style>

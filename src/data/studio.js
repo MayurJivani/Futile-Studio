@@ -11,36 +11,35 @@
  * that starts happening often.
  */
 
-/** The four drawers the board can be filtered by. */
-export const SHELVES = ['Games', 'Experiments', 'Tools', 'Systems'];
+/** The drawers the board can be filtered by. */
+export const SHELVES = ['Games', 'Experiments', 'Tools'];
 
 /** @type {Record<string, string>} */
 export const shelfOf = {
-	orbitle: 'Games',
 	noggin: 'Games',
-	qno: 'Games',
-	chorusify: 'Games',
-	hunch: 'Games',
 	haggle: 'Games',
+	croon: 'Games',
+	hunch: 'Games',
+	chorusify: 'Games',
+	bleep: 'Games',
+	curio: 'Games',
+	avalon: 'Games',
 	patina: 'Experiments',
 	knock: 'Experiments',
-	murmur: 'Experiments',
 	mosaic: 'Tools',
-	atlas: 'Tools',
-	cubby: 'Systems',
-	uauth: 'Systems',
 };
 
-/** Public repositories only. Private ones (Knock, Murmur) get no link. */
+/** Public repositories only. Private ones (Knock) get no link. */
 /** @type {Record<string, string>} */
 export const sourceOf = {
 	patina: 'https://github.com/MayurJivani/Patina',
-	orbitle: 'https://github.com/MayurJivani/Orbitle',
 	noggin: 'https://github.com/MayurJivani/Noggin',
-	qno: 'https://github.com/MayurJivani/Qno-web',
 	mosaic: 'https://github.com/MayurJivani/Mosaic',
 	chorusify: 'https://github.com/MayurJivani/Chorus',
-	cubby: 'https://github.com/MayurJivani/Cubby',
+	croon: 'https://github.com/MayurJivani/Croon',
+	bleep: 'https://github.com/MayurJivani/Bleep',
+	curio: 'https://github.com/MayurJivani/curio',
+	avalon: 'https://github.com/MayurJivani/avalon',
 };
 
 /** Status words a stranger understands, mapped from the studio's own stamps. */
@@ -61,7 +60,6 @@ export function statusOf(p) {
  * refuses anything not on it, so a vote is never free text.
  */
 export const ideas = [
-	{ id: 'murmur', name: 'Finish Murmur', note: 'one sound field across a pile of phones' },
 	{ id: 'turntable', name: 'A turntable you can actually spin', note: 'for the record shelf in /collection' },
 	{ id: 'pets', name: 'Studio pets, from scratch', note: 'the old ones were taken out back' },
 	{ id: 'field', name: 'Open up the field', note: 'the ASCII world, currently behind a locked door' },
@@ -75,21 +73,11 @@ export const ideas = [
  */
 export const featured = [
 	{
-		id: 'patina',
-		variant: 'dark',
-		/* the spread leads with a drawing made the way Patina is painted; the
-		   phone beside it is the running product, and the archive keeps the
-		   screenshot as its thumbnail */
-		art: 'patina',
-		shot: { src: 'shots/patina-d.webp', alt: 'Patina in the browser, running locally on its own demo seed: a year of painted districts, weathered and oxidised along their seams, with the cell inspector, the year timeline and the palette.' },
-		phone: { src: 'shots/patina-m.webp', w: 430, h: 932, alt: 'Patina on a phone, zoomed into the same seeded canvas, with the inspector showing a cell three layers deep and fully cured.' },
-		note: 'paint here ages and cures',
-	},
-	{
-		id: 'orbitle',
-		variant: 'offset',
-		shot: { src: 'shots/orbitle-d.webp', alt: 'Orbitle mid-round: rings drawn around a planet, with the question about how far out a moon orbits beside them.' },
-		note: 'drag the marker to the ring',
+		id: 'chorusify',
+		variant: 'phones',
+		shot: { src: 'shots/chorusify-d.webp', alt: 'Chorusify’s home screen: Guess your favourite music, with Artist Mode, Multiplayer, Categories, Survival, Guess the Year, Duels and the daily challenge.' },
+		phone: { src: 'shots/chorusify-m.webp', w: 430, h: 932, alt: 'An Artist Mode round on a phone: Peter Cat Recording Co., song 1 of 10, a one-second clip playing, and three of their songs to choose from.' },
+		note: 'one second of a song, three guesses',
 	},
 	{
 		id: 'noggin',
@@ -99,17 +87,22 @@ export const featured = [
 		note: 'the TV is the board, every phone is a buzzer',
 	},
 	{
-		id: 'chorusify',
-		variant: 'phones',
-		shot: { src: 'shots/chorusify-d.webp', alt: 'Chorusify’s home screen: Guess your favourite music, with Artist Mode, Multiplayer, Categories, Survival, Guess the Year, Duels and the daily challenge.' },
-		phone: { src: 'shots/chorusify-m.webp', w: 430, h: 932, alt: 'An Artist Mode round on a phone: Peter Cat Recording Co., song 1 of 10, a one-second clip playing, and three of their songs to choose from.' },
-		note: 'one second of a song, three guesses',
+		id: 'haggle',
+		variant: 'vivid',
+		shot: { src: 'shots/haggle-d.webp', alt: 'Haggle’s floor: a ticker of simulated prices across the top, the line “a live stock market for the whole room”, and the biggest movers of the last round, INTC up 26% and UBER down 13%.' },
+		note: 'same prices, same news, one clock',
 	},
 	{
-		id: 'qno',
-		variant: 'vivid',
-		shot: { src: 'shots/qno-d.webp', alt: 'Qno’s landing page: Quantum-Based UNO Game, over a fan of coloured cards.' },
-		note: 'the cards are quantum gates',
+		id: 'croon',
+		variant: 'sheet',
+		shot: { src: 'shots/croon-d.webp', alt: 'Croon’s lounge: a cassette deck with a karaoke video queued and its lyric line on screen, a room code to join, and Sing it loud with Start a room and Sing solo beside it.' },
+		note: 'the TV is the stage, the phone is the mic',
+	},
+	{
+		id: 'hunch',
+		variant: 'offset',
+		shot: { src: 'shots/hunch-d.webp', alt: 'Hunch’s floating island of hex tiles, forest, mountain, water and desert, under the line Follow the clues. Find the creature.' },
+		note: 'each of you knows one thing about where',
 	},
 	{
 		id: 'knock',
@@ -134,9 +127,9 @@ export const featured = [
 /** Real captures for the archive thumbnails, where a project has one. */
 /** @type {Record<string, string>} */
 export const thumbOf = {
-	atlas: 'shots/atlas-d.webp',
-	hunch: 'shots/hunch-d.webp',
-	haggle: 'shots/haggle-d.webp',
-	cubby: 'shots/cubby-d.webp',
+	bleep: 'shots/bleep-d.webp',
+	curio: 'shots/curio-d.webp',
+	avalon: 'shots/avalon-d.webp',
+	patina: 'shots/patina-d.webp',
 	...Object.fromEntries(featured.map((f) => [f.id, f.shot.src])),
 };

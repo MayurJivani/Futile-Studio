@@ -83,14 +83,10 @@ const label = `A ${stamp?.title ?? ''} stamp is tucked in here. Peel it off.`;
 		rotate: var(--peek-tilt, 12deg);
 		translate: none;
 	}
+	/* The peel itself is a spring in StampCollector; this is where it ends,
+	   and all there is with motion off. */
 	.hidden-stamp.is-peeled .stamp-art {
 		opacity: 0;
-		translate: 6px -14px;
-		rotate: 22deg;
-		transition:
-			opacity 0.35s ease,
-			translate 0.45s var(--ease-out),
-			rotate 0.45s var(--ease-out);
 	}
 	.hidden-stamp.is-peeled::before {
 		opacity: 0.5;

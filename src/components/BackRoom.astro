@@ -1,172 +1,803 @@
 ---
 /**
  * The back room: a short introduction to Jinx, and a door to /jinx for anyone
- * who wants the rest. One live line from /api/jinx, three counts read from the
- * same data /jinx uses, and the cat. The detail (instruments, the service
- * directory, the maintenance notes) lives on /jinx and is not repeated here.
+ * who wants the rest. A page torn from the maintenance notebook: the box drawn
+ * in section with its parts keyed, the way a request gets in, a few live
+ * readouts from /api/jinx, and the log. The drawing is drawn; only the panel
+ * is measured, and it says which is which.
  */
 import PixelArt from './PixelArt.astro';
 import HiddenStamp from './HiddenStamp.astro';
 import { url } from '../lib/url.js';
-import { SERVICES, STATIC } from '../data/jinx.js';
+import { layers, SERVICES, STATIC } from '../data/jinx.js';
 import { jinxCat, jinxPalette } from '../data/pixelArt.js';
 
+const note = Object.fromEntries(layers.map((l) => [l.name, l]));
+
 /* the site itself is files too; the API is one more service */
-const counts = [
-	[STATIC.length + 1, 'sites served straight off disk'],
-	[SERVICES.length + 1, 'Node services, the API among them'],
-	[0, 'ports open to the internet'],
+const files = ['futile.studio', ...STATIC.map((s) => `${s}.futile.studio`)];
+const units = [...SERVICES, 'the API'];
+
+/* the key to the drawing, in the order the numbers sit on it */
+const keys = [
+	{ n: 1, name: 'Cloudflare Tunnel', role: note['Cloudflare Tunnel'].role, body: note['Cloudflare Tunnel'].note },
+	{ n: 2, name: 'Caddy', role: note['Caddy'].role, body: note['Caddy'].note },
+	{ n: 3, name: 'Services', role: note['Services'].role, body: note['Services'].note },
+	{ n: 4, name: 'Debian 13', role: note['Debian 13'].role, body: note['Debian 13'].note },
+	{ n: 5, name: 'Chip and memory', role: 'the chip doing the work', body: 'Cores, load and memory are the figures read live in the panel.' },
+	{ n: 6, name: 'The disk', role: note['The disk'].role, body: note['The disk'].note },
 ];
+
+/* six service boxes in the detail, one per unit that actually runs */
+const boxes = units.map((_, i) => ({ x: 366 + (i % 3) * 58, y: 112 + Math.floor(i / 3) * 52 }));
 ---
 
-<section id="backroom" class="backroom" aria-labelledby="backroom-title">
-	<div class="wrap backroom-inner">
-		<div class="br-copy">
-			<h2 id="backroom-title" class="br-title">The back room</h2>
-			<p>
-				Jinx is a computer in my flat, and every running project above is served from it: some as plain files, some
-				as their own little Node service, all behind one reverse proxy and a tunnel that dials out.
-			</p>
-			<p class="br-vitals label" aria-live="polite">
-				<span class="br-led" id="cabinet-vitals" aria-hidden="true"></span>
-				<span id="cabinet-vitals-text">Asking the box how it is…</span>
-			</p>
-			<ul class="br-counts" role="list">
-				{
-					counts.map(([n, t]) => (
-						<li>
-							<b>{n}</b>
-							<span>{t}</span>
-						</li>
-					))
-				}
-			</ul>
+<section id="backroom" class="backroom drawer" aria-labelledby="backroom-title">
+	<div class="wrap">
+		<article class="br-sheet on-paper">
+			<header class="br-head">
+				<h2 id="backroom-title" class="sect-label br-title">The back room</h2>
+				<p class="br-lede">
+					Jinx is a computer in my flat, and every running project above is served from it: some as plain files, some
+					as their own little Node service, all behind one reverse proxy and a tunnel that dials out.
+				</p>
+			</header>
+
+			<figure class="br-portrait">
+				<span class="tape" aria-hidden="true"></span>
+				<div class="br-frame">
+					<PixelArt rows={jinxCat} palette={jinxPalette} />
+					<HiddenStamp id="jinx" class="br-stamp" />
+				</div>
+				<figcaption class="script">Jinx, the cat. The server took her name.</figcaption>
+			</figure>
+
+			<!-- ===== the drawing: static, and labelled as such ===== -->
+			<figure class="br-cutaway" aria-labelledby="br-cut-cap">
+				<svg
+					class="br-svg"
+					viewBox="0 0 660 430"
+					role="img"
+					aria-label="Line drawing of Jinx in section: a small tower with its network port, chip, memory and disk, and a detail of what runs on it, Caddy above the services and Debian 13 under them. Red numbers match the key."
+					data-state="loading"
+				>
+					<defs>
+						<pattern id="br-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+							<line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1" opacity=".5"></line>
+						</pattern>
+					</defs>
+
+					<g class="br-ink">
+						<!-- the case, its walls cut and hatched -->
+						<path d="M70 30h230v370H70zM80 40v350h210V40z" fill="url(#br-hatch)" fill-rule="evenodd"></path>
+						<path d="M86 400h30v8H86zM254 400h30v8h-30z"></path>
+						<!-- power supply and its fan -->
+						<rect x="90" y="50" width="160" height="62" rx="2"></rect>
+						<circle cx="210" cy="81" r="22" class="fine"></circle>
+						<path d="M210 59v44M188 81h44M195 66l30 30M225 66l-30 30" class="hair"></path>
+						<circle cx="276" cy="60" r="4" class="br-led-svg"></circle>
+						<!-- the board, the chip under its heatsink, the memory beside it -->
+						<rect x="90" y="126" width="150" height="190" rx="2" class="board"></rect>
+						<rect x="106" y="146" width="66" height="66" rx="2"></rect>
+						<path d="M116 150v58M126 150v58M136 150v58M146 150v58M156 150v58M166 150v58" class="hair"></path>
+						<path d="M190 140h6v90h-6zM202 140h6v90h-6zM214 140h6v90h-6zM226 140h6v90h-6z" class="fine"></path>
+						<!-- the network port through the back wall, and the line it dials out on -->
+						<rect x="62" y="150" width="20" height="14" rx="1"></rect>
+						<path d="M62 157C38 157 42 76 24 18" class="cable"></path>
+						<path d="M17 28l7-12 7 12" class="cable"></path>
+						<text x="40" y="22" class="br-hand">dials out</text>
+						<!-- the drive bay, and the new SSD in it -->
+						<rect x="90" y="330" width="190" height="54" rx="2"></rect>
+						<rect x="104" y="340" width="122" height="34" rx="2" class="fine"></rect>
+						<ellipse cx="150" cy="357" rx="32" ry="10" class="fine"></ellipse>
+						<circle cx="150" cy="357" r="2.5" class="fine"></circle>
+						<path d="M204 342l6 9-5 6 7 10" class="crack"></path>
+
+						<!-- detail A: what runs on it, drawn out of the chip -->
+						<circle cx="139" cy="179" r="46" class="lens"></circle>
+						<path d="M172 147L350 40M172 211L350 266" class="lens"></path>
+						<rect x="350" y="40" width="270" height="226" rx="2" class="lens"></rect>
+						<path d="M366 58h238v34H366z" class="slab"></path>
+						<path d="M392 92v-12a10 10 0 0 1 20 0v12M560 92v-12a10 10 0 0 1 20 0v12" class="fine"></path>
+						{
+							boxes.map((b) => (
+								<g>
+									<rect x={b.x} y={b.y} width="50" height="40" rx="2" />
+									<path d={`M${b.x} ${b.y + 10}h50M${b.x + 8} ${b.y + 22}h28M${b.x + 8} ${b.y + 30}h20`} class="hair" />
+								</g>
+							))
+						}
+						<path d="M576 136a20 6 0 0 0 40 0a20 6 0 0 0-40 0v48a20 6 0 0 0 40 0v-48" transform="translate(-14 0)"></path>
+						<path d="M366 224h238v26H366z" class="slab"></path>
+					</g>
+
+					<!-- the red callouts: leader from the part, then its number -->
+					<g class="br-callouts">
+						<path class="br-lead" pathLength="1" d="M66 164L36 226"></path>
+						<path class="br-lead" pathLength="1" d="M604 75H624"></path>
+						<path class="br-lead" pathLength="1" d="M602 160L624 152"></path>
+						<path class="br-lead" pathLength="1" d="M604 237H624"></path>
+						<path class="br-lead" pathLength="1" d="M139 214V258M223 232L150 260"></path>
+						<path class="br-lead" pathLength="1" d="M282 357H316"></path>
+						<g class="br-tag"><circle cx="34" cy="244" r="15"></circle><text x="34" y="250">1</text></g>
+						<g class="br-tag"><circle cx="640" cy="75" r="15"></circle><text x="640" y="81">2</text></g>
+						<g class="br-tag"><circle cx="640" cy="150" r="15"></circle><text x="640" y="156">3</text></g>
+						<g class="br-tag"><circle cx="640" cy="237" r="15"></circle><text x="640" y="243">4</text></g>
+						<g class="br-tag"><circle cx="139" cy="275" r="15"></circle><text x="139" y="281">5</text></g>
+						<g class="br-tag"><circle cx="332" cy="357" r="15"></circle><text x="332" y="363">6</text></g>
+					</g>
+				</svg>
+				<figcaption id="br-cut-cap" class="br-cut-cap">
+					<span class="catno">Drawing, not telemetry</span>
+					<span>Jinx in section, with detail A drawn out of the chip. Numbers match the key.</span>
+				</figcaption>
+				<ol class="br-keys" role="list">
+					{
+						keys.map((k) => (
+							<li>
+								<span class="br-keyno" aria-hidden="true">{k.n}</span>
+								<span>
+									<b>{k.name}</b> <span class="label">{k.role}</span>
+									<span class="br-keybody">{k.body}</span>
+								</span>
+							</li>
+						))
+					}
+				</ol>
+			</figure>
+
+			<!-- ===== the instruments: the only measured thing on the page ===== -->
+			<section class="br-panel" id="br-panel" data-state="loading" aria-labelledby="br-panel-title">
+				<div class="br-panel-head">
+					<h3 id="br-panel-title" class="cat-title">Instrument panel</h3>
+					<span class="label br-livetag" id="br-live">Waiting</span>
+				</div>
+				<p class="br-vitals label" aria-live="polite">
+					<span class="br-led" id="cabinet-vitals" aria-hidden="true"></span>
+					<span id="cabinet-vitals-text">Asking the box how it is…</span>
+				</p>
+				<dl class="br-dials">
+					<div class="br-dial br-dial-wide">
+						<dt class="label">Load, 1 min, against the cores</dt>
+						<dd>
+							<svg class="br-gauge" viewBox="0 0 120 68" aria-hidden="true">
+								<path d="M12 60a48 48 0 0 1 96 0" class="g-arc"></path>
+								<path d="M12 60h8M100 60h8M60 12v8M26 26l6 6M94 26l-6 6" class="g-tick"></path>
+								<line x1="60" y1="60" x2="60" y2="20" class="g-needle" id="br-needle"></line>
+								<circle cx="60" cy="60" r="4" class="g-hub"></circle>
+							</svg>
+							<span class="br-read" id="br-load">—</span>
+						</dd>
+					</div>
+					<div class="br-dial">
+						<dt class="label">Awake for</dt>
+						<dd><span class="br-read" id="br-up">—</span></dd>
+					</div>
+					<div class="br-dial">
+						<dt class="label">Cores</dt>
+						<dd><span class="br-read" id="br-cpus">—</span></dd>
+					</div>
+					<div class="br-dial br-dial-wide">
+						<dt class="label">Memory in use</dt>
+						<dd>
+							<span class="br-meter" aria-hidden="true"><span id="br-membar"></span></span>
+							<span class="br-read" id="br-mem">—</span>
+						</dd>
+					</div>
+				</dl>
+				<p class="label br-readat" id="br-readat">Not read yet</p>
+			</section>
+
+			<!-- ===== the way in ===== -->
+			<figure class="br-topo" aria-labelledby="br-topo-cap">
+				<figcaption id="br-topo-cap" class="cat-title br-topo-title">How a request gets in</figcaption>
+				<ol class="topo-line" role="list">
+					<li class="topo-node">Your browser</li>
+					<li class="topo-node">Cloudflare edge</li>
+					<li class="topo-wall" aria-label="The line between the internet and the flat">
+						<span class="label">the internet</span>
+						<span class="label">the flat</span>
+						<b class="topo-zero"><span>0</span> ports open to the internet</b>
+					</li>
+					<li class="topo-node">Tunnel <span class="label">cloudflared dials out</span></li>
+					<li class="topo-node topo-caddy">Caddy <span class="label">reads the hostname</span></li>
+				</ol>
+				<div class="topo-split">
+					<div class="topo-bin">
+						<p><b>{files.length}</b> <span>sites served straight off disk</span></p>
+						<ul role="list">{files.map((f) => <li>{f}</li>)}</ul>
+					</div>
+					<div class="topo-bin">
+						<p><b>{units.length}</b> <span>Node services, the API among them</span></p>
+						<ul role="list">{units.map((u) => <li>{u}</li>)}</ul>
+					</div>
+				</div>
+			</figure>
+
+			<!-- ===== the log card ===== -->
+			<section class="br-log" aria-labelledby="br-log-title">
+				<h3 id="br-log-title" class="cat-title">Maintenance log</h3>
+				<ol class="br-log-list" role="list">
+					<li>
+						<span class="label">2026-10-17</span>
+						<span>Rebuilt after the old disk failed: Debian 13 straight on the hardware, no hypervisor and no Docker, one systemd unit per app.</span>
+					</li>
+					<li>
+						<span class="label">standing</span>
+						<span>{note['The disk'].note}</span>
+					</li>
+					<li>
+						<span class="label">standing</span>
+						<span>{note['Copies off the box'].note}</span>
+					</li>
+				</ol>
+			</section>
+
 			<div class="br-actions">
 				<a href={url('jinx')} class="btn btn-stamp">Visit the observatory</a>
 				<a href="https://lab.futile.studio" class="br-link" target="_blank" rel="noopener">
 					Unfinished things, at lab.futile.studio<span class="visually-hidden">, opens in a new tab</span>
 				</a>
 			</div>
-		</div>
-
-		<figure class="br-portrait">
-			<div class="br-frame">
-				<PixelArt rows={jinxCat} palette={jinxPalette} />
-				<HiddenStamp id="jinx" class="br-stamp" />
-			</div>
-			<figcaption class="script">Jinx, the cat. The server took her name.</figcaption>
-		</figure>
+		</article>
 	</div>
 </section>
 
 <script>
+	import { animate, inView, stagger } from 'motion';
 	import { API_BASE } from '../lib/api.js';
 
-	/* One honest line about the server, or an honest line about its absence. */
-	(async () => {
-		const led = document.getElementById('cabinet-vitals');
-		const text = document.getElementById('cabinet-vitals-text');
-		if (!led || !text) return;
+	const root = document.documentElement;
+	const still = () =>
+		root.dataset.motion === 'off' || (root.dataset.motion !== 'on' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+	/* The callouts draw themselves the first time the drawing is in view. */
+	const fig = document.querySelector<HTMLElement>('#backroom .br-cutaway');
+	if (fig && !still()) {
+		const leads = fig.querySelectorAll<SVGPathElement>('.br-lead');
+		const tags = fig.querySelectorAll<SVGGElement>('.br-tag');
+		const keys = fig.querySelectorAll<HTMLElement>('.br-keys li');
+		leads.forEach((p) => {
+			p.style.strokeDasharray = '1';
+			p.style.strokeDashoffset = '1';
+		});
+		tags.forEach((t) => (t.style.opacity = '0'));
+		keys.forEach((k) => (k.style.opacity = '0'));
+		const stop = inView(
+			fig,
+			() => {
+				animate(leads, { strokeDashoffset: [1, 0] }, { duration: 0.6, delay: stagger(0.12), ease: 'easeOut' });
+				animate(tags, { opacity: [0, 1], scale: [0.5, 1] }, { type: 'spring', stiffness: 380, damping: 18, delay: stagger(0.12, { startDelay: 0.35 }) });
+				animate(keys, { opacity: [0, 1], y: [10, 0] }, { duration: 0.4, delay: stagger(0.07, { startDelay: 0.3 }) });
+				stop();
+			},
+			{ amount: 0.25 },
+		);
+	}
+
+	/* The panel: honest numbers, or an honest "no reading". Never a guess. */
+	const $ = (id: string) => document.getElementById(id);
+	const panel = $('br-panel');
+	const svg = document.querySelector<SVGElement>('#backroom .br-svg');
+	const led = $('cabinet-vitals');
+	const text = $('cabinet-vitals-text');
+	const needle = $('br-needle');
+	const membar = $('br-membar');
+
+	const put = (id: string, value: string) => {
+		const el = $(id);
+		if (!el || el.textContent === value) return;
+		el.textContent = value;
+		if (!still()) animate(el, { opacity: [0.2, 1], y: [-6, 0] }, { duration: 0.35, ease: 'easeOut' });
+	};
+	const turn = (deg: number) => {
+		if (!needle) return;
+		/* a CSS transition, not motion: motion forces fill-box, which loses the hub pivot */
+		needle.style.transition = still() ? 'none' : '';
+		needle.style.transform = `rotate(${deg}deg)`;
+	};
+	const state = (s: string) => {
+		panel?.setAttribute('data-state', s);
+		svg?.setAttribute('data-state', s);
+		if (led) led.dataset.state = s === 'ok' ? 'ok' : 'down';
+		const live = $('br-live');
+		if (live) {
+			live.textContent = s === 'ok' ? 'Live' : 'No reading';
+			live.classList.toggle('is-live', s === 'ok');
+		}
+	};
+	const clock = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+
+	async function read() {
 		try {
 			const res = await fetch(`${API_BASE}/api/jinx`, { headers: { Accept: 'application/json' } });
 			if (!res.ok) throw new Error(String(res.status));
 			const d = await res.json();
 			const days = Math.floor(d.hostUptime / 86400);
 			const hours = Math.floor((d.hostUptime % 86400) / 3600);
-			text.textContent = `Awake. Up ${days ? `${days} d ` : ''}${hours} h · ${d.cpus} cores · load ${d.loadavg[0]}`;
-			led.dataset.state = 'ok';
+			if (text) text.textContent = `Awake. Up ${days ? `${days} d ` : ''}${hours} h · ${d.cpus} cores · load ${d.loadavg[0]}`;
+			/* raw load only means something against the core count; the dial tops out at all of them busy */
+			const busy = Math.min(d.loadavg[0] / Math.max(d.cpus, 1), 1);
+			const mem = d.memory.used / d.memory.total;
+			put('br-load', `${d.loadavg[0]} · ${Math.round(busy * 100)}%`);
+			put('br-up', `${days ? `${days} d ` : ''}${hours} h`);
+			put('br-cpus', String(d.cpus));
+			put('br-mem', `${Math.round(mem * 100)}%`);
+			turn(busy * 180 - 90);
+			if (membar) membar.style.transform = `scaleX(${mem})`;
+			state('ok');
+			put('br-readat', `read at ${clock()}`);
 		} catch {
-			text.textContent = 'Not answering from here right now. The observatory says the same.';
-			led.dataset.state = 'down';
+			if (text) text.textContent = 'Not answering from here right now. The observatory says the same.';
+			for (const id of ['br-load', 'br-up', 'br-cpus', 'br-mem']) put(id, 'no reading');
+			turn(-90);
+			if (membar) membar.style.transform = 'scaleX(0)';
+			state('down');
+			put('br-readat', `asked at ${clock()}, no answer`);
 		}
-	})();
+	}
+
+	if (panel) {
+		read();
+		/* refresh only while somebody is looking */
+		setInterval(() => document.visibilityState === 'visible' && read(), 30_000);
+	}
 </script>
 
 <style>
 	.backroom {
-		position: relative;
-		background: var(--night);
-		color: var(--forest-ink);
-		padding-block: clamp(4.5rem, 9vw, 6.5rem);
-		/* a torn top edge where the paper gives way to the back room */
-		clip-path: polygon(0 1.4rem, 6% 0.4rem, 14% 1.2rem, 23% 0, 31% 1rem, 42% 0.3rem, 50% 1.3rem, 61% 0.2rem, 70% 1.1rem, 79% 0.1rem, 88% 1rem, 95% 0.3rem, 100% 1.1rem, 100% 100%, 0 100%);
-		--ink-soft: rgba(236, 228, 210, 0.76);
-	}
-	.backroom ::selection {
-		background: var(--lime);
-		color: var(--night);
+		background: var(--olive);
+		padding-block: clamp(3.5rem, 8vw, 6rem);
 	}
 	.backroom :focus-visible {
-		outline-color: var(--lime);
+		outline-color: var(--stamp);
 	}
-	.backroom-inner {
+
+	/* squared engineering paper: a 5mm cobalt grid with a heavier line every 25mm */
+	.br-sheet {
+		--grid: color-mix(in srgb, var(--cobalt) 13%, transparent);
+		--grid-major: color-mix(in srgb, var(--cobalt) 26%, transparent);
+		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
-		gap: clamp(2rem, 6vw, 5rem);
-		align-items: center;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: clamp(1.6rem, 3vw, 2.6rem) clamp(1.2rem, 2.4vw, 2.4rem);
+		padding: clamp(1.4rem, 4vw, 3.4rem);
+		color: var(--ink);
+		background:
+			linear-gradient(var(--grid-major) 1px, transparent 1px) -1px -1px / 25mm 25mm,
+			linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) -1px -1px / 25mm 25mm,
+			linear-gradient(var(--grid) 1px, transparent 1px) -1px -1px / 5mm 5mm,
+			linear-gradient(90deg, var(--grid) 1px, transparent 1px) -1px -1px / 5mm 5mm,
+			var(--card);
+		border-radius: 2px;
+		box-shadow: var(--lift-high);
+	}
+
+	.br-head {
+		grid-column: 1 / span 8;
 	}
 	.br-title {
-		font-size: clamp(3rem, 7vw, 6rem);
-		font-weight: 800;
-		font-variation-settings: 'wdth' 75;
-		letter-spacing: -0.035em;
-		line-height: 0.9;
-		margin-bottom: 1.2rem;
+		margin-bottom: 1rem;
 	}
-	.br-copy > p {
+	.br-lede {
+		max-width: 36rem;
+		font-size: 1.15rem;
 		color: var(--ink-soft);
-		max-width: 34rem;
+	}
+
+	/* the cat, a print taped into the notebook */
+	.br-portrait {
+		grid-column: 10 / span 3;
+		position: relative;
+		justify-self: end;
+		align-self: start;
+		width: min(100%, 12rem);
+		margin: 0;
+		padding: 0.7rem 0.7rem 0.4rem;
+		background: var(--ivory);
+		box-shadow: var(--lift);
+		rotate: 3deg;
+	}
+	.br-portrait .tape {
+		top: -0.8rem;
+		left: 50%;
+		translate: -50% 0;
+		rotate: -4deg;
+	}
+	.br-frame {
+		position: relative;
+		padding: 0.8rem;
+		background: var(--ink-fixed);
+	}
+	.br-frame :global(.br-stamp) {
+		right: -1.4rem;
+		bottom: -1.4rem;
+		--peek-tilt: 10deg;
+	}
+	.br-portrait figcaption {
+		margin-top: 0.5rem;
+		font-size: 1.35rem;
+		text-align: center;
+		color: var(--ink-soft);
+	}
+
+	/* ---- the drawing ---- */
+	.br-cutaway {
+		grid-column: 1 / span 8;
+		margin: 0;
+	}
+	.br-svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		color: var(--ink);
+		overflow: visible;
+	}
+	.br-ink :is(path, rect, circle, ellipse) {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.br-ink .fine {
+		stroke-width: 1.2;
+	}
+	.br-ink .hair {
+		stroke-width: 0.9;
+		opacity: 0.45;
+	}
+	.br-ink .board,
+	.br-ink .slab {
+		fill: color-mix(in srgb, var(--ink) 5%, transparent);
+	}
+	.br-ink .lens {
+		stroke-width: 1.1;
+		stroke-dasharray: 5 5;
+		opacity: 0.6;
+	}
+	.br-ink .cable {
+		stroke-width: 2.2;
+	}
+	.br-ink .crack {
+		stroke: var(--stamp);
+		stroke-width: 1.6;
+	}
+	.br-ink .br-led-svg {
+		fill: var(--grey);
+		stroke: var(--ink-fixed);
+		stroke-width: 1;
+	}
+	/* the power light only lights when the panel has a real reading */
+	.br-svg[data-state='ok'] .br-led-svg {
+		fill: var(--lime);
+	}
+	.br-hand {
+		font-family: var(--script);
+		font-size: 22px;
+		fill: var(--stamp);
+		stroke: none;
+	}
+	.br-lead {
+		fill: none;
+		stroke: var(--stamp);
+		stroke-width: 1.6;
+		stroke-linecap: round;
+	}
+	.br-tag {
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+	.br-tag circle {
+		fill: var(--card);
+		stroke: var(--stamp);
+		stroke-width: 1.8;
+	}
+	.br-tag text {
+		font-family: var(--mono);
+		font-size: 16px;
+		font-weight: 600;
+		text-anchor: middle;
+		fill: var(--stamp);
+	}
+
+	.br-cut-cap {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem 0.8rem;
+		margin-top: 0.8rem;
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+	}
+	.br-cut-cap .catno {
+		color: var(--stamp);
+	}
+	.br-keys {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.9rem 1.6rem;
+		margin-top: 1.2rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--ink-ghost);
+	}
+	.br-keys li {
+		display: grid;
+		grid-template-columns: 1.7rem minmax(0, 1fr);
+		gap: 0.6rem;
+		font-size: 0.92rem;
+		line-height: 1.45;
+	}
+	.br-keys b {
+		font-weight: 600;
+	}
+	.br-keys .label {
+		color: var(--stamp);
+	}
+	.br-keyno {
+		display: grid;
+		place-items: center;
+		width: 1.6rem;
+		height: 1.6rem;
+		border: 1.5px solid var(--stamp);
+		border-radius: 50%;
+		font: 600 0.72rem var(--mono);
+		color: var(--stamp);
+	}
+	.br-keybody {
+		display: block;
+		margin-top: 0.15rem;
+		color: var(--ink-soft);
+	}
+
+	/* ---- the instrument panel ---- */
+	.br-panel {
+		grid-column: 9 / span 4;
+		grid-row: 2;
+		align-self: start;
+		padding: 1.1rem 1.1rem 0.9rem;
+		background: var(--card);
+		border: 1.5px solid var(--ink);
+		border-radius: 2px;
+		box-shadow: var(--lift);
+	}
+	.br-panel-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.8rem;
+		padding-bottom: 0.6rem;
+		border-bottom: 1.5px solid var(--ink);
+	}
+	.br-panel-head h3 {
+		font-size: 1.7rem;
+	}
+	.br-livetag {
+		color: var(--ink);
+	}
+	.br-panel[data-state='down'] .br-livetag {
+		color: var(--stamp);
 	}
 	.br-vitals {
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		margin: 1.2rem 0;
-		color: var(--forest-ink);
+		margin: 0.8rem 0;
 		text-transform: none;
-		letter-spacing: 0.02em;
+		color: var(--ink-soft);
 	}
 	.br-led {
 		flex: none;
 		width: 0.55rem;
 		height: 0.55rem;
 		border-radius: 50%;
-		background: #8a8579;
+		background: var(--grey);
+		box-shadow: 0 0 0 1.5px var(--ink-fixed);
 	}
 	.br-led[data-state='ok'] {
 		background: var(--lime);
-		box-shadow: 0 0 0 3px rgba(198, 232, 74, 0.18);
 	}
 	.br-led[data-state='down'] {
-		background: #e0ad5c;
+		background: var(--stamp);
 	}
-	.br-counts {
-		list-style: none;
+	.br-dials {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 1rem;
-		max-width: 34rem;
-		margin-bottom: 1.6rem;
-		padding-block: 0.9rem;
-		border-block: 1px dashed rgba(236, 228, 210, 0.2);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.6rem;
 	}
-	.br-counts li {
+	.br-dial {
+		padding: 0.6rem 0.7rem;
+		border: 1px solid var(--ink-ghost);
+		background: color-mix(in srgb, var(--card) 80%, transparent);
+	}
+	.br-dial-wide {
+		grid-column: 1 / -1;
+	}
+	.br-dial dd {
+		margin: 0.3rem 0 0;
 		display: grid;
-		gap: 0.2rem;
+		gap: 0.3rem;
 	}
-	.br-counts b {
+	.br-read {
+		display: block;
 		font-family: var(--mono);
-		font-size: 1.6rem;
-		font-weight: 500;
-		line-height: 1;
-		color: var(--lime);
+		font-size: 1.15rem;
+		font-variant-numeric: tabular-nums lining-nums;
+		line-height: 1.2;
+		color: var(--ink);
 	}
-	.br-counts span {
-		font-size: 0.78rem;
-		line-height: 1.3;
+	.br-panel[data-state='down'] .br-read {
+		font-size: 0.85rem;
+		color: var(--ink-faint);
+	}
+	.br-gauge {
+		width: min(100%, 11rem);
+		height: auto;
+	}
+	.br-gauge .g-arc,
+	.br-gauge .g-tick {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 1.6;
+		stroke-linecap: round;
+	}
+	.br-gauge .g-needle {
+		stroke: var(--stamp);
+		stroke-width: 2.2;
+		stroke-linecap: round;
+		/* pivot on the hub, in the gauge's own units; resting at zero */
+		transform-box: view-box;
+		transform-origin: 60px 60px;
+		transform: rotate(-90deg);
+		transition: transform 0.9s cubic-bezier(0.34, 1.4, 0.5, 1);
+	}
+	.br-gauge .g-hub {
+		fill: var(--ink);
+	}
+	.br-meter {
+		display: block;
+		height: 0.7rem;
+		border: 1px solid var(--ink);
+		background: repeating-linear-gradient(90deg, var(--ink-ghost) 0 1px, transparent 1px 10%);
+	}
+	.br-meter span {
+		display: block;
+		height: 100%;
+		background: var(--live);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.6s var(--ease-out);
+	}
+	.br-readat {
+		margin-top: 0.7rem;
+		text-transform: none;
+	}
+
+	/* ---- the way in ---- */
+	.br-topo {
+		grid-column: 1 / span 7;
+		margin: 0;
+	}
+	.br-topo-title,
+	.br-log h3 {
+		font-size: 1.7rem;
+		margin-bottom: 0.8rem;
+	}
+	.topo-line {
+		list-style: none;
+		display: flex;
+		align-items: stretch;
+		flex-wrap: wrap;
+		gap: 1.6rem;
+	}
+	.topo-node {
+		position: relative;
+		display: grid;
+		align-content: center;
+		gap: 0.15rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--card);
+		border: 1.5px solid var(--ink);
+		font-family: var(--label-face);
+		font-size: 1.25rem;
+		text-transform: uppercase;
+		line-height: 1;
+	}
+	/* a red wire to the next stop */
+	.topo-node:not(:last-child)::after {
+		content: '';
+		position: absolute;
+		left: 100%;
+		top: 50%;
+		width: 1.6rem;
+		border-top: 1.5px solid var(--stamp);
+	}
+	.topo-caddy {
+		border-color: var(--stamp);
+	}
+	.topo-wall {
+		display: grid;
+		align-content: center;
+		gap: 0.1rem;
+		padding-inline: 0.6rem;
+		border-inline: 1.5px dashed var(--ink-faint);
+		text-align: center;
+	}
+	.topo-zero {
+		font: 400 0.95rem var(--body);
+		color: var(--stamp);
+	}
+	.topo-zero span {
+		font-family: var(--mono);
+	}
+	.topo-split {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		margin-top: 1.2rem;
+		padding-top: 1rem;
+		border-top: 1.5px solid var(--stamp);
+	}
+	.topo-bin p {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin-bottom: 0.4rem;
+		font-size: 0.9rem;
 		color: var(--ink-soft);
 	}
+	.topo-bin b {
+		font-family: var(--mono);
+		font-size: 1.5rem;
+		font-weight: 500;
+		color: var(--ink);
+	}
+	.topo-bin ul {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+	.topo-bin li {
+		padding: 0.2rem 0.45rem;
+		border: 1px solid var(--ink-ghost);
+		background: var(--card);
+		font-family: var(--mono);
+		font-size: 0.7rem;
+	}
+
+	/* ---- the log card: kraft stock, punched along the top ---- */
+	.br-log {
+		grid-column: 8 / span 5;
+		align-self: start;
+		padding: 1.5rem 1.2rem 1.1rem;
+		background: var(--kraft);
+		color: var(--ink-fixed);
+		box-shadow: var(--lift);
+		rotate: -1deg;
+	}
+	.br-log-list {
+		list-style: none;
+		display: grid;
+		gap: 0.7rem;
+	}
+	.br-log-list li {
+		display: grid;
+		grid-template-columns: 6.2rem minmax(0, 1fr);
+		gap: 0.6rem;
+		padding-bottom: 0.7rem;
+		border-bottom: 1px solid rgba(23, 24, 22, 0.2);
+		font-size: 0.9rem;
+		line-height: 1.45;
+	}
+	.br-log-list .label {
+		color: var(--ink-fixed);
+		padding-top: 0.2rem;
+	}
+
 	.br-actions {
+		grid-column: 1 / -1;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -176,53 +807,72 @@ const counts = [
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;
-		color: var(--forest-ink);
+		color: var(--ink);
 	}
 
-	/* the portrait, framed like a photo on the server's shelf */
-	.br-portrait {
-		justify-self: center;
-		width: min(100%, 15rem);
-		margin: 0;
+	@media (max-width: 1100px) {
+		/* lets the log card sit beside the panel instead of under the topology */
+		.br-sheet {
+			grid-auto-flow: dense;
+		}
+		.br-cutaway {
+			grid-column: 1 / -1;
+		}
+		.br-panel {
+			grid-column: 1 / span 6;
+			grid-row: auto;
+		}
+		.br-log {
+			grid-column: 7 / span 6;
+		}
+		.br-topo {
+			grid-column: 1 / -1;
+		}
 	}
-	.br-frame {
-		position: relative;
-		padding: 1.1rem;
-		background: #0f131c;
-		border: 1px solid rgba(236, 228, 210, 0.16);
-		box-shadow: inset 0 0 0 6px #161b26;
-		rotate: 2deg;
-	}
-	.br-frame :global(.br-stamp) {
-		right: -1.2rem;
-		bottom: -1.4rem;
-		--peek-tilt: 10deg;
-	}
-	.br-portrait figcaption {
-		margin-top: 0.9rem;
-		text-align: center;
-		color: var(--ink-soft);
-	}
-
-	@media (max-width: 860px) {
-		.backroom-inner {
-			grid-template-columns: minmax(0, 1fr);
+	@media (max-width: 760px) {
+		.br-head,
+		.br-portrait,
+		.br-panel,
+		.br-log {
+			grid-column: 1 / -1;
 		}
 		.br-portrait {
-			width: min(70%, 13rem);
+			justify-self: center;
+			width: min(70%, 11rem);
 		}
-		.br-frame :global(.br-stamp) {
-			right: -0.6rem;
+		.br-keys,
+		.topo-split {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		/* the way in reads top to bottom on a phone */
+		.topo-line {
+			flex-direction: column;
+			gap: 1.2rem;
+		}
+		.topo-node:not(:last-child)::after {
+			left: 1.2rem;
+			top: 100%;
+			width: 0;
+			height: 1.2rem;
+			border-top: none;
+			border-left: 1.5px solid var(--stamp);
+		}
+		.topo-wall {
+			border-inline: none;
+			border-block: 1.5px dashed var(--ink-faint);
+			padding-block: 0.4rem;
+		}
+		.br-log {
+			rotate: 0deg;
 		}
 	}
-	@media (max-width: 420px) {
-		.br-counts {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 0.6rem;
+	/* on a phone the notebook takes nearly the whole width, so the drawing stays readable */
+	@media (max-width: 560px) {
+		.backroom .wrap {
+			padding-inline: 0.5rem;
 		}
-		.br-counts li {
-			grid-template-columns: 2.4rem minmax(0, 1fr);
-			align-items: baseline;
+		.br-sheet {
+			padding: 1.4rem 0.9rem;
 		}
 	}
 </style>

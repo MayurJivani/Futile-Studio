@@ -34,9 +34,10 @@ const sections = [
 
 		<ul id="nav-list" class="nav-list">
 			{
-				sections.map(([id, name]) => (
+				sections.map(([id, name], i) => (
 					<li>
 						<a href={url(`#${id}`)} class="nav-tab" data-section={id}>
+							<span class="nav-no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
 							{name}
 						</a>
 					</li>
@@ -138,14 +139,15 @@ const sections = [
 		/* Extra right padding is the lamp cord's lane, so the two never collide. */
 		padding: 0.7rem calc(var(--gutter) + 2.2rem) 0.7rem var(--gutter);
 	}
+	/* The index: a strip of card stock along the top of the cabinet, ruled
+	   under with a double hairline like a printed register. */
 	:global(.nav-strip) {
 		position: sticky;
 		top: 0;
 		z-index: 100;
-		background: color-mix(in srgb, var(--paper) 92%, transparent);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-		border-bottom: 1px solid var(--ink-ghost);
+		background: var(--card);
+		border-bottom: 3px double var(--ink);
+		box-shadow: 0 8px 18px -16px var(--shadow-deep);
 	}
 
 	.nav-logo {
@@ -173,12 +175,13 @@ const sections = [
 		position: relative;
 		display: inline-flex;
 		align-items: center;
+		gap: 0.3rem;
 		min-height: 44px;
-		padding: 0 0.6rem;
-		font-family: var(--mono);
-		font-size: 0.74rem;
-		font-weight: 500;
-		letter-spacing: 0.05em;
+		padding: 0 0.55rem;
+		font-family: var(--label-face);
+		font-size: 1.12rem;
+		font-weight: 400;
+		letter-spacing: 0.03em;
 		text-transform: uppercase;
 		color: var(--ink-soft);
 		text-decoration: none;
@@ -201,6 +204,14 @@ const sections = [
 		transition:
 			opacity 0.25s ease,
 			scale 0.35s var(--ease-out);
+	}
+	.nav-no {
+		font-family: var(--mono);
+		font-size: 0.56rem;
+		letter-spacing: 0.04em;
+		color: var(--stamp);
+		align-self: flex-start;
+		margin-top: 0.85rem;
 	}
 	.nav-tab:hover,
 	.nav-tab:focus-visible,
@@ -337,12 +348,13 @@ const sections = [
 			transition: transform 0.32s var(--ease-out);
 		}
 		.nav-tab {
-			font-family: var(--display);
-			font-weight: 700;
-			font-size: 1.6rem;
-			letter-spacing: -0.02em;
-			text-transform: none;
+			font-size: 2rem;
 			color: var(--ink);
+			border-bottom: 1px solid var(--ink-ghost);
+		}
+		.nav-no {
+			margin-top: 0.7rem;
+			min-width: 1.6rem;
 		}
 		.nav-tab::after {
 			inset: 0.3rem -0.2rem;

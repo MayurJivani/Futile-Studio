@@ -13,19 +13,27 @@ import Explorer from './Explorer.astro';
 import { ideas } from '../data/studio.js';
 ---
 
-<section id="studio" class="studio wrap" aria-labelledby="studio-title">
+<section id="studio" class="studio drawer" aria-labelledby="studio-title">
+<div class="studio-inner wrap">
 	<div class="studio-head">
 		<h2 id="studio-title" class="sect-label" data-split data-split-group>The shared studio</h2>
-		<p class="sect-lede">
+		<p class="sect-lede note on-paper">
+			<span class="tape" aria-hidden="true"></span>
 			Everyone reading this part of the page right now, one explorer each, under a name the studio makes up. Nothing
 			about you is kept: no address, no account, just a name and the marks you leave.
 		</p>
 	</div>
 
-	<div class="floor-card">
+	<div class="floor-card on-paper" id="studio-card" data-state="connecting">
+		<span class="tape" aria-hidden="true"></span>
+		<p class="studio-state label" id="studio-state">connecting</p>
 		<p class="floor-status" id="studio-status" aria-live="polite">Looking for the studio…</p>
+		<button class="you-btn studio-retry" type="button" id="studio-retry">Try again</button>
 		<div class="you-are" id="you-are" hidden>
-			<p>You arrived as <b data-myname></b>.</p>
+			<p class="name-tag">
+				<span class="tag-band" aria-hidden="true"><b>Hello</b> my name is</span>
+				<span class="tag-name"><span class="visually-hidden">You arrived as </span><b data-myname></b></span>
+			</p>
 			<div class="you-actions">
 				<button class="you-btn" type="button" id="name-reroll">Give me another</button>
 				<button class="you-btn" type="button" id="name-pick" aria-expanded="false" aria-controls="name-form">Choose one</button>
@@ -55,7 +63,7 @@ import { ideas } from '../data/studio.js';
 		<p class="ballot-note">
 			Pick a sticker, then press a spot on the board. Three each; they fade after a day. Press one of yours to lift it.
 		</p>
-		<div class="board-kinds" role="radiogroup" aria-label="Sticker">
+		<div class="board-kinds on-paper" role="radiogroup" aria-label="Sticker">
 			{
 				['star', 'heart', 'cat', 'spiral', 'stamp', 'flower'].map((k, i) => (
 					<label class="kind">
@@ -88,13 +96,14 @@ import { ideas } from '../data/studio.js';
 		<ul class="ideas" role="list">
 			{
 				ideas.map((i) => (
-					<li>
+					<li class="on-paper">
 						<button class="idea" type="button" data-idea={i.id} data-clue="vote" aria-pressed="false" disabled>
 							<span class="idea-copy">
 								<span class="idea-name">{i.name}</span>
 								<span class="idea-note">{i.note}</span>
 							</span>
 							<span class="idea-tally" aria-hidden="true" />
+							<svg class="idea-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 13.5c2 1.2 3.6 3 4.8 5.6C11 12 15 7 20.5 3.5" /></svg>
 							<span class="idea-n" data-n>
 								0
 							</span>
@@ -112,6 +121,7 @@ import { ideas } from '../data/studio.js';
 		</p>
 	</div>
 
+</div>
 	<template id="explorer-tpl"><Explorer class="mini-explorer is-idle" /></template>
 
 	<!-- the stickers, drawn once and used by reference -->
@@ -133,6 +143,13 @@ import { ideas } from '../data/studio.js';
 	const section = document.getElementById('studio')!;
 	const floor = document.getElementById('studio-floor')!;
 	const statusEl = document.getElementById('studio-status')!;
+	const card = document.getElementById('studio-card')!;
+	const stateEl = document.getElementById('studio-state')!;
+	/* the plain word for where the connection stands, never a guess */
+	const setState = (s: 'connecting' | 'live' | 'offline' | 'paused' | 'hidden') => {
+		card.dataset.state = s;
+		stateEl.textContent = s;
+	};
 	const opt = document.getElementById('studio-opt') as HTMLInputElement;
 	const tpl = document.getElementById('explorer-tpl') as HTMLTemplateElement;
 	const buttons = [...section.querySelectorAll<HTMLButtonElement>('.idea')];
@@ -188,6 +205,7 @@ import { ideas } from '../data/studio.js';
 	opt.addEventListener('change', () => setWanted(opt.checked));
 
 	/* ---------- drawing ---------- */
+	let onFloor = new Set<string>();
 	function drawFloor() {
 		floor.textContent = '';
 		const ids = [...people.keys()].sort((a, b) => (a === me ? -1 : b === me ? 1 : 0));
@@ -208,8 +226,10 @@ import { ideas } from '../data/studio.js';
 			nm.textContent = people.get(id)!.name || 'someone';
 			fig.appendChild(nm);
 			floor.appendChild(fig);
-			if (!still()) animate(fig, { y: [18, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 300, damping: 22 });
+			/* only newcomers spring in; everyone already standing stays put */
+			if (!still() && !onFloor.has(id)) animate(fig, { y: [28, 0], rotate: [-8, 0], opacity: [0, 1] }, { type: 'spring', stiffness: 320, damping: 16 });
 		});
+		onFloor = new Set(ids.slice(0, SHOWN));
 		if (ids.length > SHOWN) {
 			const more = document.createElement('span');
 			more.className = 'floor-more script';
@@ -257,6 +277,7 @@ import { ideas } from '../data/studio.js';
 	function connect() {
 		if (ws || !near || !wanted() || document.visibilityState !== 'visible') return;
 		statusEl.textContent = 'Looking for the studio…';
+		setState('connecting');
 		let sock: WebSocket;
 		try {
 			sock = new WebSocket((API_BASE || location.origin).replace(/^http/, 'ws') + '/ws/presence');
@@ -289,6 +310,7 @@ import { ideas } from '../data/studio.js';
 				for (const p of m.peers) people.set(p.id, { colour: p.colour, name: p.name || '' });
 				buttons.forEach((b) => (b.disabled = false));
 				board.dataset.offline = 'false';
+				setState('live');
 				drawFloor();
 			} else if (m.t === 'hi') {
 				people.set(m.id, { colour: m.colour, name: m.name || '' });
@@ -347,22 +369,33 @@ import { ideas } from '../data/studio.js';
 
 	function offline() {
 		people.clear();
+		onFloor.clear();
 		floor.textContent = '';
+		setState('offline');
 		statusEl.textContent =
 			'The studio is closed for the moment, so nobody shows up here. Everything else on the page still works.';
 	}
 
-	function disconnect(reason: string) {
+	function disconnect(reason: string, state: 'paused' | 'hidden') {
 		clearTimeout(retryTimer);
 		const s = ws;
 		ws = null;
 		s?.close();
 		people.clear();
+		onFloor.clear();
+		setState(state);
 		floor.textContent = '';
 		buttons.forEach((b) => (b.disabled = true));
 		board.dataset.offline = 'true';
 		statusEl.textContent = reason;
 	}
+
+	/* the back-off gives up after about a minute; this asks once more, now */
+	document.getElementById('studio-retry')!.addEventListener('click', () => {
+		clearTimeout(retryTimer);
+		retry = 0;
+		connect();
+	});
 
 	buttons.forEach((b) =>
 		b.addEventListener('click', () => {
@@ -379,6 +412,8 @@ import { ideas } from '../data/studio.js';
 	const nameMsg = document.getElementById('name-msg')!;
 	const pickBtn = document.getElementById('name-pick')!;
 	function showMe(name: string) {
+		if (youAre.hidden && !still())
+			animate(youAre.querySelector('.name-tag')!, { scale: [0.6, 1], rotate: [-12, -2.5], opacity: [0, 1] }, { type: 'spring', stiffness: 260, damping: 14 });
 		youAre.hidden = false;
 		youAre.querySelector('[data-myname]')!.textContent = name;
 	}
@@ -408,6 +443,7 @@ import { ideas } from '../data/studio.js';
 		if (ws?.readyState !== WebSocket.OPEN) return;
 		ws.send(JSON.stringify({ t: 'mark', kind: kind(), x, y }));
 	};
+	let seenMarks: Set<string> | null = null;
 	function drawMarks(list: Mark[]) {
 		board.querySelectorAll('.mk').forEach((n) => n.remove());
 		emptyEl.hidden = list.length > 0;
@@ -420,6 +456,12 @@ import { ideas } from '../data/studio.js';
 			el.style.top = `${m.y * 100}%`;
 			el.style.setProperty('--r', `${((parseInt(m.id.slice(0, 2), 16) % 30) - 15).toFixed(0)}deg`);
 			el.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#mk-${m.kind}"/></svg>`;
+			/* signed in pen under the sticker; textContent, since names come off the wire */
+			const by = document.createElement('span');
+			by.className = 'mk-by';
+			by.setAttribute('aria-hidden', 'true');
+			by.textContent = own ? 'you' : m.name;
+			el.appendChild(by);
 			if (own) {
 				(el as HTMLButtonElement).type = 'button';
 				el.setAttribute('aria-label', `Your ${m.kind}. Press to lift it.`);
@@ -433,8 +475,29 @@ import { ideas } from '../data/studio.js';
 				el.setAttribute('aria-label', `A ${m.kind} from ${m.name}`);
 			}
 			board.appendChild(el);
+			/* a fresh sticker gets pressed onto the wall; the ones already up do not move */
+			if (seenMarks && !seenMarks.has(m.id) && !still()) animate(el, { scale: [1.8, 1], opacity: [0, 1] }, { type: 'spring', stiffness: 420, damping: 18 });
 		}
+		seenMarks = new Set(list.map((m) => m.id));
 	}
+	/* the chosen sticker hovers under a mouse before it is pressed on */
+	const ghost = document.createElement('span');
+	ghost.className = 'mk-ghost';
+	ghost.setAttribute('aria-hidden', 'true');
+	board.appendChild(ghost);
+	board.addEventListener('pointermove', (e) => {
+		if (e.pointerType !== 'mouse' || board.dataset.offline === 'true' || (e.target as HTMLElement).closest('.mk-own')) {
+			ghost.hidden = true;
+			return;
+		}
+		const r = board.getBoundingClientRect();
+		ghost.hidden = false;
+		ghost.style.left = `${e.clientX - r.left}px`;
+		ghost.style.top = `${e.clientY - r.top}px`;
+		ghost.innerHTML = `<svg viewBox="0 0 24 24"><use href="#mk-${kind()}"/></svg>`;
+	});
+	board.addEventListener('pointerleave', () => (ghost.hidden = true));
+	ghost.hidden = true;
 	board.addEventListener('click', (e) => {
 		if ((e.target as HTMLElement).closest('.mk-own')) return;
 		const r = board.getBoundingClientRect();
@@ -463,7 +526,7 @@ import { ideas } from '../data/studio.js';
 
 	function sync() {
 		opt.checked = wanted();
-		if (!wanted()) return disconnect('You are hidden. Nobody sees you here, and you see nobody.');
+		if (!wanted()) return disconnect('You are hidden. Nobody sees you here, and you see nobody.', 'hidden');
 		if (near && document.visibilityState === 'visible') connect();
 	}
 
@@ -477,13 +540,23 @@ import { ideas } from '../data/studio.js';
 
 	window.addEventListener('futile-desk-change', sync);
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'hidden') disconnect('Paused while the tab is in the background.');
+		if (document.visibilityState === 'hidden') disconnect('Paused while the tab is in the background.', 'paused');
 		else sync();
 	});
 </script>
 
 <style>
+	/* A painted noticeboard wall: sage, with felt over it. Text sits on the wall
+	   only in full ink; anything smaller is pinned up on paper. */
 	.studio {
+		--wall: var(--sage);
+		background: var(--wall);
+		color: var(--ink);
+	}
+	:global([data-lamp='off']) .studio {
+		--wall: color-mix(in srgb, var(--sage) 45%, var(--paper));
+	}
+	.studio-inner {
 		padding-block: clamp(5rem, 12vw, 9rem);
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -493,22 +566,74 @@ import { ideas } from '../data/studio.js';
 	.studio-head {
 		grid-column: 1 / -1;
 	}
+	.note {
+		position: relative;
+		margin-top: 1.4rem;
+		padding: 1.3rem 1.4rem 1.2rem;
+		background: var(--card);
+		color: var(--ink-soft);
+		box-shadow: var(--lift);
+		rotate: -0.8deg;
+	}
+	.note .tape {
+		top: -12px;
+		left: 42%;
+		rotate: 3deg;
+	}
 
-	/* The worktable: a long plank seen from the front, with whoever is here
-	   standing on it. */
+	/* The visitors' sheet: an ivory notice taped to the wall, with whoever is
+	   here standing along its bottom rule. */
 	.floor-card {
 		position: relative;
-		padding: 1.6rem 1.6rem 1.2rem;
-		background:
-			repeating-linear-gradient(90deg, transparent 0 140px, rgba(27, 33, 50, 0.04) 140px 142px),
-			#e3d6bb;
-		color: #1b2132;
-		border-radius: 4px;
+		padding: 1.8rem 1.6rem 1.2rem;
+		background: var(--card);
+		color: var(--ink);
+		border-radius: 2px;
 		box-shadow: var(--lift-high);
+		rotate: 0.5deg;
+	}
+	.floor-card > .tape {
+		top: -13px;
+		left: 1.4rem;
+		rotate: -4deg;
 	}
 	.floor-card .label,
 	.floor-card .studio-opt {
-		color: rgba(27, 33, 50, 0.74);
+		color: var(--ink-soft);
+	}
+	/* connecting / live / offline / paused / hidden, written as it is */
+	.studio-state {
+		position: absolute;
+		top: 1rem;
+		right: 1.2rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+		padding: 0.2rem 0.5rem;
+		border: 1px solid currentColor;
+	}
+	.studio-state::before {
+		content: '';
+		width: 0.62em;
+		height: 0.62em;
+		border-radius: 50%;
+		border: 1.5px solid var(--ink-fixed);
+	}
+	[data-state='live'] .studio-state {
+		color: var(--live);
+	}
+	[data-state='live'] .studio-state::before {
+		background: var(--lime);
+	}
+	[data-state='offline'] .studio-state {
+		color: var(--stamp);
+	}
+	.studio-retry {
+		display: none;
+		margin: -0.4rem 0 0.6rem;
+	}
+	[data-state='offline'] .studio-retry {
+		display: inline-block;
 	}
 	.studio-log-wrap {
 		margin: 0.4rem 0 0.8rem;
@@ -526,11 +651,12 @@ import { ideas } from '../data/studio.js';
 		margin-right: 0.4rem;
 	}
 	.studio-log-empty {
-		color: rgba(27, 33, 50, 0.7);
+		color: var(--ink-soft);
 	}
 	.floor-status {
 		font-weight: 600;
 		min-height: 3em;
+		padding-right: 6.5rem;
 	}
 	.floor {
 		display: flex;
@@ -550,6 +676,12 @@ import { ideas } from '../data/studio.js';
 	}
 	.floor :global(.floor-fig) {
 		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		min-width: 3.3rem;
+	}
+	.floor :global(.floor-fig .explorer) {
 		width: 3.3rem;
 	}
 	.floor :global(.floor-fig .ex-bob) {
@@ -586,9 +718,10 @@ import { ideas } from '../data/studio.js';
 		font-size: clamp(1.5rem, 2.6vw, 2rem);
 		font-variation-settings: 'wdth' 85;
 	}
+	/* on the bare wall: full ink, since soft ink is too faint on sage */
 	.ballot-note {
-		color: var(--ink-soft);
-		font-size: 0.9rem;
+		color: var(--ink);
+		font-size: 0.95rem;
 		margin: 0.3rem 0 1.2rem;
 	}
 	.ideas {
@@ -601,13 +734,13 @@ import { ideas } from '../data/studio.js';
 	}
 	.ideas li {
 		position: relative;
-		background: var(--card);
-		border: 1px solid var(--ink-ghost);
-		box-shadow: var(--lift);
 		rotate: var(--slip-tilt, -0.6deg);
 	}
 	.ideas li:nth-child(2n) {
 		--slip-tilt: 0.7deg;
+	}
+	.ideas li:nth-child(3n) {
+		--slip-tilt: -1.2deg;
 	}
 	.ideas li::before {
 		content: '';
@@ -621,60 +754,97 @@ import { ideas } from '../data/studio.js';
 		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
 		z-index: 1;
 	}
+	/* The whole card is the button: press it into the wall. */
 	.idea {
+		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto 2.4rem;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas: 'copy n' 'tally n';
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem 1rem;
 		width: 100%;
-		min-height: 64px;
-		padding: 0.9rem 1rem;
-		background: none;
-		border: none;
-		border-radius: 4px;
+		min-height: 88px;
+		padding: 1.2rem 1.2rem 0.9rem;
+		background:
+			repeating-linear-gradient(transparent 0 1.55rem, color-mix(in srgb, var(--airmail) 14%, transparent) 1.55rem calc(1.55rem + 1px)) 0 0.4rem,
+			var(--card);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 2px;
+		box-shadow: var(--lift);
 		font: inherit;
 		color: var(--ink);
 		text-align: left;
 		cursor: pointer;
-		transition: background 0.2s ease;
+		transition:
+			translate 0.12s ease,
+			box-shadow 0.12s ease;
 	}
 	.idea:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--ink) 4%, transparent);
+		box-shadow: var(--lift-high);
+	}
+	.idea:active:not(:disabled) {
+		translate: 0 2px;
+		box-shadow: 0 1px 2px var(--shadow);
 	}
 	.idea:disabled {
 		cursor: default;
 		color: var(--ink-faint);
 	}
 	.idea-copy {
+		grid-area: copy;
 		display: flex;
 		flex-direction: column;
 		gap: 0.1rem;
 	}
+	/* written on the card by hand, as a suggestion slip would be */
 	.idea-name {
-		font-family: var(--display);
-		font-weight: 700;
-		font-size: 1.15rem;
+		font-family: var(--script);
+		font-size: 1.9rem;
+		line-height: 1;
 	}
 	.idea-note {
 		font-size: 0.85rem;
 		color: var(--ink-soft);
 	}
 	.idea-tally {
+		grid-area: tally;
 		display: block;
-		height: 1.3rem;
-		color: var(--ink-soft);
+		height: 1.4rem;
+		color: var(--ink);
 	}
 	.idea-tally :global(svg) {
 		height: 100%;
 		width: auto;
 	}
 	.idea-n {
+		grid-area: n;
 		justify-self: end;
+		min-width: 2.4rem;
+		text-align: right;
 		font-family: var(--mono);
-		font-size: 1rem;
+		font-size: 1.5rem;
 		font-variant-numeric: tabular-nums;
 	}
-	/* Your own mark is the one in vermilion. */
+	/* Your own mark is the one in vermilion: a marker tick in the corner. */
+	.idea-tick {
+		position: absolute;
+		top: -0.6rem;
+		right: -0.4rem;
+		width: 2.6rem;
+		height: 2.6rem;
+		fill: none;
+		stroke: var(--stamp);
+		stroke-width: 3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		display: none;
+	}
+	.idea[aria-pressed='true'] .idea-tick {
+		display: block;
+	}
+	.idea[aria-pressed='true'] {
+		border-color: var(--stamp);
+	}
 	.idea[aria-pressed='true'] .idea-tally,
 	.idea[aria-pressed='true'] .idea-n {
 		color: var(--stamp);
@@ -686,9 +856,9 @@ import { ideas } from '../data/studio.js';
 		color: var(--stamp);
 	}
 	.ballot-rules {
-		margin-top: 1.4rem;
-		font-size: 0.8rem;
-		color: var(--ink-soft);
+		margin-top: 1.6rem;
+		font-size: 0.85rem;
+		color: var(--ink);
 		max-width: 34rem;
 	}
 
@@ -706,8 +876,46 @@ import { ideas } from '../data/studio.js';
 
 	/* ---------- who you are ---------- */
 	.you-are {
-		margin: 0.6rem 0 0.2rem;
+		margin: 0.2rem 0 0.2rem;
 		font-size: 0.95rem;
+	}
+	/* The sticker everyone gets at the door. */
+	.name-tag {
+		display: grid;
+		width: min(100%, 17rem);
+		background: var(--ivory);
+		border: 1px solid var(--ink-ghost);
+		border-radius: 2px;
+		box-shadow: var(--lift);
+		transform: rotate(-2.5deg);
+		overflow: hidden;
+	}
+	.tag-band {
+		padding: 0.35rem 0.8rem 0.3rem;
+		background: var(--stamp);
+		color: var(--stamp-ink);
+		text-align: center;
+		font-size: 0.78rem;
+		line-height: 1.1;
+	}
+	.tag-band b {
+		display: block;
+		font: 400 1.9rem/0.95 var(--label-face);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	.tag-name {
+		padding: 0.5rem 0.8rem 0.7rem;
+		border-bottom: 0.6rem solid var(--stamp);
+		text-align: center;
+		font-family: var(--script);
+		font-size: 2.1rem;
+		line-height: 1;
+		color: var(--ink-fixed);
+		overflow-wrap: anywhere;
+	}
+	.tag-name b {
+		font-weight: 400;
 	}
 	.you-are[hidden],
 	.name-form[hidden] {
@@ -720,17 +928,19 @@ import { ideas } from '../data/studio.js';
 		margin-top: 0.4rem;
 	}
 	.you-btn {
-		min-height: 40px;
+		min-height: 44px;
 		padding: 0 0.9rem;
-		background: #fbf9f4;
-		color: #1b2132;
-		border: 1px solid rgba(27, 33, 50, 0.3);
-		border-radius: 999px;
-		font: 500 0.82rem var(--body);
+		background: var(--card);
+		color: var(--ink);
+		border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+		border-radius: 2px;
+		font: 400 1.05rem var(--label-face);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 		cursor: pointer;
 	}
 	.you-btn:hover {
-		border-color: #1b2132;
+		border-color: var(--ink);
 	}
 	.name-form {
 		display: grid;
@@ -745,35 +955,47 @@ import { ideas } from '../data/studio.js';
 		min-height: 40px;
 		padding: 0 0.7rem;
 		font: 500 0.95rem var(--mono);
-		color: #1b2132;
-		background: #fbf9f4;
-		border: 1px solid rgba(27, 33, 50, 0.45);
-		border-radius: 4px;
+		color: var(--ink);
+		background: var(--ivory);
+		border: 1px solid color-mix(in srgb, var(--ink) 45%, transparent);
+		border-radius: 2px;
 	}
 	.name-msg {
 		grid-column: 1 / -1;
 		font-size: 0.8rem;
-		color: rgba(27, 33, 50, 0.75);
+		color: var(--ink-soft);
 	}
+	/* each visitor wears a little name tag too */
 	.floor :global(.floor-name) {
 		display: block;
-		max-width: 5.5rem;
-		margin: 0.2rem auto 0;
+		margin-top: 0.25rem;
+		padding: 0.1rem 0.3rem;
+		background: var(--ivory);
+		border: 1px solid var(--ink-ghost);
+		border-top: 3px solid var(--stamp);
 		font: 500 0.6rem var(--mono);
 		text-align: center;
-		color: #1b2132;
-		overflow-wrap: anywhere;
+		color: var(--ink-fixed);
+		white-space: nowrap;
 	}
 
-	/* ---------- the marks board: cork, with stickers on it ---------- */
+	/* ---------- the marks board: a patch of the wall, with stickers on it ---------- */
 	.board-card .ballot-note {
 		margin-bottom: 0.8rem;
 	}
+	/* the sticker sheet, peeled from */
 	.board-kinds {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.35rem;
-		margin-bottom: 0.7rem;
+		width: fit-content;
+		max-width: 100%;
+		margin-bottom: 0.9rem;
+		padding: 0.5rem;
+		background: var(--card);
+		border-radius: 2px;
+		box-shadow: var(--lift);
+		rotate: -1deg;
 	}
 	.kind {
 		position: relative;
@@ -790,8 +1012,8 @@ import { ideas } from '../data/studio.js';
 		place-items: center;
 		width: 44px;
 		height: 44px;
-		border: 1px solid var(--ink-ghost);
-		border-radius: 8px;
+		border: 1px dashed var(--ink-ghost);
+		border-radius: 2px;
 		background: var(--card);
 	}
 	.kind svg {
@@ -806,17 +1028,48 @@ import { ideas } from '../data/studio.js';
 		outline: 2px solid var(--stamp);
 		outline-offset: 2px;
 	}
+	/* A real corkboard: speckled cork in a wooden frame, a pin at each corner.
+	   Fixed colours, because it is an object on the wall in either lamp. */
 	.board {
 		position: relative;
 		aspect-ratio: 16 / 9;
+		color: #2a1d10;
 		background:
-			radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.05) 0 1px, transparent 2px) 0 0 / 9px 9px,
-			#c9a776;
-		border: 6px solid #8b6a43;
-		border-radius: 4px;
-		box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+			radial-gradient(circle at 20% 30%, rgba(90, 50, 20, 0.35) 0 1px, transparent 1.6px) 0 0 / 7px 9px,
+			radial-gradient(circle at 70% 60%, rgba(255, 235, 190, 0.35) 0 1px, transparent 1.6px) 0 0 / 11px 8px,
+			radial-gradient(circle at 40% 80%, rgba(60, 30, 10, 0.3) 0 1.4px, transparent 2px) 0 0 / 13px 15px,
+			radial-gradient(120% 120% at 50% 40%, #c8955c, #a8733f);
+		border: 12px solid #6b4423;
+		border-image: linear-gradient(135deg, #8a5a30, #5a3519 40%, #7a4d27 60%, #4a2b13) 12;
+		box-shadow:
+			inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+			inset 0 6px 14px rgba(0, 0, 0, 0.35),
+			0 18px 30px -18px rgba(0, 0, 0, 0.7);
 		cursor: crosshair;
 		overflow: hidden;
+	}
+	/* a phone gets a squarer board, so there is room to aim a thumb */
+	@media (max-width: 640px) {
+		.board {
+			aspect-ratio: 1;
+			border-width: 9px;
+		}
+		.board :global(.mk) {
+			width: 38px;
+			height: 38px;
+		}
+	}
+	/* brass pins at the corners, holding the cork to the frame */
+	.board::before {
+		content: '';
+		position: absolute;
+		inset: 8px;
+		pointer-events: none;
+		background:
+			radial-gradient(circle, #f0d58a 0 3px, #9a7a2c 3.5px 5px, transparent 5.5px) 0 0 / 12px 12px no-repeat,
+			radial-gradient(circle, #f0d58a 0 3px, #9a7a2c 3.5px 5px, transparent 5.5px) 100% 0 / 12px 12px no-repeat,
+			radial-gradient(circle, #f0d58a 0 3px, #9a7a2c 3.5px 5px, transparent 5.5px) 0 100% / 12px 12px no-repeat,
+			radial-gradient(circle, #f0d58a 0 3px, #9a7a2c 3.5px 5px, transparent 5.5px) 100% 100% / 12px 12px no-repeat;
 	}
 	.board[data-offline='true'] {
 		cursor: not-allowed;
@@ -831,7 +1084,7 @@ import { ideas } from '../data/studio.js';
 		width: 22px;
 		height: 22px;
 		translate: -50% -50%;
-		border: 2px dashed #1b2132;
+		border: 2px dashed currentColor;
 		border-radius: 50%;
 		opacity: 0;
 		pointer-events: none;
@@ -844,20 +1097,53 @@ import { ideas } from '../data/studio.js';
 		inset: auto 0 0.6rem;
 		text-align: center;
 		font-family: var(--script);
-		font-size: 1.2rem;
-		color: rgba(27, 33, 50, 0.7);
+		font-size: 1.5rem;
+		color: #2a1d10;
 		pointer-events: none;
 	}
+	/* die-cut vinyl: a white border cut round the shape, lifted a little off the cork */
 	.board :global(.mk) {
 		position: absolute;
-		width: 34px;
-		height: 34px;
+		width: 46px;
+		height: 46px;
 		padding: 0;
 		translate: -50% -50%;
 		rotate: var(--r, 0deg);
 		background: none;
 		border: none;
-		filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+	}
+	.board :global(.mk > svg) {
+		filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+			drop-shadow(0 4px 3px rgba(40, 20, 5, 0.45));
+	}
+	/* a tiny paper name tag under each sticker */
+	.board :global(.mk-by) {
+		position: absolute;
+		left: 50%;
+		top: calc(100% + 3px);
+		translate: -50% 0;
+		padding: 0.05rem 0.35rem;
+		white-space: nowrap;
+		background: #f2ebdd;
+		box-shadow: 0 1px 2px rgba(40, 20, 5, 0.4);
+		font-family: var(--script);
+		font-size: 0.95rem;
+		line-height: 1.1;
+		color: #2a1d10;
+		pointer-events: none;
+	}
+	.board :global(.mk-ghost) {
+		position: absolute;
+		width: 46px;
+		height: 46px;
+		translate: -50% -50%;
+		opacity: 0.55;
+		pointer-events: none;
+		rotate: -8deg;
+	}
+	.board :global(.mk-ghost svg) {
+		width: 100%;
+		height: 100%;
 	}
 	.board :global(.mk svg) {
 		width: 100%;
@@ -865,9 +1151,12 @@ import { ideas } from '../data/studio.js';
 	}
 	.board :global(.mk-own) {
 		cursor: pointer;
-		outline: 2px dashed rgba(27, 33, 50, 0.55);
-		outline-offset: 2px;
 		border-radius: 50%;
+	}
+	/* yours carries a red tag, so it reads as liftable */
+	.board :global(.mk-own .mk-by) {
+		background: #b83a26;
+		color: #f2ebdd;
 	}
 	.board :global(.mk-own:focus-visible) {
 		outline: 3px solid var(--stamp);
@@ -875,10 +1164,11 @@ import { ideas } from '../data/studio.js';
 	.board-help {
 		margin-top: 0.5rem;
 		text-transform: none;
+		color: var(--ink);
 	}
 
 	@media (max-width: 860px) {
-		.studio {
+		.studio-inner {
 			grid-template-columns: 1fr;
 		}
 		.floor-card,

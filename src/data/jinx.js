@@ -33,8 +33,8 @@ export const layers = [
 	},
 	{
 		name: 'The disk',
-		role: 'The weak spot',
-		note: 'Failing, by its own SMART report. Logs, /tmp and swap live in RAM and the disk is mounted to write as little as it can; only the apps and Postgres are written to it.',
+		role: 'The new SSD',
+		note: 'The old disk was failing by its own SMART report, so it is gone. The apps and Postgres now live on a new SSD.',
 	},
 	{
 		name: 'Copies off the box',

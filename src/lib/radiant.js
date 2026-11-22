@@ -25,7 +25,8 @@ export function radiate(el, still) {
 	const text = el.querySelector('.wm-text');
 	const cx = cv?.getContext('2d');
 	if (!cv || !text || !cx) return;
-	const css = getComputedStyle(document.documentElement);
+	// the name's own element, so a ticket that sets its own ink is honoured
+	const css = getComputedStyle(el);
 	let dots = [];
 	let rings = [];
 	let W = 0;

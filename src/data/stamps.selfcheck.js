@@ -4,13 +4,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { stamps, places } from './stamps.js';
 import { open } from './projects.js';
+import { featured } from './studio.js';
 
 const ids = stamps.map((s) => s.id);
 assert.equal(new Set(ids).size, ids.length, 'stamp ids are unique');
 
 // Progress was stored under these ids before the redesign; renaming one would
-// silently empty somebody's album.
-for (const legacy of ['explorer', 'lamp', 'log', 'jinx', 'vote', 'toys', 'wink', ...open.map((p) => `p-${p.id}`)]) {
+// silently empty somebody's album. Every featured spread hides its own stamp.
+for (const legacy of ['explorer', 'lamp', 'log', 'jinx', 'vote', 'toys', 'wink', ...featured.map((f) => `p-${f.id}`)]) {
 	assert.ok(ids.includes(legacy), `legacy stamp id still exists: ${legacy}`);
 }
 

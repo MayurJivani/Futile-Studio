@@ -101,9 +101,10 @@ import Sketch from './Sketch.astro';
 
 		/* ---------- the pencil: circle something, badly ---------- */
 		function circle() {
+			/* only things on screen: a circle drawn out of sight looks like nothing happened */
 			const targets = [...document.querySelectorAll<HTMLElement>('[data-annotate]')].filter((t) => {
 				const b = t.getBoundingClientRect();
-				return b.width > 0 && b.height > 0 && !t.dataset.circled;
+				return b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight && !t.dataset.circled;
 			});
 			/* Once everything is circled, start again rather than do nothing. */
 			if (!targets.length) {
@@ -235,8 +236,13 @@ import Sketch from './Sketch.astro';
 	.toy-pencil.is-used {
 		animation: toy-scribble 0.45s ease;
 	}
+	/* the two with colour of their own: a lime-inked stamp, a coffee mug */
 	.toy-stamp {
 		transform: rotate(-7deg);
+		color: var(--lime);
+	}
+	.toy-mug {
+		color: #e2b07a;
 	}
 	.toy-stamp:hover {
 		transform: rotate(0deg) translateY(-3px);
@@ -300,7 +306,8 @@ import Sketch from './Sketch.astro';
 	.mark-ring {
 		width: 2.3rem;
 		height: 2.3rem;
-		border: 3px solid #8a5a32;
+		/* milky coffee: reads on the airmail blue, where the desk sits */
+		border: 3px solid #e2b07a;
 		border-radius: 50%;
 		opacity: 0;
 		transform: translateX(-50%) scale(var(--s, 1)) rotate(var(--r, 0deg));
@@ -312,7 +319,7 @@ import Sketch from './Sketch.astro';
 			border-width: 6px;
 		}
 		to {
-			opacity: 0.26;
+			opacity: 0.55;
 			border-width: 3px;
 		}
 	}
@@ -349,8 +356,9 @@ import Sketch from './Sketch.astro';
 		fill: none;
 	}
 	.mark-circle path {
-		stroke: var(--stamp);
-		stroke-width: 2.4;
+		/* a bright red pencil: shows on the postcard and on the blue */
+		stroke: #ff5a3c;
+		stroke-width: 3;
 		stroke-linecap: round;
 		opacity: 0.85;
 		stroke-dasharray: 1;
@@ -374,8 +382,8 @@ import Sketch from './Sketch.astro';
 		font-size: 0.72rem;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--stamp);
-		border: 2.5px solid var(--stamp);
+		color: var(--lime);
+		border: 2.5px solid var(--lime);
 		border-radius: 5px;
 		padding: 0.15rem 0.45rem;
 		white-space: nowrap;

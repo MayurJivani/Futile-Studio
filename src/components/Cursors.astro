@@ -160,9 +160,9 @@
 
 		function wanted() {
 			try {
-				return JSON.parse(localStorage.getItem(KEY) || '{}').cursors === true;
+				return JSON.parse(localStorage.getItem(KEY) || '{}').cursors !== false;
 			} catch {
-				return false;
+				return true;
 			}
 		}
 

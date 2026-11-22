@@ -7,14 +7,19 @@
  * lands for the visit and is simply forgotten afterwards.
  */
 
+import { stamps } from '../data/stamps.js';
+
 const KEY = 'futile-guide';
-const ID = /^[a-z0-9-]{1,40}$/;
+/* Only stamps that exist count: a retired project's stamp stays in storage
+   (it comes back if the project does) but never inflates the tally, and a
+   project with no stamp of its own earns nothing. */
+const KNOWN = new Set(stamps.map((s) => s.id));
 
 /** @returns {Set<string>} */
 export function collected() {
 	try {
 		const raw = JSON.parse(localStorage.getItem(KEY) || '[]');
-		return new Set(Array.isArray(raw) ? raw.filter((id) => typeof id === 'string' && ID.test(id)) : []);
+		return new Set(Array.isArray(raw) ? raw.filter((id) => KNOWN.has(id)) : []);
 	} catch {
 		return memory;
 	}
@@ -25,7 +30,9 @@ const memory = new Set();
 
 function save(set) {
 	try {
-		localStorage.setItem(KEY, JSON.stringify([...set]));
+		const kept = JSON.parse(localStorage.getItem(KEY) || '[]');
+		const old = Array.isArray(kept) ? kept.filter((id) => typeof id === 'string' && !KNOWN.has(id)) : [];
+		localStorage.setItem(KEY, JSON.stringify([...old, ...set]));
 	} catch {
 		for (const id of set) memory.add(id);
 	}
@@ -33,7 +40,7 @@ function save(set) {
 
 /** Earn a stamp. Returns true only the first time, so callers can celebrate once. */
 export function collect(id) {
-	if (!ID.test(id)) return false;
+	if (!KNOWN.has(id)) return false;
 	const set = collected();
 	if (set.has(id)) return false;
 	set.add(id);

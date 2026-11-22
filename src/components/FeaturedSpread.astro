@@ -1,9 +1,14 @@
 ---
 /**
- * One featured project as a magazine spread. The structure is shared (title,
- * facts, the real screenshot, the links, a pencilled note and a tucked stamp)
- * and the `variant` decides the layout and the paper it is printed on, so
- * seven spreads in a row never read as one card repeated.
+ * One featured project as its own artefact in the collection. The facts are
+ * shared (catalogue number, title, what it is, shelf, year, stack, the link)
+ * and the artefact beside them is drawn per project: a gallery print, an
+ * observation card, a ticket, a J-card, a deck, an experiment sheet, a
+ * control panel. Every picture in them is a real capture of the running thing.
+ *
+ * Motion hooks for Featured.astro: [data-piece] settles in on entry,
+ * [data-draw] paths are inked after, [data-drift] moves with the scroll and
+ * [data-depth] with the pointer. All of it is optional; nothing starts hidden.
  *
  * The screenshot is itself a link to the running thing. The stamp is a
  * separate button beside it, never inside the link.
@@ -23,19 +28,57 @@ const { p, f, index } = Astro.props;
 const source = sourceOf[p.id] && sourceOf[p.id] !== p.href ? sourceOf[p.id] : undefined;
 const year = p.shipped?.slice(0, 4);
 const titleId = `spread-${p.id}`;
+const catno = `FS-${String(index + 1).padStart(3, '0')}`;
+
+const shotImg = {
+	src: url(f.shot.src),
+	alt: f.shot.alt,
+	width: f.shot.w ?? 1280,
+	height: f.shot.h ?? 800,
+	loading: index === 0 ? 'eager' : 'lazy',
+	decoding: 'async',
+} as const;
+const phoneImg = f.phone && {
+	src: url(f.phone.src),
+	alt: f.phone.alt,
+	width: f.phone.w ?? 390,
+	height: f.phone.h ?? 780,
+	loading: 'lazy',
+	decoding: 'async',
+} as const;
+/* the picture opens the thing too, and earns the same clue as the button */
+const shotLink = { href: p.href, target: '_blank', rel: 'noopener', 'data-clue': `p-${p.id}`, tabindex: '-1' };
+
+/* Patina's oxidised tones, taken from the drawing's own palette */
+const swatches = [
+	['night', patinaPalette['0']],
+	['horizon', patinaPalette['2']],
+	['paint', patinaPalette.h],
+	['rust', patinaPalette.r],
+	['verdigris', patinaPalette.v],
+	['wet', patinaPalette.y],
+];
+/* only what the Chorusify home screen shows */
+const tracks = ['Artist Mode', 'Multiplayer', 'Categories', 'Survival', 'Guess the Year', 'Duels', 'Daily challenge'];
+/* eight data tones, evenly across 17 to 19.5 kHz on a 16 to 20.5 kHz axis */
+const kx = (k: number) => 20 + ((k - 16) / 4.5) * 360;
+const tones = Array.from({ length: 8 }, (_, i) => kx(17.15 + i * (2.2 / 7)));
 ---
 
-<article class:list={['spread', `v-${f.variant}`]} aria-labelledby={titleId} data-spread>
+<article class:list={['spread', `a-${p.id}`]} aria-labelledby={titleId} data-spread>
 	<div class="spread-inner wrap">
 		<header class="spread-text">
+			<p class="spread-cat">
+				<span class="catno">{catno}</span>
+				<span class="is-live label">Live</span>
+			</p>
+			<h3 class="spread-title cat-title" id={titleId}>{p.name}</h3>
 			<p class="spread-meta label">
-				<span class="spread-live">Live</span>
 				<span>{shelfOf[p.id]}, {p.kind}</span>
 				{year && <span>{year}</span>}
 			</p>
-			<h3 class="spread-title" id={titleId}>{p.name}</h3>
 			<p class="spread-desc">{p.desc}</p>
-			<p class="spread-stack label">{p.stack}</p>
+			<p class="spread-stack label"><span class="spread-k">Built with</span> {p.stack}</p>
 			<p class="spread-actions">
 				<a class="btn btn-stamp" href={p.href} target="_blank" rel="noopener" data-clue={`p-${p.id}`}>
 					{p.cta}
@@ -55,73 +98,290 @@ const titleId = `spread-${p.id}`;
 		</header>
 
 		<div class="spread-stage" data-depth-stage>
+			{/* ---------- Patina: a print on a museum mat ---------- */}
 			{
-				f.art === 'patina' ? (
-					<a class="spread-shot spread-canvas" href={p.href} target="_blank" rel="noopener" data-clue={`p-${p.id}`} data-depth="0.6" tabindex="-1">
-						<span class="canvas-px">
-						<PixelArt
-							rows={patinaScene}
-							palette={patinaPalette}
-							label="Pixel art in the spirit of a Patina canvas: a house, a tree and a lake under the moon, a heart and an HI from other painters, and rust and verdigris where the paint was fought over. An illustration, not a screenshot."
-						/>
-						<span class="canvas-wet" aria-hidden="true" style={`--x:${patinaWet.x}; --y:${patinaWet.y}`} />
-						</span>
-						<span class="canvas-cap label" aria-hidden="true">64 × 40 cells of 4096 × 4096 · drawn, not captured</span>
-					</a>
-				) : (
-			<a
-					class="spread-shot"
-					href={p.href}
-					target="_blank"
-					rel="noopener"
-					data-clue={`p-${p.id}`}
-					data-depth="0.6"
-					tabindex="-1"
-				>
-					<img
-						src={url(f.shot.src)}
-						alt={f.shot.alt}
-						width={f.shot.w ?? 1280}
-						height={f.shot.h ?? 800}
-						loading={index === 0 ? 'eager' : 'lazy'}
-						decoding="async"
-					/>
-				</a>
+				p.id === 'patina' && (
+					<>
+						<figure class="pt-print on-paper" data-piece>
+							<img {...phoneImg} />
+						</figure>
+						<figure class="pt-mat on-paper" data-piece data-depth="0.6">
+							<a class="art-shot pt-canvas" {...shotLink}>
+								<span class="canvas-px">
+									<PixelArt
+										rows={patinaScene}
+										palette={patinaPalette}
+										label="Pixel art in the spirit of a Patina canvas: a house, a tree and a lake under the moon, a heart and an HI from other painters, and rust and verdigris where the paint was fought over. An illustration, not a screenshot."
+									/>
+									<span class="canvas-wet" aria-hidden="true" style={`--x:${patinaWet.x}; --y:${patinaWet.y}`} />
+								</span>
+							</a>
+							<figcaption class="label">64 × 40 cells of 4096 × 4096 · drawn, not captured</figcaption>
+						</figure>
+						<div class="pt-label on-paper" data-piece data-depth="1.2" data-drift="18" aria-hidden="true">
+							<p class="cat-title">{p.name}</p>
+							<p class="label">Pixels, 4096 × 4096</p>
+							<p class="label">Shared canvas, open a full year{year && `, ${year}`}</p>
+							<span class="catno">{catno}</span>
+						</div>
+						<ul class="pt-swatches on-paper" data-piece data-drift="30" aria-hidden="true">
+							{swatches.map(([n, c]) => (
+								<li style={`--c:${c}`}>
+									<span class="label">{n}</span>
+								</li>
+							))}
+						</ul>
+						<p class="spread-note script pt-note">
+							<svg viewBox="0 0 60 30" class="spread-arrow" aria-hidden="true">
+								<path d="M2 6c14-4 34 0 44 16m0 0-8-2m8 2 1-8" pathLength="1" data-draw />
+							</svg>
+							{f.note}
+						</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</>
 				)
 			}
+
+			{/* ---------- Hunch: the island at night, and the clues dealt round it ---------- */}
 			{
-				f.phone && (
-					<figure class="spread-phone" data-depth="1.4">
-						<img src={url(f.phone.src)} alt={f.phone.alt} width={f.phone.w ?? 390} height={f.phone.h ?? 780} loading="lazy" decoding="async" />
-					</figure>
-				)
-			}
-			{
-				f.live && (
-					<figure class="spread-live-clip" data-depth="1.4">
-						<picture>
-							{/* Reduced motion gets the last frame: the same finished stage, without the replay. */}
-							<source srcset={url(f.live.still)} media="(prefers-reduced-motion: reduce)" />
-							<img src={url(f.live.src)} alt={f.live.alt} width="640" height="360" loading="lazy" decoding="async" />
-						</picture>
-						<figcaption class="label"><span class="spread-live-dot" aria-hidden="true"></span>The stage, as a mod works it</figcaption>
-					</figure>
-				)
-			}
-			<p class="spread-note script" aria-hidden="true" data-depth="1">
-				<svg viewBox="0 0 60 30" class="spread-arrow">
-					<path d="M2 6c14-4 34 0 44 16m0 0-8-2m8 2 1-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-				</svg>
-				{f.note}
-			</p>
-			{
-				f.variant === 'poster' ? (
-					<div class="spread-tuck">
-						<span class="spread-ticket label" aria-hidden="true">Admit one · {p.name}</span>
+				p.id === 'hunch' && (
+					<div class="hn-stage">
+						<a class="art-shot hn-shot" data-piece data-depth="0.6" {...shotLink}>
+							<img {...shotImg} />
+						</a>
+						{/* terrain colours as the island shows them; the clues are the kind each player holds */}
+						<p class="hn-cap label" aria-hidden="true">example clues · one each</p>
+						<ul class="hn-clues" aria-hidden="true">
+							{[
+								['forest', 'It is near a forest', '#2f9a5a'],
+								['water', 'It is not by water', '#33b7e0'],
+								['desert', 'Within one space of desert', '#f0923a'],
+								['mountain', 'Mountains, maybe', '#8f7ad8'],
+							].map(([k, t, c], i) => (
+								<li class="hn-clue" style={`--c:${c};--i:${i}`} data-piece>
+									<span class="hn-hex" />
+									<span class="hn-k">{k}</span>
+									<span class="hn-t">{t}</span>
+								</li>
+							))}
+						</ul>
+						<p class="spread-note script hn-note">{f.note}</p>
 						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
 					</div>
-				) : (
-					<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+				)
+			}
+
+			{/* ---------- Noggin': the broadcast and the ticket in ---------- */}
+			{
+				p.id === 'noggin' && (
+					<>
+						<div class="ng-tv" data-piece data-depth="0.6">
+							<a class="art-shot ng-screen" {...shotLink}>
+								<img {...shotImg} />
+							</a>
+							<span class="ng-tv-plate label" aria-hidden="true">Screen · the TV</span>
+						</div>
+						<figure class="ng-handset" data-piece data-depth="1.4" data-drift="26">
+							<span class="ng-buzz" aria-hidden="true"></span>
+							<img {...phoneImg} />
+							{/* sits over the BUZZ button in the screenshot, and actually buzzes */}
+							<button class="ng-press" type="button" data-buzz aria-label="Press the buzzer">
+								<span class="ng-ms label" aria-live="polite" data-buzz-ms></span>
+							</button>
+							<figcaption class="label" aria-hidden="true">Seat · your phone</figcaption>
+						</figure>
+						<p class="spread-note script ng-note">{f.note}</p>
+						<div class="ng-ticket on-paper" data-piece data-depth="1.8">
+							<div class="ng-body" aria-hidden="true">
+								<span class="label">{catno} · Admit one</span>
+								<span class="cat-title">{p.name}</span>
+								<span class="ng-seats label"><span>Seat · your phone</span><span>Screen · the TV</span></span>
+							</div>
+							{/* The ticket stub and the stamp it hides travel together. */}
+							<div class="spread-tuck ng-stub">
+								<span class="spread-ticket label" aria-hidden="true">Admit one · {p.name}</span>
+								<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+							</div>
+						</div>
+					</>
+				)
+			}
+
+			{/* ---------- Chorusify: a cassette J-card ---------- */}
+			{
+				p.id === 'chorusify' && (
+					<>
+						<div class="ch-jcard on-paper" data-piece data-depth="0.6">
+							<div class="ch-flap">
+								<p class="label ch-side" aria-hidden="true">Side A · modes</p>
+								<ol class="ch-tracks">
+									{tracks.map((t, i) => (
+										<li>
+											<span class="label">A{i + 1}</span> {t}
+										</li>
+									))}
+								</ol>
+							</div>
+							<p class="ch-spine cat-title" aria-hidden="true">
+								{p.name} <span class="label">{catno} · {year}</span>
+							</p>
+							<a class="art-shot ch-cover" {...shotLink}>
+								<img {...shotImg} />
+							</a>
+						</div>
+						<figure class="art-phone ch-phone" data-piece data-depth="1.4" data-drift="30">
+							<img {...phoneImg} />
+						</figure>
+						<p class="spread-note script ch-note">
+							<svg viewBox="0 0 60 30" class="spread-arrow" aria-hidden="true">
+								<path d="M2 6c14-4 34 0 44 16m0 0-8-2m8 2 1-8" pathLength="1" data-draw />
+							</svg>
+							{f.note}
+						</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</>
+				)
+			}
+
+			{/* ---------- Haggle: a fan of share certificates ---------- */}
+			{
+				p.id === 'haggle' && (
+					<>
+						{/* tickers and moves as the screenshot shows them; prices are simulated */}
+						<div class="qn-fan" aria-hidden="true">
+							{[
+								['INTC', '+26%', 'M6 30 16 22l6 4 12-14M28 12h6v6'],
+								['VOD', '+21%', 'M6 28 14 24l8 2 12-12M28 14h6v6'],
+								['UBER', '−13%', 'M6 10l10 8 6-4 12 14M28 28h6v-6'],
+							].map(([t, m, d], i) => (
+								<div class="qn-card on-paper" style={`--i:${i}`} data-piece>
+									<span class="qn-idx label">{t}</span>
+									<svg viewBox="0 0 40 40">
+										<path d={d} />
+									</svg>
+									<span class="qn-idx qn-idx-b label">{m}</span>
+								</div>
+							))}
+						</div>
+						<div class="qn-face on-paper" data-piece data-depth="0.8">
+							<span class="qn-idx label" aria-hidden="true">Share certificate · {catno}</span>
+							<a class="art-shot qn-shot" {...shotLink}>
+								<img {...shotImg} />
+							</a>
+						</div>
+						<p class="spread-note script qn-note">{f.note}</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</>
+				)
+			}
+
+			{/* ---------- Croon: a lyric sheet on the stand, a mic beside it ---------- */}
+			{
+				p.id === 'croon' && (
+					<>
+						<div class="cr-sheet on-paper" data-piece>
+							<p class="cr-head label" aria-hidden="true">
+								<span>Songbook · tonight’s queue</span>
+								<span>{catno}</span>
+							</p>
+							{/* an example line, lit word by word the way Croon times it */}
+							<p class="cr-lyric" aria-hidden="true">
+								<span class="cr-sung">Take me home,</span> country roads
+							</p>
+							<a class="art-shot cr-shot" {...shotLink}>
+								<img {...shotImg} />
+							</a>
+							<p class="cr-queue label" aria-hidden="true">
+								<span>Queue rotates</span>
+								<span>Room on the TV</span>
+								<span>Join from your phone</span>
+							</p>
+						</div>
+						<svg class="cr-mic" viewBox="0 0 80 200" data-piece data-depth="1.4" data-drift="24" aria-hidden="true">
+							<rect x="22" y="6" width="36" height="58" rx="18" />
+							<path d="M26 22h28M26 32h28M26 42h28M26 52h28" class="cr-grille" />
+							<path d="M30 64h20l-4 120H34z" />
+							<path d="M40 184v10" />
+						</svg>
+						<p class="spread-note script cr-note">
+							<svg viewBox="0 0 60 30" class="spread-arrow" aria-hidden="true">
+								<path d="M2 6c14-4 34 0 44 16m0 0-8-2m8 2 1-8" pathLength="1" data-draw />
+							</svg>
+							{f.note}
+						</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</>
+				)
+			}
+
+			{/* ---------- Knock: a sound experiment sheet ---------- */}
+			{
+				p.id === 'knock' && (
+					<div class="kn-sheet on-paper" data-piece>
+						<p class="kn-head label" aria-hidden="true">
+							<span>Sound experiment · {p.name}</span>
+							<span>{catno}</span>
+						</p>
+						<figure class="kn-plot">
+							<svg viewBox="0 0 400 170" role="img" aria-label="A sketch of the signal: a band between 17 and 19.5 kHz, above hearing, carrying eight data tones.">
+								<rect x={kx(17)} y="20" width={kx(19.5) - kx(17)} height="120" class="kn-band" />
+								<path d="M20 140h360M20 20v120" class="kn-axis" />
+								{[16, 17, 18, 19, 20].map((k) => (
+									<>
+										<path d={`M${kx(k)} 140v5`} class="kn-axis" />
+										<text x={kx(k)} y="157" text-anchor="middle">{k}</text>
+									</>
+								))}
+								<text x="380" y="168" text-anchor="end">kHz</text>
+								<path d={`M20 132 ${tones.map((x) => `L${x - 5} 131 L${x} 52 L${x + 5} 131`).join(' ')} L380 133`} class="kn-trace" pathLength="1" data-draw />
+								<path d={`M${kx(17)} 12v128M${kx(19.5)} 12v128`} class="kn-call" pathLength="1" data-draw />
+								<text x={kx(17)} y="10" text-anchor="middle" class="kn-red">17</text>
+								<text x={kx(19.5)} y="10" text-anchor="middle" class="kn-red">19.5 kHz</text>
+								<path d={`M${tones[3]} 48 C${tones[3] - 20} 36 120 30 96 34`} class="kn-call" pathLength="1" data-draw />
+								<text x="92" y="38" text-anchor="end" class="kn-red kn-hand">eight data tones</text>
+							</svg>
+						</figure>
+						<div class="kn-shots">
+							<a class="art-shot kn-host" {...shotLink} data-depth="0.6">
+								<img {...shotImg} />
+							</a>
+							<figure class="art-phone kn-phone" data-depth="1.4" data-drift="26">
+								<img {...phoneImg} />
+							</figure>
+							<span class="tape kn-tape" aria-hidden="true"></span>
+						</div>
+						<p class="spread-note script kn-note">{f.note}</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</div>
+				)
+			}
+
+			{/* ---------- Mosaic: the control-room panel ---------- */}
+			{
+				p.id === 'mosaic' && (
+					<div class="ms-panel" data-piece>
+						<div class="ms-mon ms-pgm" data-depth="0.6">
+							<p class="ms-plate label" aria-hidden="true"><span>CH 1 · Mod board</span><span>{catno}</span></p>
+							<a class="art-shot ms-screen" {...shotLink}>
+								<img {...shotImg} />
+							</a>
+						</div>
+						<figure class="ms-mon onair-clip" data-piece data-depth="1.4" data-drift="24">
+							<p class="ms-plate label" aria-hidden="true"><span>CH 2 · Stage</span><span class="ms-tally">On air</span></p>
+							<picture>
+								{/* Reduced motion gets the last frame: the same finished stage, without the replay. */}
+								<source srcset={url(f.live.still)} media="(prefers-reduced-motion: reduce)" />
+								<img src={url(f.live.src)} alt={f.live.alt} width="640" height="360" loading="lazy" decoding="async" />
+							</picture>
+							<figcaption class="label">The stage, as a mod works it</figcaption>
+						</figure>
+						<div class="ms-desk" aria-hidden="true">
+							<span class="ms-key is-on"></span><span class="ms-key"></span><span class="ms-key"></span>
+							<span class="ms-fader"></span><span class="ms-fader" style="--v:30%"></span>
+						</div>
+						<p class="spread-note script ms-note">{f.note}</p>
+						<HiddenStamp id={`p-${p.id}`} class="spread-stamp" />
+					</div>
 				)
 			}
 		</div>
@@ -131,7 +391,7 @@ const titleId = `spread-${p.id}`;
 <style>
 	.spread {
 		position: relative;
-		/* the collage may hang past the column, never past the page */
+		/* the artefact may hang past the column, never past the page */
 		overflow-x: clip;
 		padding-block: clamp(4rem, 9vw, 7.5rem);
 		color: var(--ink);
@@ -143,36 +403,33 @@ const titleId = `spread-${p.id}`;
 		align-items: center;
 	}
 
+	/* ---------- the shared catalogue entry ---------- */
+	.spread-cat {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 0.9rem;
+	}
+	.spread-cat .catno {
+		color: var(--stamp);
+	}
+	.spread-cat .is-live {
+		color: var(--live);
+	}
+	.spread-title {
+		font-size: clamp(3.6rem, 8vw, 7rem);
+		margin-bottom: 0.6rem;
+	}
 	.spread-meta {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.3rem 1rem;
+		gap: 0.3rem 1.2rem;
 		margin-bottom: 1rem;
-	}
-	.spread-live {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		color: var(--live);
-	}
-	.spread-live::before {
-		content: '';
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 50%;
-		background: currentColor;
-	}
-	.spread-title {
-		font-size: clamp(3.2rem, 8vw, 7rem);
-		font-weight: 800;
-		font-variation-settings: 'wdth' 75, 'opsz' 96;
-		letter-spacing: -0.035em;
-		line-height: 0.88;
-		margin-bottom: 1.2rem;
 	}
 	.spread-desc {
 		max-width: 34rem;
-		font-size: 1.02rem;
+		font-size: 1.04rem;
+		line-height: 1.55;
 		color: var(--ink-soft);
 	}
 	.spread-stack {
@@ -180,8 +437,14 @@ const titleId = `spread-${p.id}`;
 		text-transform: none;
 		letter-spacing: 0.02em;
 	}
+	.spread-k {
+		text-transform: uppercase;
+		color: var(--stamp);
+		margin-right: 0.4rem;
+	}
 	.spread-actions {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 1.2rem;
 		margin-top: 1.6rem;
@@ -190,107 +453,103 @@ const titleId = `spread-${p.id}`;
 		display: inline-flex;
 		align-items: center;
 		min-height: 44px;
-		font-size: 0.92rem;
+		font-size: 0.95rem;
 		color: var(--ink-soft);
 	}
 
+	/* ---------- the stage and its shared parts ---------- */
 	.spread-stage {
 		position: relative;
-		min-height: 18rem;
+		min-width: 0;
 	}
-	.spread-shot {
-		display: block;
-		position: relative;
-		z-index: 1;
-		border-radius: 4px;
-		overflow: hidden;
-		box-shadow: var(--lift-high);
-		translate: var(--dx, 0) var(--dy, 0);
-		transition: translate 0.6s var(--ease-out);
-	}
-	.spread-shot img,
-	.spread-phone img {
+	.spread-stage img {
 		display: block;
 		width: 100%;
 		height: auto;
 	}
-	.spread-shot:hover {
-		outline: 2px solid var(--stamp);
-		outline-offset: 4px;
+	/* pointer depth and scroll drift both ride on `translate`, so the entrance
+	   (a transform) and the printed tilt (`rotate`) never fight them */
+	.spread [data-depth],
+	.spread [data-drift] {
+		translate: var(--dx, 0) calc(var(--dy, 0px) + var(--drift, 0px));
+		transition:
+			translate 0.6s var(--ease-out),
+			rotate 0.45s var(--ease-out);
 	}
-	.spread-phone {
+	.art-shot {
+		display: block;
+		position: relative;
+	}
+	.art-shot:hover img {
+		outline: 2px solid var(--stamp);
+		outline-offset: -2px;
+	}
+	.spread-note {
 		position: absolute;
-		z-index: 2;
-		width: 26%;
+		z-index: 5;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.3rem;
+		max-width: 15rem;
+		font-size: 1.5rem;
+		color: var(--stamp);
+		pointer-events: none;
+	}
+	.spread-arrow {
+		flex: none;
+		width: 3rem;
+		overflow: visible;
+	}
+	.spread-arrow path {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+	}
+	/* Stuck over a corner, never under it: a hidden stamp must still be the
+	   thing a click lands on. */
+	.spread-stage :global(.spread-stamp) {
+		z-index: 6;
+	}
+	.art-phone {
+		margin: 0;
 		border: 6px solid #1b1d22;
 		border-radius: 18px;
 		overflow: hidden;
 		box-shadow: var(--lift-high);
-		translate: var(--dx, 0) var(--dy, 0);
-		transition: translate 0.6s var(--ease-out);
-	}
-	.spread-note {
-		position: absolute;
-		z-index: 3;
-		display: flex;
-		align-items: flex-start;
-		gap: 0.3rem;
-		max-width: 14rem;
-		font-size: 1.4rem;
-		color: var(--stamp);
-		translate: var(--dx, 0) var(--dy, 0);
-		transition: translate 0.6s var(--ease-out);
-	}
-	/* The arrow is drawn heading right and down. A note above its picture
-	   puts the arrow first and mirrors it, so it heads down-left onto the
-	   picture; a note below flips it upright, so it climbs back up to it. */
-	.spread-arrow {
-		flex: none;
-		width: 3rem;
-		order: 2;
-		scale: 1 -1;
-	}
-	:is(.v-dark, .v-poster, .v-crop) .spread-arrow {
-		order: -1;
-		scale: -1 1;
-		margin-top: 0.6rem;
-	}
-	/* Stuck over a corner of the photo, never under it: a hidden stamp must
-	   still be the thing a click lands on. */
-	.spread-stage :global(.spread-stamp) {
-		z-index: 4;
 	}
 
-	/* ---------- the drawn canvas ---------- */
-	.spread-canvas {
+	/* ================= Patina: a gallery print ================= */
+	.a-patina {
+		background: var(--paper-2);
+	}
+	.a-patina .spread-stage {
+		padding: 3rem 0 7.5rem;
+	}
+	.pt-mat {
 		position: relative;
-		padding: 0;
-		background: #0a1424;
-		border: 6px solid #0f1b2e;
-		border-radius: 2px;
+		z-index: 2;
+		width: 84%;
+		margin: 0;
+		padding: clamp(1.2rem, 4vw, 3rem) clamp(1.2rem, 4vw, 3rem) clamp(1rem, 3vw, 2.2rem);
+		background: var(--card);
+		box-shadow:
+			inset 0 0 0 1px var(--ink-ghost),
+			var(--lift-high);
 	}
-	/* the drawing must be seen whole, so the phone stands beside it, not on it */
-	.spread-canvas {
-		width: 78%;
+	/* the bevel cut into the mat, around the window */
+	.pt-canvas {
+		border: 5px solid var(--ink-fixed);
+		box-shadow: 0 0 0 1px var(--card), 0 0 0 4px color-mix(in srgb, var(--ink-fixed) 18%, var(--card));
 	}
-	.spread-stage:has(.spread-canvas) .spread-phone {
-		left: auto;
-		right: 0;
-		top: 12%;
-		bottom: auto;
-		width: 20%;
-		rotate: 4deg;
+	.pt-mat figcaption {
+		margin-top: 0.9rem;
+		text-align: center;
+		text-transform: none;
 	}
 	.canvas-px {
 		position: relative;
 		display: block;
-	}
-	.canvas-cap {
-		display: block;
-		padding: 0.45rem 0.6rem 0.4rem;
-		background: #0f1b2e;
-		color: rgba(236, 228, 210, 0.72);
-		font-size: 0.62rem;
 	}
 	/* the newest cell, still wet: one pixel breathing, nothing else moves */
 	.canvas-wet {
@@ -308,388 +567,1097 @@ const titleId = `spread-${p.id}`;
 			opacity: 0.25;
 		}
 	}
-
-	/* ---------- dark: Patina, printed on the night side ---------- */
-	.v-dark {
-		background: var(--night);
-		color: var(--forest-ink);
-		--ink-soft: rgba(236, 228, 210, 0.74);
-		--live: #7ad48a;
+	@media (prefers-reduced-motion: reduce) {
+		.canvas-wet {
+			animation: none;
+		}
 	}
-	.v-dark .label {
-		color: rgba(236, 228, 210, 0.7);
+	:global(html[data-motion='off']) .canvas-wet {
+		animation: none;
 	}
-	.v-dark .spread-src {
-		color: rgba(236, 228, 210, 0.78);
+	/* the phone capture, printed small and tucked behind the mat */
+	.pt-print {
+		position: absolute;
+		z-index: 1;
+		right: 0;
+		top: 0;
+		width: 22%;
+		margin: 0;
+		padding: 0.45rem 0.45rem 1.6rem;
+		background: var(--card);
+		box-shadow: var(--lift);
+		rotate: 5deg;
 	}
-	.v-dark .spread-shot {
-		rotate: 1.2deg;
+	.pt-label {
+		position: absolute;
+		z-index: 3;
+		right: 2%;
+		bottom: 0;
+		width: min(15rem, 46%);
+		padding: 0.9rem 1rem;
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: var(--lift);
+		rotate: -1deg;
 	}
-	.v-dark .spread-phone {
-		left: -6%;
-		bottom: -10%;
-		rotate: -5deg;
+	.pt-label .cat-title {
+		font-size: 1.9rem;
+		margin-bottom: 0.3rem;
 	}
-	.v-dark .spread-note {
-		right: -1rem;
-		top: -3rem;
-		color: var(--marker);
+	.pt-label .label {
+		text-transform: none;
+		margin-bottom: 0.2rem;
 	}
-	.v-dark :global(.spread-stamp) {
-		right: -1.2rem;
-		bottom: -1.6rem;
+	.pt-label .catno {
+		margin-top: 0.5rem;
+	}
+	.pt-swatches {
+		position: absolute;
+		z-index: 3;
+		left: 4%;
+		bottom: 1.4rem;
+		display: flex;
+		margin: 0;
+		padding: 0.35rem;
+		list-style: none;
+		background: var(--card);
+		box-shadow: var(--lift);
+		rotate: 1.5deg;
+	}
+	.pt-swatches li {
+		width: clamp(2.2rem, 5vw, 3.2rem);
+	}
+	.pt-swatches li::before {
+		content: '';
+		display: block;
+		aspect-ratio: 1;
+		background: var(--c);
+	}
+	.pt-swatches .label {
+		display: block;
+		padding-top: 0.25rem;
+		font-size: 0.5rem;
+		text-transform: none;
+		color: var(--ink-faint);
+	}
+	/* above the mat, the arrow heading down onto the canvas */
+	.pt-note {
+		left: 30%;
+		top: -0.6rem;
+		max-width: none;
+		white-space: nowrap;
+	}
+	.pt-note .spread-arrow {
+		order: -1;
+		scale: -1 1;
+		margin-top: 0.6rem;
+	}
+	.a-patina :global(.spread-stamp) {
+		left: 78%;
+		top: 0.2rem;
 		--peek-tilt: 14deg;
 	}
 
-	/* ---------- offset: Orbitle, a photo laid on the page, text to the right ---------- */
-	.v-offset .spread-inner {
+	/* ================= Hunch: the island at night ================= */
+	/* Hunch's own sky: deep teal night, glass chips, terrain colours */
+	.a-hunch {
+		background: radial-gradient(120% 90% at 70% 40%, #12404a, #0a1d26 70%);
+	}
+	.a-hunch .spread-text {
+		color: #e8f4f2;
+		--ink: #e8f4f2;
+		--ink-soft: #b9d6d6;
+		--live: var(--lime);
+		--stamp: #8fd8e0;
+	}
+	.a-hunch .spread-text .catno,
+	.a-hunch .spread-k {
+		color: #e8f4f2;
+	}
+	.a-hunch .btn-stamp {
+		background: #f2ebdd;
+		border-color: #f2ebdd;
+		color: #0a1d26;
+		border-radius: 999px;
+	}
+	.a-hunch .spread-inner {
 		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
 	}
-	.v-offset .spread-stage {
+	.a-hunch .spread-stage {
 		order: -1;
 	}
-	.v-offset .spread-stage::before {
-		/* the ring the game asks you to place, drawn on the paper behind the photo */
-		content: '';
-		position: absolute;
-		inset: -12% 8% -12% 20%;
-		border: 1.5px dashed var(--ink-faint);
-		border-radius: 50%;
+	.hn-stage {
+		position: relative;
+		padding-bottom: 1rem;
 	}
-	.v-offset .spread-shot {
-		rotate: -2deg;
-		border: 10px solid var(--card);
-		border-bottom-width: 36px;
-		border-radius: 2px;
+	.hn-shot {
+		display: block;
+		overflow: hidden;
+		border-radius: 18px;
+		box-shadow:
+			0 0 0 1px rgba(120, 220, 230, 0.25),
+			0 30px 60px -28px rgba(0, 0, 0, 0.8);
 	}
-	.v-offset .spread-note {
-		left: 2rem;
-		bottom: -2.6rem;
+	.hn-cap {
+		margin: 1.1rem 0 0.5rem;
+		color: #8fd8e0;
 	}
-	.v-offset :global(.spread-stamp) {
-		right: 4%;
-		top: -1.8rem;
+	/* clue chips in the island's own terrain colours */
+	.hn-clues {
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.6rem;
+	}
+	.hn-clue {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 0.7rem;
+		align-items: center;
+		padding: 0.6rem 0.8rem;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid color-mix(in srgb, var(--c) 60%, transparent);
+		border-radius: 14px;
+		backdrop-filter: blur(6px);
+		rotate: calc((var(--i) - 1.5) * 0.8deg);
+		transition: translate 0.3s var(--ease-out), background 0.3s ease;
+	}
+	.hn-clue:hover {
+		translate: 0 -3px;
+		background: color-mix(in srgb, var(--c) 18%, transparent);
+	}
+	.hn-hex {
+		grid-row: 1 / span 2;
+		width: 1.6rem;
+		aspect-ratio: 1 / 1.1;
+		background: var(--c);
+		clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+		box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.25);
+	}
+	.hn-k {
+		font-family: var(--mono);
+		font-size: 0.55rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--c);
+	}
+	.hn-t {
+		font-size: 0.92rem;
+		line-height: 1.25;
+		color: #e8f4f2;
+	}
+	.hn-note {
+		right: 0.6rem;
+		top: -2.4rem;
+		max-width: 12rem;
+		text-align: right;
+		color: #8fd8e0;
+		rotate: 3deg;
+	}
+	.a-hunch :global(.spread-stamp) {
+		left: -1rem;
+		top: 30%;
 		--peek-tilt: -10deg;
 	}
 
-	/* ---------- poster: Noggin', the title runs over the screen like a bill ---------- */
-	.v-poster {
-		background: #121214;
-		color: #f1e6c8;
-		--ink-soft: rgba(241, 230, 200, 0.76);
-		--live: #7ad48a;
+	/* ================= Noggin': the ticket and the broadcast ================= */
+	/* the lining's light ink is for the facts only; the paper on it keeps its own */
+	.a-noggin {
+		background: var(--olive);
 	}
-	.v-poster .label,
-	.v-poster .spread-src {
-		color: rgba(241, 230, 200, 0.74);
+	.a-noggin .spread-text {
+		color: var(--ivory);
+		--ink: var(--ivory);
+		--ink-soft: color-mix(in srgb, var(--ivory) 84%, transparent);
+		--live: var(--lime);
+		--stamp: var(--vermilion);
 	}
-	.v-poster .spread-inner {
-		grid-template-columns: 1fr;
+	.a-noggin .spread-text .catno {
+		color: var(--ivory);
 	}
-	.v-poster .spread-text {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 0 3rem;
-		align-items: end;
+	.a-noggin .spread-k {
+		color: var(--ivory);
 	}
-	.v-poster .spread-title {
-		grid-column: 1 / -1;
-		font-size: clamp(4rem, 15vw, 13rem);
-		color: #d6a640;
-		margin-bottom: 0.4rem;
+	.a-noggin .btn-stamp {
+		background: #b83a26;
+		border-color: #b83a26;
+		color: var(--ivory);
 	}
-	.v-poster .spread-meta,
-	.v-poster .spread-desc,
-	.v-poster .spread-stack {
-		grid-column: 1;
+	.a-noggin .spread-inner {
+		grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
 	}
-	.v-poster .spread-actions {
-		grid-column: 2;
-		grid-row: 3 / span 2;
-		justify-self: end;
+	.a-noggin .spread-stage {
+		padding: 0 0 7rem 12%;
 	}
-	/* The TV is the board and the phone stands beside it, never on top of
-	   the point values. */
-	.v-poster .spread-shot {
-		width: 80%;
-	}
-	.v-poster .spread-phone {
-		right: 0;
-		top: 10%;
-		width: 17%;
-		rotate: 4deg;
-	}
-	/* The ticket and the stamp it hides travel together. */
-	.spread-tuck {
-		position: absolute;
-		z-index: 4;
-		left: 2%;
-		bottom: -1.4rem;
-		/* as wide as the ticket, so the stamp stays on it at every width */
-		width: max-content;
-	}
-	.v-poster .spread-ticket {
+	.ng-tv {
 		position: relative;
-		display: inline-block;
-		padding: 0.7rem 1.4rem;
-		background: #f1e6c8;
-		color: #121214;
-		rotate: -6deg;
-		/* a torn ticket stub: notched ends */
-		clip-path: polygon(0 0, 100% 0, 100% 35%, 96% 50%, 100% 65%, 100% 100%, 0 100%, 0 65%, 4% 50%, 0 35%);
+		z-index: 1;
+		padding: clamp(0.8rem, 2vw, 1.4rem) clamp(0.8rem, 2vw, 1.4rem) 2.4rem;
+		background: #23241f;
+		border-radius: 10px;
+		box-shadow:
+			inset 0 0 0 2px #34352e,
+			var(--lift-high);
 	}
-	.v-poster .spread-note {
-		right: 3%;
-		top: -3.4rem;
+	.ng-screen {
+		border-radius: 14px / 18px;
+		overflow: hidden;
+		box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+	}
+	.ng-tv-plate {
+		position: absolute;
+		left: 50%;
+		bottom: 0.7rem;
+		translate: -50% 0;
+		color: #b9b39f;
+		white-space: nowrap;
+	}
+	/* the phone as a buzzer handset, the red cap on top */
+	.ng-handset {
+		position: absolute;
+		z-index: 2;
+		left: 0;
+		top: 18%;
+		width: 19%;
+		margin: 0;
+		padding: 0.4rem 0.4rem 0;
+		background: #111210;
+		border-radius: 14px;
+		box-shadow: var(--lift-high);
+		rotate: -7deg;
+	}
+	.ng-handset img {
+		border-radius: 9px;
+	}
+	.ng-handset figcaption {
+		padding: 0.45rem 0 0.5rem;
+		color: #b9b39f;
+		text-align: center;
+		font-size: 0.5rem;
+	}
+	/* the hit area is the round BUZZ button drawn in the screenshot */
+	.ng-press {
+		position: absolute;
+		left: 50%;
+		top: 49%;
+		width: 74%;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: transparent;
+		cursor: pointer;
+		transition: scale 0.08s ease, box-shadow 0.2s ease;
+	}
+	.ng-press:hover {
+		box-shadow: 0 0 0 2px rgba(214, 166, 64, 0.6), 0 0 22px rgba(140, 90, 220, 0.5);
+	}
+	.ng-press:active,
+	.ng-press.is-hit {
+		scale: 0.92;
+		box-shadow: 0 0 0 3px #d6a640, 0 0 34px rgba(214, 166, 64, 0.8);
+	}
+	.ng-ms {
+		position: absolute;
+		left: 50%;
+		top: 76%;
+		translate: -50% 0;
+		white-space: nowrap;
 		color: #d6a640;
+		font-size: 0.5rem;
+	}
+	.ng-buzz {
+		position: absolute;
+		left: 50%;
+		top: -0.85rem;
+		width: 44%;
+		height: 1rem;
+		translate: -50% 0;
+		background: #b83a26;
+		border-radius: 50% 50% 3px 3px;
+		transition: background 0.5s ease, box-shadow 0.5s ease;
+	}
+	/* the red lamp on top lights up the moment you buzz, then cools */
+	.ng-handset.is-buzzed .ng-buzz {
+		background: #ff5a3c;
+		box-shadow: 0 0 10px 3px rgba(255, 90, 60, 0.9), 0 0 30px 8px rgba(255, 60, 30, 0.55);
+		transition: none;
+	}
+	.ng-note {
+		right: 0;
+		top: -2.6rem;
+		color: var(--ivory);
+	}
+	.ng-ticket {
+		position: absolute;
+		z-index: 3;
+		left: 20%;
+		bottom: 0;
+		display: flex;
+		width: min(30rem, 74%);
+		background: var(--kraft);
+		color: var(--ink-fixed);
+		box-shadow: var(--lift-high);
+		rotate: -4deg;
+		/* notched ends, like a torn admission ticket */
+		clip-path: polygon(0 0, 100% 0, 100% 38%, 97% 50%, 100% 62%, 100% 100%, 0 100%, 0 62%, 3% 50%, 0 38%);
+		transition: rotate 0.45s var(--ease-out);
+	}
+	.ng-ticket:hover {
+		rotate: -1deg;
+	}
+	.ng-body {
+		flex: 1;
+		display: grid;
+		gap: 0.3rem;
+		padding: 1rem 1rem 1rem 1.6rem;
+	}
+	.ng-body .label,
+	.ng-stub .label {
+		color: #3d3d36;
+	}
+	.ng-body .cat-title {
+		font-size: clamp(2.2rem, 5vw, 3.4rem);
+	}
+	.ng-seats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.2rem 1rem;
+	}
+	/* the stub, torn along a row of punched holes */
+	.spread-tuck {
+		position: relative;
+		width: 6.5rem;
+		padding: 1rem 0.8rem;
+		background: radial-gradient(circle, rgba(23, 24, 22, 0.55) 1.6px, transparent 2px) 0 0 / 4px 9px repeat-y;
+	}
+	.spread-ticket {
+		display: block;
+		writing-mode: vertical-rl;
+		rotate: 180deg;
+		margin: 0 auto;
 	}
 	/* stuck over the stub's torn end, so it reads as tucked in, not buried */
-	.v-poster :global(.spread-stamp) {
-		right: -1.6rem;
+	.ng-stub :global(.spread-stamp) {
+		right: 0.6rem;
 		bottom: 0.5rem;
-		z-index: 1;
 		--peek-tilt: -18deg;
 	}
 
-	/* ---------- phones: Chorusify, a phone held up in front of the page ---------- */
-	.v-phones .spread-shot {
-		width: 82%;
-		margin-left: auto;
-		rotate: 1deg;
+	/* ================= Chorusify: a cassette J-card ================= */
+	.a-chorusify .spread-inner {
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
 	}
-	.v-phones .spread-phone {
-		left: 0;
-		top: 12%;
-		width: 30%;
-		rotate: -6deg;
+	.a-chorusify .spread-stage {
+		order: -1;
+		padding: 2rem 14% 3.5rem 0;
 	}
-	/* clear of the phone, which hangs below the screenshot on the left */
-	.v-phones .spread-note {
-		left: 38%;
-		bottom: -3.6rem;
+	.ch-jcard {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 4fr) 2.6rem minmax(0, 6fr);
+		background: var(--card);
+		color: var(--ink);
+		box-shadow: var(--lift-high);
+		perspective: 900px;
 	}
-	.v-phones :global(.spread-stamp) {
-		left: 25%;
-		top: 6%;
+	.ch-flap {
+		padding: 1rem 1rem 1.2rem;
+		background: var(--sage);
+		color: var(--ink-fixed);
+		transform-origin: 100% 50%;
+		transform: rotateY(14deg);
+		box-shadow: inset -10px 0 14px -10px rgba(0, 0, 0, 0.35);
+		transition: transform 0.6s var(--ease-out);
+	}
+	/* unfolds flat when touched, never hides anything while folded */
+	.ch-jcard:hover .ch-flap,
+	.ch-jcard:focus-within .ch-flap {
+		transform: none;
+	}
+	.ch-side {
+		color: var(--ink-fixed);
+		margin-bottom: 0.6rem;
+		padding-bottom: 0.4rem;
+		border-bottom: 1px solid rgba(23, 24, 22, 0.4);
+	}
+	.ch-tracks {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		font-family: var(--label-face);
+		font-size: clamp(1rem, 1.8vw, 1.35rem);
+		text-transform: uppercase;
+		line-height: 1.25;
+	}
+	.ch-tracks .label {
+		color: #2e3328;
+		margin-right: 0.3rem;
+	}
+	.ch-spine {
+		writing-mode: vertical-rl;
+		rotate: 180deg;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.8rem 0;
+		background: var(--ink-fixed);
+		color: var(--ivory);
+		font-size: 1.5rem;
+		text-align: center;
+	}
+	.ch-spine .label {
+		color: var(--ivory);
+	}
+	.ch-cover {
+		align-self: stretch;
+		overflow: hidden;
+	}
+	.ch-cover img {
+		height: 100%;
+		object-fit: cover;
+		object-position: 30% 50%;
+	}
+	.ch-phone {
+		position: absolute;
+		z-index: 2;
+		right: 0;
+		top: 0;
+		width: 22%;
+		rotate: 6deg;
+	}
+	.ch-note {
+		left: 34%;
+		bottom: -0.4rem;
+	}
+	.a-chorusify :global(.spread-stamp) {
+		left: 32%;
+		top: 0.6rem;
 		--peek-tilt: 8deg;
 	}
 
-	/* ---------- vivid: Qno, in its own violet ---------- */
-	.v-vivid {
-		background: #2b1466;
-		color: #f4eefe;
-		--ink-soft: rgba(244, 238, 254, 0.8);
-		--live: #8ff0a4;
+	/* ================= Haggle: share certificates on the trading floor ================= */
+	/* Haggle's own floor: night navy, amber bell, green and red tape */
+	.a-haggle {
+		background: #0e0d18;
 	}
-	.v-vivid .label,
-	.v-vivid .spread-src {
-		color: rgba(244, 238, 254, 0.78);
+	.a-haggle .spread-text {
+		color: var(--ivory);
+		--ink: var(--ivory);
+		--ink-soft: var(--ivory);
+		--live: var(--lime);
 	}
-	.v-vivid .spread-title {
-		color: var(--lime);
+	.a-haggle .spread-text .catno,
+	.a-haggle .spread-k {
+		color: var(--ivory);
 	}
-	.v-vivid .spread-shot {
-		rotate: -1.5deg;
-		border-radius: 10px;
+	.a-haggle .btn-stamp {
+		background: #f5a623;
+		border-color: #f5a623;
+		color: var(--ink-fixed);
 	}
-	.v-vivid .spread-note {
-		left: -1rem;
-		bottom: -3rem;
-		color: var(--lime);
+	.a-haggle .qn-card {
+		color: #2f6b2c;
 	}
-	.v-vivid :global(.spread-stamp) {
-		right: 12%;
-		bottom: -1.8rem;
+	.a-haggle .qn-card:nth-child(3) {
+		color: #b83a26;
+	}
+	.a-haggle .spread-stage {
+		padding: 12rem 0 3rem;
+	}
+	.qn-fan {
+		position: absolute;
+		left: 18%;
+		top: 0;
+		width: 64%;
+		height: 13rem;
+	}
+	.qn-card {
+		position: absolute;
+		--w: 8.4rem;
+		--gap: 5.6rem;
+		left: calc(50% - var(--w) / 2 + (var(--i) - 1) * var(--gap));
+		bottom: 0;
+		width: var(--w);
+		aspect-ratio: 5 / 7;
+		display: grid;
+		place-items: center;
+		background: var(--card);
+		color: var(--cobalt);
+		border-radius: 2px;
+		box-shadow: var(--lift);
+		transform-origin: 50% 160%;
+		rotate: calc((var(--i) - 1) * 9deg);
+		transition:
+			rotate 0.5s var(--ease-out),
+			left 0.5s var(--ease-out);
+	}
+	/* the hand spreads when touched */
+	.a-haggle .spread-stage:hover .qn-card,
+	.a-haggle .spread-stage:focus-within .qn-card {
+		--gap: 7rem;
+		rotate: calc((var(--i) - 1) * 15deg);
+	}
+	.qn-card svg {
+		width: 52%;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2.2;
+	}
+	.qn-idx {
+		position: absolute;
+		left: 0.5rem;
+		top: 0.45rem;
+		color: #b83a26;
+		font-size: 0.7rem;
+	}
+	.qn-idx-b {
+		left: auto;
+		top: auto;
+		right: 0.5rem;
+		bottom: 0.45rem;
+		rotate: 180deg;
+	}
+	.qn-face {
+		position: relative;
+		z-index: 2;
+		padding: 2rem 0.8rem 0.8rem;
+		background: var(--card);
+		border-radius: 2px;
+		box-shadow: var(--lift-high);
+		rotate: 1.5deg;
+	}
+	.qn-face .qn-idx {
+		top: 0.7rem;
+		left: 0.8rem;
+	}
+	.qn-shot {
+		overflow: hidden;
+	}
+	/* below the certificate, where no card of the fan can land on it */
+	.qn-note {
+		left: 0;
+		top: auto;
+		bottom: -0.6rem;
+		max-width: 18rem;
+		color: #f5a623;
+		rotate: -3deg;
+		z-index: 4;
+	}
+	.a-haggle :global(.spread-stamp) {
+		right: 8%;
+		bottom: 1.2rem;
 		--peek-tilt: 16deg;
 	}
 
-	/* ---------- paper: Knock, a phone propped up on the desk ---------- */
-	.v-paper .spread-inner {
-		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+	/* ================= Croon: the lyric sheet and the mic ================= */
+	.a-croon {
+		background: #16120f;
 	}
-	.v-paper .spread-stage {
-		order: -1;
-		min-height: 30rem;
+	.a-croon .spread-text {
+		color: var(--ivory);
+		--ink: var(--ivory);
+		--ink-soft: color-mix(in srgb, var(--ivory) 82%, transparent);
+		--live: var(--lime);
 	}
-	.v-paper .spread-shot {
-		width: 72%;
+	.a-croon .spread-text .catno,
+	.a-croon .spread-k {
+		color: var(--ivory);
+	}
+	.a-croon .btn-stamp {
+		background: #ff5a36;
+		border-color: #ff5a36;
+		color: var(--ink-fixed);
+	}
+	.a-croon .spread-stage {
+		padding: 1rem 3.5rem 2rem 0;
+	}
+	/* a songbook page: Croon's own three-stripe band across the top */
+	.cr-sheet {
+		position: relative;
+		padding: 2.2rem clamp(1rem, 3vw, 1.8rem) 1.2rem;
+		background:
+			linear-gradient(#ff5a36, #ff5a36) 0 0 / 100% 8px no-repeat,
+			linear-gradient(#ffc23d, #ffc23d) 0 8px / 100% 8px no-repeat,
+			linear-gradient(#2cc6b0, #2cc6b0) 0 16px / 100% 8px no-repeat,
+			var(--card);
+		box-shadow: var(--lift-high);
 		rotate: -1deg;
 	}
-	.v-paper .spread-phone {
-		right: 4%;
-		top: 4%;
-		width: 34%;
+	.cr-head,
+	.cr-queue {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 0.4rem 1rem;
+	}
+	.cr-lyric {
+		margin: 0.8rem 0 1rem;
+		font-family: var(--display);
+		font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+		line-height: 1;
+		color: color-mix(in srgb, var(--ink) 35%, transparent);
+	}
+	.cr-sung {
+		color: #d9431f;
+	}
+	.cr-shot {
+		display: block;
+		overflow: hidden;
+		box-shadow: 0 0 0 1px var(--ink-ghost);
+	}
+	.cr-queue {
+		margin-top: 0.9rem;
+		justify-content: flex-start;
+	}
+	.cr-mic {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		width: clamp(3.5rem, 6vw, 5rem);
+		fill: #26211d;
+		stroke: #8b8178;
+		stroke-width: 2;
+		rotate: 8deg;
+		filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.5));
+	}
+	.cr-grille {
+		fill: none;
+		stroke: #5b524a;
+	}
+	.cr-note {
+		left: 8%;
+		bottom: -0.6rem;
+		color: #ffc23d;
+	}
+	.a-croon :global(.spread-stamp) {
+		right: 1.4rem;
+		top: 2.6rem;
+		--peek-tilt: 12deg;
+	}
+
+	/* ================= Knock: the sound experiment sheet ================= */
+	.a-knock {
+		background: var(--ink-fixed);
+	}
+	.a-knock .spread-text {
+		color: var(--ivory);
+		--ink: var(--ivory);
+		--ink-soft: color-mix(in srgb, var(--ivory) 82%, transparent);
+		--live: var(--lime);
+		--stamp: var(--vermilion);
+	}
+	.a-knock .spread-text .catno,
+	.a-knock .spread-k {
+		color: var(--ivory);
+	}
+	.a-knock .btn-stamp {
+		background: #b83a26;
+		border-color: #b83a26;
+		color: var(--ivory);
+	}
+	.a-knock .spread-inner {
+		grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+	}
+	.a-knock .spread-text {
+		order: 2;
+	}
+	.kn-sheet {
+		position: relative;
+		padding: 1rem clamp(1rem, 3vw, 1.8rem) 1.6rem;
+		background:
+			linear-gradient(color-mix(in srgb, var(--cobalt) 12%, transparent) 1px, transparent 1px) 0 0 / 14px 14px,
+			linear-gradient(90deg, color-mix(in srgb, var(--cobalt) 12%, transparent) 1px, transparent 1px) 0 0 / 14px 14px,
+			var(--card);
+		color: var(--ink);
+		box-shadow: var(--lift-high);
+		rotate: 0.8deg;
+	}
+	.kn-head {
+		display: flex;
+		justify-content: space-between;
+		padding-bottom: 0.5rem;
+		margin-bottom: 0.8rem;
+		border-bottom: 1px solid var(--ink);
+	}
+	.kn-plot {
+		margin: 0;
+	}
+	.kn-plot svg {
+		display: block;
+		width: 100%;
+		overflow: visible;
+		font-family: var(--mono);
+		font-size: 9px;
+		fill: var(--ink-soft);
+	}
+	.kn-band {
+		fill: color-mix(in srgb, var(--cobalt) 14%, transparent);
+	}
+	.kn-axis {
+		stroke: var(--ink);
+		stroke-width: 1;
+		fill: none;
+	}
+	.kn-trace {
+		stroke: var(--cobalt);
+		stroke-width: 1.4;
+		fill: none;
+		stroke-linejoin: round;
+	}
+	.kn-call {
+		stroke: var(--stamp);
+		stroke-width: 1;
+		fill: none;
+		stroke-dasharray: 3 2;
+	}
+	.kn-call[data-draw] {
+		stroke-dasharray: none;
+	}
+	.kn-red {
+		fill: var(--stamp);
+	}
+	.kn-hand {
+		font-family: var(--script);
+		font-size: 17px;
+	}
+	.kn-shots {
+		position: relative;
+		margin-top: 1.4rem;
+		padding-right: 26%;
+	}
+	.kn-host {
+		box-shadow: var(--lift);
+		rotate: -1.5deg;
+	}
+	.kn-phone {
+		position: absolute;
+		right: 0;
+		top: -2.4rem;
+		width: 27%;
 		rotate: 4deg;
 	}
-	.v-paper .spread-note {
-		left: 10%;
-		bottom: 0;
+	.kn-tape {
+		left: 30%;
+		top: -0.8rem;
+		rotate: -4deg;
 	}
-	.v-paper :global(.spread-stamp) {
-		right: 0;
-		bottom: 8%;
+	.kn-note {
+		position: relative;
+		margin-top: 1rem;
+		max-width: none;
+	}
+	.a-knock :global(.spread-stamp) {
+		right: 1rem;
+		bottom: 1rem;
 		--peek-tilt: -6deg;
 	}
 
-	/* ---------- crop: Mosaic, a close-up of the one button that matters ---------- */
-	.v-crop {
-		background: var(--forest);
-		color: var(--forest-ink);
-		--ink-soft: rgba(236, 228, 210, 0.76);
-		--live: #8fe39e;
+	/* ================= Mosaic: a control-room panel ================= */
+	.a-mosaic {
+		background: var(--paper-2);
 	}
-	.v-crop .label,
-	.v-crop .spread-src {
-		color: rgba(236, 228, 210, 0.74);
+	.a-mosaic .spread-inner {
+		grid-template-columns: 1fr;
 	}
-	.v-crop .spread-shot {
-		rotate: 0.8deg;
+	.a-mosaic .spread-text {
+		display: grid;
+		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+		gap: 0 3rem;
+		align-items: end;
 	}
-	/* The moving part, pinned over the corner of the board like a monitor
-	   clip: the stage as a mod drags things onto it. */
-	.spread-live-clip {
-		position: absolute;
-		z-index: 2;
-		left: -5%;
-		bottom: -16%;
-		width: 48%;
+	.a-mosaic .spread-text > :is(.spread-cat, .spread-title, .spread-meta) {
+		grid-column: 1;
+	}
+	.a-mosaic .spread-text > :is(.spread-desc, .spread-stack, .spread-actions) {
+		grid-column: 2;
+	}
+	.a-mosaic .spread-desc {
+		grid-row: 1 / span 2;
+		align-self: end;
+	}
+	.ms-panel {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+		gap: clamp(1rem, 2.4vw, 2rem);
+		align-items: start;
+		padding: clamp(1rem, 2.4vw, 2rem);
+		background: #2a2c28;
+		border-radius: 2px;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.08),
+			var(--lift-high);
+	}
+	.ms-mon {
 		margin: 0;
-		padding: 0.4rem 0.4rem 0;
-		background: #0c0f0d;
-		border: 1px solid rgba(200, 240, 74, 0.35);
-		border-radius: 8px;
-		box-shadow: var(--lift-high);
-		rotate: -2deg;
-		translate: var(--dx, 0) var(--dy, 0);
-		transition: translate 0.6s var(--ease-out);
+		padding: 0.5rem;
+		background: #0f110f;
+		border-radius: 3px;
+		box-shadow: inset 0 0 0 1px #3d403a;
 	}
-	.spread-live-clip img {
-		display: block;
-		width: 100%;
-		height: auto;
-		border-radius: 4px;
-	}
-	.spread-live-clip figcaption {
+	.ms-plate {
 		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		padding: 0.35rem 0.2rem 0.45rem;
-		color: rgba(236, 228, 210, 0.8);
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.1rem 0.2rem 0.5rem;
+		color: #c8c3b2;
 	}
-	.spread-live-dot {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 50%;
-		background: var(--lime);
+	.ms-tally {
+		padding: 0 0.4rem;
+		background: #b83a26;
+		color: var(--ivory);
 	}
-	.v-crop .spread-note {
-		right: 0;
-		top: -3rem;
-		color: var(--lime);
+	.ms-pgm {
+		grid-row: span 2;
 	}
-	.v-crop :global(.spread-stamp) {
-		right: 3%;
-		top: -1.6rem;
+	.onair-clip {
+		margin-top: 3rem;
+	}
+	.onair-clip figcaption {
+		padding: 0.5rem 0.2rem 0.1rem;
+		color: #c8c3b2;
+	}
+	.ms-desk {
+		display: flex;
+		align-items: end;
+		gap: 0.6rem;
+	}
+	.ms-key {
+		width: 1.6rem;
+		height: 1.2rem;
+		background: #4a4d46;
+		border-radius: 2px;
+	}
+	.ms-key.is-on {
+		background: #b83a26;
+	}
+	.ms-fader {
+		width: 0.5rem;
+		height: 3.6rem;
+		margin-left: 0.6rem;
+		background:
+			linear-gradient(#c8c3b2, #c8c3b2) 50% var(--v, 60%) / 1.4rem 0.5rem no-repeat,
+			linear-gradient(#0f110f, #0f110f) 50% 0 / 2px 100% no-repeat;
+	}
+	.ms-note {
+		left: 40%;
+		bottom: -2.6rem;
+		max-width: none;
+		white-space: nowrap;
+	}
+	.a-mosaic :global(.spread-stamp) {
+		right: 2%;
+		top: -1.4rem;
 		--peek-tilt: -12deg;
 	}
+	.a-mosaic .spread-stage {
+		padding-bottom: 2.4rem;
+	}
 
-	@media (max-width: 860px) {
+	/* ================= tablet and phone: stacked, on purpose ================= */
+	@media (max-width: 900px) {
 		.spread-inner,
-		.v-offset .spread-inner,
-		.v-paper .spread-inner,
-		.v-poster .spread-text {
-			grid-template-columns: 1fr;
+		.a-hunch .spread-inner,
+		.a-noggin .spread-inner,
+		.a-chorusify .spread-inner,
+		.a-knock .spread-inner,
+		.a-mosaic .spread-text {
+			grid-template-columns: minmax(0, 1fr);
 		}
-		.v-offset .spread-stage,
-		.v-paper .spread-stage {
+		/* on a phone the facts come first, the artefact under them */
+		.a-hunch .spread-stage,
+		.a-chorusify .spread-stage,
+		.a-knock .spread-text {
 			order: 0;
 		}
-		.v-paper .spread-stage {
-			min-height: 0;
+		.a-mosaic .spread-text > * {
+			grid-column: 1 !important;
 		}
-		.v-poster .spread-actions {
-			grid-column: 1;
+		.a-mosaic .spread-desc {
 			grid-row: auto;
-			justify-self: start;
-		}
-		.spread-stage {
-			margin-top: 1rem;
-			margin-bottom: 2rem;
 		}
 		.spread-note {
-			font-size: 1.2rem;
+			font-size: 1.3rem;
 		}
-		/* On a phone a stamp hanging off the column is a stamp half off the
-		   screen, so they tuck inside the edge instead. */
-		.v-dark :global(.spread-stamp) {
-			right: 0.3rem;
+	}
+	@media (max-width: 640px) {
+		.a-patina .spread-stage {
+			padding: 1.6rem 0 0;
 		}
-		.v-poster .spread-shot {
-			width: 78%;
+		.pt-mat {
+			width: 100%;
 		}
-		.v-poster .spread-phone {
-			width: 22%;
-			top: 4%;
+		/* the print stands beside the label and the swatches, under the mat */
+		.pt-print {
+			top: auto;
+			bottom: 3rem;
+			width: 31%;
 		}
-		/* Stacked rather than layered on a phone: the clip and the pencilled
-		   note each get their own line under the screenshot, so neither covers
-		   it. The phone frames keep their deliberate overlap. */
-		.spread-stage {
-			min-height: 0;
-		}
-		.spread-live-clip {
-			position: relative;
-			left: auto;
-			bottom: auto;
-			width: 82%;
-			margin: -1.5rem 0 0 auto;
-		}
-		.spread-note,
-		.v-dark .spread-note,
-		.v-offset .spread-note,
-		.v-poster .spread-note,
-		.v-phones .spread-note,
-		.v-vivid .spread-note,
-		.v-paper .spread-note,
-		.v-crop .spread-note {
+		.pt-label,
+		.pt-swatches,
+		.pt-note {
 			position: relative;
 			inset: auto;
-			margin-top: 1.4rem;
-			translate: none;
+			width: auto;
 		}
-		.spread-tuck {
-			position: relative;
-			left: auto;
-			bottom: auto;
-			margin-top: 2.4rem;
+		.pt-label {
+			margin-top: 0.8rem;
+			width: 62%;
 		}
-		.v-dark .spread-phone {
-			bottom: -4%;
-			width: 30%;
+		.pt-swatches {
+			display: grid;
+			grid-template-columns: repeat(3, 3.4rem);
+			margin-top: 1rem;
+			width: fit-content;
 		}
-		/* left, so it stays clear of the stamp tucked at the right */
-		.v-dark .spread-note {
-			margin: 1.6rem 0 0;
+		.pt-note {
+			margin-top: 1rem;
+			white-space: normal;
 		}
-		/* on a phone every note sits under its picture, so every arrow points up */
-		:is(.v-dark, .v-poster, .v-crop) .spread-arrow {
+		.pt-note .spread-arrow {
 			order: 2;
 			scale: 1 -1;
 			margin-top: 0;
 		}
-		/* the Chorusify phone hangs below the screenshot: the note waits under it */
-		.v-phones .spread-note {
-			margin-top: 24%;
+		.a-patina :global(.spread-stamp) {
+			left: auto;
+			right: 0.4rem;
 		}
-		.spread-stage:has(.spread-canvas) .spread-phone {
-			width: 21%;
-			top: 6%;
-			bottom: auto;
+
+		.hn-note {
+			position: relative;
+			inset: auto;
+			margin: 0.8rem 0 0 auto;
 		}
-		/* the real phone capture is tall; keep it inside its own band */
-		.v-paper .spread-phone {
-			top: -4%;
-			width: 28%;
+		.hn-clues {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.a-hunch :global(.spread-stamp) {
+			left: auto;
+			right: -0.4rem;
+			top: 20%;
+		}
+
+		.a-noggin .spread-stage {
+			padding: 0;
+		}
+		/* the handset hangs off the TV's corner, the note beside it */
+		.ng-handset {
+			position: relative;
+			inset: auto;
+			width: 32%;
+			margin: -2rem 0.4rem 0 auto;
+			rotate: 6deg;
+		}
+		.ng-note {
+			position: relative;
+			inset: auto;
+			margin: -9rem 0 0;
+			max-width: 55%;
+		}
+		.ng-ticket {
+			position: relative;
+			left: auto;
+			width: 100%;
+			margin-top: 2.2rem;
+			rotate: -2deg;
+		}
+
+		.a-chorusify .spread-stage {
+			padding: 0;
+		}
+		.ch-jcard {
+			grid-template-columns: minmax(0, 1fr) 2.2rem;
+			grid-template-areas: 'cover spine' 'flap spine';
+		}
+		.ch-cover {
+			grid-area: cover;
+		}
+		.ch-spine {
+			grid-area: spine;
+		}
+		.ch-flap {
+			grid-area: flap;
+			transform: none;
+		}
+		.ch-phone {
+			width: 30%;
+			top: auto;
+			bottom: -1.5rem;
+			right: 2.6rem;
+		}
+		.ch-note {
+			position: relative;
+			inset: auto;
+			margin-top: 2.6rem;
+		}
+		.ch-note .spread-arrow {
+			order: 2;
+			scale: 1 -1;
+		}
+		.a-chorusify :global(.spread-stamp) {
+			left: auto;
+			right: -0.4rem;
+			top: -1rem;
+		}
+
+		.a-haggle .spread-stage {
+			padding-top: 7.5rem;
+		}
+		.qn-fan {
+			left: 10%;
+			width: 80%;
+			height: 9rem;
+		}
+		.qn-card {
+			--w: 5.6rem;
+			--gap: 3.6rem;
+		}
+		.a-haggle .spread-stage:hover .qn-card {
+			--gap: 4.2rem;
+		}
+		.qn-note {
+			position: relative;
+			inset: auto;
+			margin-top: 1.2rem;
+			max-width: none;
+			rotate: -2deg;
+		}
+		.a-haggle :global(.spread-stamp) {
+			bottom: 3rem;
+		}
+
+		.kn-shots {
+			padding-right: 30%;
+		}
+		.kn-phone {
+			width: 31%;
+			top: -1rem;
+		}
+		/* the tall phone hangs below the host shot: the note waits under it */
+		.kn-note {
+			margin-top: 4.5rem;
+			max-width: 80%;
+		}
+
+		.ms-panel {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.onair-clip {
+			width: 82%;
+			margin: -1.5rem 0 0 auto;
+			rotate: -1.5deg;
+		}
+		.ms-pgm {
+			grid-row: auto;
+		}
+		/* under the panel, on the paper, never red on the dark steel */
+		.ms-note {
+			left: 0;
+			bottom: -2.4rem;
+			white-space: normal;
 		}
 	}
 </style>
