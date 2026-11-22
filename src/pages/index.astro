@@ -381,7 +381,10 @@ const fmtWhen = (w: string) =>
 				<div class="pc-left">
 					<h2 id="post-title" class="post-title" data-annotate>Write to the studio.</h2>
 					<p class="post-sub">Work, questions, or an idea that sounds slightly pointless. All of it gets read.</p>
+					{/* email_off: Cloudflare's obfuscation script crashes on this page's SVG links and leaves the address unreadable */}
+					<Fragment set:html="<!--email_off-->" />
 					<a class="post-mail" href="mailto:mayur@futile.studio" data-annotate>mayur@futile.studio</a>
+					<Fragment set:html="<!--/email_off-->" />
 					<div class="post-box">
 						<a class="btn btn-stamp" href={url('post/')} id="post-it" data-clue="post">Post it</a>
 						<p class="post-hint">Opens the postcard desk: write on the back and post it to the studio.</p>
